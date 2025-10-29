@@ -1,8 +1,7 @@
 <template>
   <div class="student-page">
-    <!-- 统一的左右边距容器，使海报与下方三列对齐 -->
     <div class="container">
-      <!-- 顶部大海报（轮播） -->
+      
       <div class="banner">
         <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
           <div class="slide">
@@ -202,8 +201,8 @@ export default {
   position: relative;
   height: 420px;
   overflow: hidden;
-  border-radius: 16px;
-  margin: 12px 0 0;
+  border-radius: 0;
+  margin: 0;
   background: #ffffff;
 }
 .slides { display:flex; height:100%; transition: transform .5s ease-in-out; }
@@ -237,9 +236,9 @@ export default {
 /* 三列布局：由容器控制左右边距，这里不再额外 padding */
 .grid{
   display:grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
-  gap:16px;
-  padding-top: 16px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:clamp(0px, 2.5vw, 36px);
+  padding-top: 20px;
 }
 @media (max-width: 1100px){ .grid{ grid-template-columns:1fr; } }
 
@@ -284,6 +283,17 @@ export default {
 .container > .recruitment + .useful {
   margin-top: 16px;
 }
+
+/* 假设 .container 当前左右 padding 是 24px（你代码里就是 24） */
+.container { padding: 12px 24px 24px; }
+
+.container > .banner{
+  margin-left: -24px;
+  margin-right: -24px;
+  width: calc(100% + 48px);   /* 24*2 */
+  border-radius: 0;
+}
+
 
 /* 整行区块的容器：与上面三列保持统一左右边距，由 .container 控制 */
 .section-full{

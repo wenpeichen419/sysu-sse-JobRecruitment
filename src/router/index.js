@@ -58,6 +58,14 @@ const routes = [
     component: StudentHome,
     meta: { layout: 'student' }
   }
+  ,
+  {
+    path: '/resume-manage',
+    name: 'ResumeManage',
+    component: () => import('../views/ResumeManage.vue'),
+    meta: { layout: 'student' }
+  }
+  
 ]
 
 const router = createRouter({

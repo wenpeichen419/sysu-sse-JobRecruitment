@@ -43,7 +43,7 @@ export default {
       navLinks: [
         { path: '/student-home', text: '首页', exact: true },
         { path: '/job',          text: '求职中心' },
-        { path: '/resume',       text: '简历管理' },
+        { path: '/resume-manage',       text: '简历管理' },
         { path: '/delivery',     text: '投递情况' }
       ]
     }
