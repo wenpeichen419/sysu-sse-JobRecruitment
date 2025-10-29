@@ -25,6 +25,16 @@ const routes = [
     component: () => import('../views/PostMethod.vue')
   },
   {
+    path: '/post-method-choice',
+    name: 'PostMethodChoice',
+    component: () => import('../views/PostMethodChoice.vue')
+  },
+  {
+    path: '/position-form',
+    name: 'PositionForm',
+    component: () => import('../views/PositionForm.vue')
+  },
+  {
     path: '/talent-pool',
     name: 'TalentPool',
     component: () => import('../views/TalentPool.vue')
