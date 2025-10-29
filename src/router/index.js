@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import CandidateList from '../views/CandidateList.vue'
-
+import StudentHome from '@/views/StudentHome.vue'
 const routes = [
   {
     path: '/',
@@ -50,6 +50,13 @@ const routes = [
     path: '/enterprise-edit',
     name: 'EnterpriseEdit',
     component: () => import('../views/EnterpriseEdit.vue')
+  }
+  ,
+  {
+    path: '/student-home',
+    name: 'StudentHome',
+    component: StudentHome,
+    meta: { layout: 'student' }
   }
 ]
 

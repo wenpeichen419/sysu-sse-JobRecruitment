@@ -1,28 +1,31 @@
 <template>
   <div id="app">
-    <!-- 导航栏 -->
-    <nav class="navbar">
+    <!-- 学生端导航（根据路由 meta 切换） -->
+    <StudentNavbar v-if="layout === 'student'" />
+
+    <!-- 企业端导航（默认） -->
+    <nav v-else class="navbar">
       <!-- 左侧logo和院名 -->
       <div class="logo-section">
-        <img 
-          src="@/assets/campus_logo.png" 
-          alt="中山大学软件工程学院" 
+        <img
+          src="@/assets/campus_logo.png"
+          alt="中山大学软件工程学院"
           class="logo-image"
-        >
+        />
       </div>
-      
+
       <!-- 中间导航链接 -->
       <ul class="nav-links">
         <li v-for="(link, index) in navLinks" :key="index">
-          <router-link 
-            :to="link.path" 
+          <router-link
+            :to="link.path"
             :class="{ active: $route.path === link.path }"
           >
             {{ link.text }}
           </router-link>
         </li>
       </ul>
-      
+
       <!-- 右侧用户信息 -->
       <div class="user-section">
         <span class="user-greeting">您好，</span>
@@ -31,22 +34,39 @@
     </nav>
 
     <!-- 页面内容 - 路由出口 -->
-    <div class="main-content">
+    <div class="main-content" :style="{ marginTop: contentTop }">
       <router-view />
     </div>
   </div>
 </template>
 
 <script>
+import StudentNavbar from '@/components/StudentNavbar.vue'
+
 export default {
   name: 'App',
+  components: { StudentNavbar },
   data() {
     return {
+      // 企业端导航链接
       navLinks: [
         { path: '/', text: '主页' },
         { path: '/position-manage', text: '岗位管理' },
         { path: '/talent-pool', text: '人才库' }
       ]
+    }
+  },
+  computed: {
+    // 使用路由 meta 切换布局；默认为 enterprise
+    layout() {
+      return this.$route.meta && this.$route.meta.layout
+        ? this.$route.meta.layout
+        : 'enterprise'
+    },
+    // 不同导航高度下，主内容需要的顶部外边距
+    contentTop() {
+      // 学生端 StudentNavbar企业端 105px
+      return this.layout === 'student' ? '105px' : '105px'
     }
   }
 }
@@ -68,7 +88,7 @@ body {
   min-height: 100vh;
 }
 
-/* 导航栏样式 - 保持原有样式 */
+/* ===== 企业端导航样式（保留原样） ===== */
 .navbar {
   background-color: #2a5e23;
   display: flex;
@@ -151,35 +171,31 @@ body {
   color: #ecdcda;
 }
 
-/* 主内容区域样式 - 只移除居中限制，保留导航栏相关样式 */
+/* 主内容区域：顶部外边距由 contentTop 计算提供 */
 .main-content {
-  margin-top: 105px; /* 保留顶部外边距避免导航栏遮挡 */
-  min-height: calc(100vh - 105px);
+  min-height: calc(100vh - 70px);
+  /* margin-top 在行内样式里按布局动态设置 */
 }
 
-/* 响应式设计 */
+/* 响应式设计（企业端导航时才生效） */
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;
     height: auto;
     padding: 15px;
-    position: relative;
+    position: fixed;
   }
-  
+
   .logo-section {
     margin-bottom: 15px;
   }
-  
+
   .nav-links {
     margin-bottom: 15px;
   }
-  
+
   .nav-links li {
     margin: 0 10px;
-  }
-  
-  .main-content {
-    margin-top: 0;
   }
 }
 </style>
