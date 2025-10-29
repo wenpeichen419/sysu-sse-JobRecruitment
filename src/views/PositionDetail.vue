@@ -90,8 +90,8 @@
 
       <!-- 操作按钮 -->
       <div class="action-section">
-        <button class="edit-btn">编辑岗位</button>
-        <button class="publish-btn">发布岗位</button>
+        <button class="edit-btn" @click="editPosition">编辑岗位</button>
+        <button class="publish-btn" @click="publishPosition">发布岗位</button>
         <button class="back-btn" @click="goBack">返回列表</button>
       </div>
     </div>
@@ -108,6 +108,15 @@ export default {
     }
   },
   methods: {
+    // 编辑岗位 - 跳转到发布模式选择页面
+    editPosition() {
+      this.$router.push('/post-method-choice')
+    },
+    // 发布岗位 - 跳转到发布模式选择页面
+    publishPosition() {
+      this.$router.push('/post-method-choice')
+    },
+    // 返回列表
     goBack() {
       this.$router.push('/position-manage')
     }

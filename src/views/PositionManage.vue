@@ -188,7 +188,8 @@ export default {
       this.$router.push(`/position-detail/${positionId}`)
     },
     goToPostMethod() {
-      this.$router.push('/post-method')
+      // 跳转到发布模式选择页面
+      this.$router.push('/post-method-choice')
     }
   }
 }
