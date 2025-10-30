@@ -92,6 +92,18 @@
             />
           </el-form-item>
 
+          <!-- 招聘截止时间 -->
+          <el-form-item label="招聘截止时间" prop="recruitDeadline">
+            <el-date-picker
+              v-model="formData.recruitDeadline"
+              type="date"
+              placeholder="选择日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+
           <!-- 岗位标签 -->
           <el-form-item label="岗位标签" prop="tags">
             <div class="tags-input-container">
@@ -197,6 +209,7 @@ export default {
       location: '',
       salaryRange: '',
       deadline: '',
+      recruitDeadline: '',
       tags: [],
       description: '',
       requirements: '',
@@ -242,6 +255,7 @@ export default {
               location: extractedData.location || '',
               salaryRange: extractedData.salaryRange || '',
               deadline: extractedData.deadline || '',
+              recruitDeadline: extractedData.recruitDeadline || '',
               tags: extractedData.tags || [],
               description: extractedData.description || '',
               requirements: extractedData.requirements || '',
