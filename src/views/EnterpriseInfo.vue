@@ -33,10 +33,59 @@
           </div>
         </div>
       </div>
-      <button class="edit-profile-btn" @click="goToEditProfile">
-        修改简介
-      </button>
+      <div class="button-group">
+        <button class="edit-profile-btn" @click="goToEditProfile">
+          修改简介
+        </button>
+        <button class="account-settings-btn" @click="showPasswordDialog = true">
+          账号设置
+        </button>
+      </div>
+      
     </div>
+    
+    <!-- 添加密码修改弹框 -->
+<div v-if="showPasswordDialog" class="modal-overlay" @click="showPasswordDialog = false">
+  <div class="modal-content" @click.stop>
+    <div class="modal-header">
+      <h2 class="modal-title">修改密码</h2>
+      <button class="modal-close" @click="showPasswordDialog = false">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label for="oldPassword">原密码</label>
+        <input 
+          type="password" 
+          id="oldPassword" 
+          v-model="passwordForm.oldPassword" 
+          placeholder="请输入原密码"
+        >
+      </div>
+      <div class="input-group">
+        <label for="newPassword">新密码</label>
+        <input 
+          type="password" 
+          id="newPassword" 
+          v-model="passwordForm.newPassword" 
+          placeholder="请输入新密码"
+        >
+      </div>
+      <div class="input-group">
+        <label for="confirmPassword">确认密码</label>
+        <input 
+          type="password" 
+          id="confirmPassword" 
+          v-model="passwordForm.confirmPassword" 
+          placeholder="请再次输入新密码"
+        >
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-btn" @click="showPasswordDialog = false">取消修改</button>
+      <button class="confirm-btn" @click="confirmPasswordChange">确认修改</button>
+    </div>
+  </div>
+</div>
 
     <!-- 第二个和第三个矩形并排 -->
     <div class="info-cards-row">
@@ -110,6 +159,16 @@
 <script>
 export default {
   name: 'EnterpriseInfo',
+  data() {
+    return {
+      showPasswordDialog: false,
+      passwordForm: {
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
+    }
+  },
   methods: {
     goToEditProfile() {
       // 暂时跳转到主页，后续可以修改为编辑页面
@@ -120,6 +179,18 @@ export default {
       const address = encodeURIComponent('河北省秦皇岛市经济技术开发区龙海道185号');
       const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=yourCompanyName`;
       window.open(url, '_blank');
+    },
+    confirmPasswordChange() {
+      // 这里添加密码修改的逻辑，后续调用接口
+      console.log('修改密码:', this.passwordForm);
+      // 调用API后关闭弹框
+      this.showPasswordDialog = false;
+      // 清空表单
+      this.passwordForm = {
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      };
     }
   }
 }
@@ -236,7 +307,14 @@ export default {
   background: #d8d8d8;
 }
 
-.edit-profile-btn {
+/* 按钮组样式 */
+.button-group {
+  display: flex;
+  gap: 60px;
+  flex-shrink: 0;
+}
+
+.edit-profile-btn, .account-settings-btn {
   background: #1d5e25;
   color: white;
   border: none;
@@ -247,9 +325,10 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s ease;
   flex-shrink: 0;
+  width: 200px;
 }
 
-.edit-profile-btn:hover {
+.edit-profile-btn:hover, .account-settings-btn:hover {
   background: #2a4e1b;
 }
 
@@ -397,6 +476,128 @@ export default {
   text-decoration: underline;
 }
 
+/* 弹框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 600px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+  font-weight: bold;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 18px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #1d5e25;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.cancel-btn {
+  background: #cccccc;
+  color: #666;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #b3b3b3;
+}
+
+.confirm-btn {
+  background: #005e27;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.confirm-btn:hover {
+  background: #004a1f;
+}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
@@ -424,6 +625,13 @@ export default {
     gap: 15px;
   }
   
-
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .edit-profile-btn, .account-settings-btn {
+    width: 100%;
+  }
 }
 </style>

@@ -237,7 +237,6 @@ export default {
 .fixed-filter {
   background: white;
   padding: 25px 30px;
- 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   position: sticky;
@@ -250,7 +249,7 @@ export default {
   align-items: center;
   gap: 120px;
   flex-wrap: wrap;
-  margin-left:400px;
+  margin-left:330px;
 }
 
 .filter-item {
