@@ -307,8 +307,15 @@ export default {
   display: flex;
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+  font-size: 28px;
   font-weight: bold;
   color: #333;
+}
+
+.table-header .table-col {
+  font-size: 26px !important; /* 表头字体调大 */
+  font-weight: bold;
+  color: #2a5e23;
 }
 
 .table-row {

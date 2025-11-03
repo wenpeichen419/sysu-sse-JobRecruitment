@@ -14,8 +14,34 @@
       </button>
       <div class="candidate-list-page">
         <div class="filters-container">
-  
-        </div>
+         <div class="filters">
+            <!-- 候选人名字筛选 -->
+             <div class="filter-item">
+                <label>候选人名字</label>
+      <input 
+        type="text" 
+        v-model="filters.candidateName"
+        placeholder="输入候选人名字"
+        class="filter-input"
+      >
+          </div>
+    
+    <!-- 简历状态筛选 -->
+    <div class="filter-item">
+      <label>简历状态</label>
+      <select v-model="filters.resumeStatus" class="filter-select">
+        <option value="">请选择</option>
+        <option value="未审核">未审核</option>
+        <option value="已候选">已候选</option>
+        <option value="已发送面试通知">已发送面试通知</option>
+        <option value="已拒绝">已拒绝</option>
+      </select>
+    </div>
+    
+               <!-- 筛选按钮 -->
+              <button class="filter-btn" @click="handleFilter">筛选</button>
+               </div>
+         </div>
 
         <div class="candidates-list">
           <div 
@@ -36,7 +62,7 @@
             <div class="candidate-info">
               <div class="name-section">
                 <h3 class="candidate-name">{{ candidate.name }}</h3>
-                <span class="candidate-grade">{{ candidate.grade }} · {{ candidate.type }}</span>
+                <span class="candidate-grade">{{ candidate.grade }} </span>
               </div>
             </div>
             
@@ -287,56 +313,19 @@ export default {
   margin: 0 auto;
 }
 
-.filters {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 80px;
-  padding: 0 30px;
-}
-
-.filter-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 22px;
-  color: #333;
-  font-weight: 500;
-}
-
-.filter-checkbox input {
-  width: 24px;
-  height: 24px;
-}
-
-.filter-btn {
-  background: #325e21;
-  color: white;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 22px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.filter-btn:hover {
-  background: #2a4e1b;
-}
 
 .candidates-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 22px;
   max-height: calc(100vh - 350px);
+  margin-top:30px;
 }
 
 .candidate-row {
   background: white;
   border-radius: 12px;
-  padding: 30px 25px;
+  padding: 0px 25px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
@@ -346,6 +335,7 @@ export default {
   min-width: 100%;
   min-height: 150px;
   margin-left: 0;
+  
 }
 
 .candidate-row:hover {
@@ -405,13 +395,14 @@ export default {
 
 .candidate-grade {
   color: #666;
-  font-size: 16px;
+  font-size: 22px;
   padding-left: 100px;
   font-weight: normal;
+  margin-left:150px;
 }
 
 .candidate-status {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: bold;
   white-space: nowrap;
   flex-shrink: 0;
@@ -434,6 +425,60 @@ export default {
   font-weight: 500;
   transition: all 0.2s ease;
 }
+
+.filters {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 80px;
+  padding: 0 30px;
+  margin-top:40px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-item label {
+  font-size: 22px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.filter-input, .filter-select {
+  padding: 12px 15px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  font-size: 20px;
+  min-width: 200px;
+}
+
+.filter-input:focus, .filter-select:focus {
+  outline: none;
+  border-color: #325e21;
+}
+
+.filter-btn {
+  background: #325e21;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: #2a4e1b;
+}
+
 
 /* 响应式设计 */
 @media (max-width: 768px) {
@@ -471,6 +516,19 @@ export default {
   
   .main-content {
     margin-left: 0;
+  }
+    .filters {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .filter-item {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filter-input, .filter-select {
+    min-width: 150px;
   }
 }
 </style>
