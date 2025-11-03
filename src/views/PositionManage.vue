@@ -26,6 +26,7 @@
               <option value="">请选择</option>
               <option value="published">已发布</option>
               <option value="draft">草稿</option>
+              <option value="closed">已下线</option>
             </select>
           </div>
           <div class="filter-item">
@@ -112,9 +113,9 @@ export default {
         },
          {
           id: 5,
-          title: '运营培训生',
-          status: 'draft',
-          statusText: '草稿',
+          title: '下线功能测试',
+          status: 'closed',
+          statusText: '已下线',
           updateDate: '2025-10-09'
         },
          {
@@ -146,13 +147,6 @@ export default {
           updateDate: '2025-10-09'
         },
           {
-          id: 9,
-          title: '运营培训生',
-          status: 'draft',
-          statusText: '草稿',
-          updateDate: '2025-10-09'
-        },
-          {
           id: 10,
           title: '运营培训生',
           status: 'draft',
@@ -173,8 +167,15 @@ export default {
           statusText: '草稿',
           updateDate: '2025-10-09'
         },
-        {
+          {
           id: 13,
+          title: '运营培训生',
+          status: 'draft',
+          statusText: '草稿',
+          updateDate: '2025-10-09'
+        },
+        {
+          id: 14,
           title: '运营培训生',
           status: 'draft',
           statusText: '草稿',
@@ -348,6 +349,11 @@ export default {
 .status-tag.draft {
   background: #fff3e0;
   color: #ef6c00;
+}
+
+.status-tag.closed {
+  background: #fee3e3;
+  color: #fc1e1e;
 }
 
 /* 响应式设计 */

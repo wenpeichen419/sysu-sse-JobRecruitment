@@ -93,29 +93,36 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- 右侧：详细信息 - 每个信息单独成行 -->
-            <div class="right-details-group">
-              <div class="info-item-detail">
-                <span class="detail-label">职能类别：</span>
-                <span class="detail-value">{{ positionData.functionCategory }}</span>
-              </div>
-              <div class="info-item-detail">
-                <span class="detail-label">部门：</span>
-                <span class="detail-value">{{ positionData.department }}</span>
-              </div>
-              <div class="info-item-detail">
-                <span class="detail-label">招聘人数：</span>
-                <span class="detail-value">{{ positionData.recruitCount }}人</span>
-              </div>
-              <div class="info-item-detail">
-                <span class="detail-label">要求到岗：</span>
-                <span class="detail-value">{{ positionData.deadline }}</span>
-              </div>
-              <div class="info-item-detail">
-                <span class="detail-label">招聘截止：</span>
-                <span class="detail-value">{{ positionData.recruitDeadline }}</span>
+              <!-- 详细信息 - 前三行一排，后两行一排 -->
+              <div class="details-group-below">
+                <!-- 前三行 -->
+                <div class="details-row first-row">
+                  <div class="info-item-detail">
+                    <span class="detail-label">职能类别：</span>
+                    <span class="detail-value">{{ positionData.functionCategory }}</span>
+                  </div>
+                  <div class="info-item-detail">
+                    <span class="detail-label">部门：</span>
+                    <span class="detail-value">{{ positionData.department }}</span>
+                  </div>
+                  <div class="info-item-detail">
+                    <span class="detail-label">招聘人数：</span>
+                    <span class="detail-value">{{ positionData.recruitCount }}人</span>
+                  </div>
+                </div>
+                
+                <!-- 后两行 -->
+                <div class="details-row second-row">
+                  <div class="info-item-detail">
+                    <span class="detail-label">要求到岗：</span>
+                    <span class="detail-value">{{ positionData.deadline }}</span>
+                  </div>
+                  <div class="info-item-detail">
+                    <span class="detail-label">招聘截止：</span>
+                    <span class="detail-value">{{ positionData.recruitDeadline }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -521,21 +528,20 @@ export default {
 /* 左侧信息组 */
 .left-info-group {
   flex: 1;
-  margin-top:70px;
-  
+  margin-top: 70px;
 }
 
 /* 岗位标题和标签 */
 .position-header {
   margin-bottom: 30px;
-  margin-top:18px;
-  margin-left:20px;
+  margin-top: -35px;
+  margin-left: 20px;
 }
 
 .position-title {
   color: #325e21;
   margin: 0 0 20px 0;
-  font-size: 32px;
+  font-size: 36px;
   font-weight: bold;
 }
 
@@ -550,9 +556,10 @@ export default {
   color: #325e21;
   padding: 8px 16px;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
 }
+
 
 /* 主要信息组 */
 .main-info-group {
@@ -560,14 +567,19 @@ export default {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  
+  margin-bottom: 40px;
+  /* 新增以下属性 */
+  width: fit-content; /* 让宽度根据内容自适应 */
+  margin-left: -20px; /* 确保靠左对齐 */
+  padding: 0; /* 移除内边距 */
 }
 
 .info-item-main {
-  flex: 1;
-  padding: 25px 20px;
+  padding: 25px 40px; /* 调整左右内边距，可以根据需要调整 */
   position: relative;
   text-align: left;
+  /* 移除 flex: 1 或者改为 auto */
+  flex: none; /* 不让它们自动拉伸 */
 }
 
 /* 分割线 */
@@ -582,7 +594,9 @@ export default {
 }
 
 .info-content {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .info-label {
@@ -598,40 +612,49 @@ export default {
   color: #cab156;
 }
 
-/* 右侧详细信息组 - 每个信息单独成行 */
-.right-details-group {
-  flex: 1;
+/* 详细信息组 - 放在下方 */
+/* 详细信息组 - 放在下方 */
+.details-group-below {
+  width: 100%;
+  margin-left: 20px;
+}
+
+.details-row {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 100px;
-  margin-left:200px;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.details-row.first-row {
+  justify-content: flex-start;
+  gap: 0px;
+}
+
+.details-row.second-row {
+  justify-content: flex-start;
+  gap: 0px;
 }
 
 .info-item-detail {
   display: flex;
-  
   align-items: center;
   padding: 12px 0;
-  
-}
-
-.info-item-detail:last-child {
-  border-bottom: none;
+  flex: none; /* 改为 none 而不是 1 */
+  width: 400px; /* 设置固定宽度，确保所有项目宽度一致 */
 }
 
 .detail-label {
   color: #346024;
   font-weight: 550;
   font-size: 24px;
-  min-width: 100px;
+  min-width: 120px; /* 设置标签的最小宽度 */
 }
 
 .detail-value {
   color: #333;
   font-weight: 500;
   font-size: 24px;
-  margin-left:20px;
+  margin-left: 10px;
 }
 
 /* 章节头部 */
@@ -707,6 +730,15 @@ export default {
   
   .info-item-main:not(:last-child) {
     border-bottom: 1px solid #d8d8d8;
+  }
+  
+  .details-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .details-row.second-row {
+    gap: 15px;
   }
   
   .info-item-detail {
