@@ -20,11 +20,6 @@ const routes = [
     props: true
   },
   {
-    path: '/post-method',
-    name: 'PostMethod',
-    component: () => import('../views/PostMethod.vue')
-  },
-  {
     path: '/post-method-choice',
     name: 'PostMethodChoice',
     component: () => import('../views/PostMethodChoice.vue')

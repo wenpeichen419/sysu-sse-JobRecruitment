@@ -9,90 +9,163 @@
       </div>
     </div>
 
-    <div class="content-wrapper">
-      <!-- 岗位基本信息 -->
-      <div class="basic-info-section">
-        <div class="section-header">
-          <h1 class="position-title">推荐算法工程师</h1>
-          <div class="position-tags">
-            <span class="tag">AI</span>
-            <span class="tag">算法</span>
-            <span class="tag">机器学习</span>
-            <span class="tag">Python</span>
-          </div>
-        </div>
-        
-        <div class="position-meta">
-          <div class="meta-item">
-            <strong>8500-9499</strong>
-          </div>
-          <div class="meta-item">
-            <strong>广东省广州市天河区</strong>
-          </div>
-          <div class="meta-item">
-            <strong>校招</strong>
-          </div>
-        </div>
-
-        <div class="position-details">
-          <div class="detail-row">
-            <span class="detail-label">职能类别：</span>
-            <span class="detail-value">算法</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">部门：</span>
-            <span class="detail-value">xx部门</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">招聘人数：</span>
-            <span class="detail-value">3人</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">要求到岗时间：</span>
-            <span class="detail-value">2025-11-11</span>
-          </div>
+    <div class="detail-layout">
+      <!-- 左侧导航 - 固定位置 -->
+      <div class="left-sidebar fixed-sidebar">
+        <div class="sidebar-title">岗位详情</div>
+        <div class="title-divider"></div>
+        <div 
+          v-for="section in sections" 
+          :key="section.id"
+          class="sidebar-item"
+          :class="{ active: activeSection === section.id }"
+          @click="scrollToSection(section.id)"
+        >
+          {{ section.name }}
         </div>
       </div>
 
-      <!-- 职位详情 -->
-      <div class="detail-section">
-        <h2 class="section-title">职位详情</h2>
-        
-        <div class="description-section">
-          <h3>岗位描述：</h3>
-          <p>作为推荐算法方向的研究工程师，你可以：</p>
-          <ul>
-            <li>负责推荐系统中具体推荐业务的召回、排序等模型算法及策略的设计与优化；</li>
-            <li>深入理解业务场景，通过对数据的敏锐洞察挖掘产品潜在价值和需求，针对现有业务场景特点优化推荐策略和模型，不断提升用户体验和业务指标；</li>
-            <li>基于大规模深度神经网络模型和机器学习系统，探索业界前沿推荐技术的研发工作，通过技术创新推动产品成长，包含但不限于推荐多模态大模型、图神经网络、多任务学习、超长序列建模、强化学习等技术方向。</li>
-          </ul>
+      <!-- 右侧内容区域 - 充满剩余空间 -->
+      <div class="right-content full-width">
+        <!-- 基本信息区域（包含操作按钮） -->
+        <div class="basic-info-section full-width-section" id="basic-section" ref="basicSection">
+          <!-- 操作按钮放在右上角 -->
+          <div class="action-buttons-top">
+            <button 
+              v-if="positionStatus === 'published'" 
+              class="offline-btn"
+              @click="handleOffline"
+            >
+              下线岗位
+            </button>
+            <button 
+              v-else-if="positionStatus === 'draft'" 
+              class="delete-draft-btn"
+              @click="handleDeleteDraft"
+            >
+              删除草稿
+            </button>
+            
+            <button 
+              class="edit-btn"
+              @click="handleEdit"
+            >
+              {{ positionStatus === 'published' ? '修改' : '继续完善' }}
+            </button>
+          </div>
+
+          <!-- 主要内容区域 -->
+          <div class="main-content-area">
+            <!-- 左侧：岗位信息 -->
+            <div class="left-info-group">
+              <!-- 岗位标题和标签 -->
+              <div class="position-header">
+                <h1 class="position-title">{{ positionData.title }}</h1>
+                <div class="position-tags">
+                  <span 
+                    v-for="tag in positionData.tags" 
+                    :key="tag" 
+                    class="tag"
+                  >
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- 薪资、地点、类型 -->
+              <div class="main-info-group">
+                <div class="info-item-main">
+                  <div class="info-content">
+                    <div class="info-label">薪资范围</div>
+                    <div class="info-value">{{ positionData.salaryRange }}</div>
+                  </div>
+                </div>
+                <div class="info-item-main">
+                  <div class="info-content">
+                    <div class="info-label">工作地点</div>
+                    <div class="info-value">{{ positionData.location }}</div>
+                  </div>
+                </div>
+                <div class="info-item-main">
+                  <div class="info-content">
+                    <div class="info-label">招聘类型</div>
+                    <div class="info-value">{{ positionData.category }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧：详细信息 - 每个信息单独成行 -->
+            <div class="right-details-group">
+              <div class="info-item-detail">
+                <span class="detail-label">职能类别：</span>
+                <span class="detail-value">{{ positionData.functionCategory }}</span>
+              </div>
+              <div class="info-item-detail">
+                <span class="detail-label">部门：</span>
+                <span class="detail-value">{{ positionData.department }}</span>
+              </div>
+              <div class="info-item-detail">
+                <span class="detail-label">招聘人数：</span>
+                <span class="detail-value">{{ positionData.recruitCount }}人</span>
+              </div>
+              <div class="info-item-detail">
+                <span class="detail-label">要求到岗：</span>
+                <span class="detail-value">{{ positionData.deadline }}</span>
+              </div>
+              <div class="info-item-detail">
+                <span class="detail-label">招聘截止：</span>
+                <span class="detail-value">{{ positionData.recruitDeadline }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="requirement-section">
-          <h3>岗位要求：</h3>
-          <ul>
-            <li>本科及以上学历，计算机、数学、人工智能等相关专业；</li>
-            <li>扎实的编程能力和算法功能，熟练掌握Python/C++/Java等至少一种编程语言；</li>
-            <li>扎实的机器学习/深度学习理论基础，熟练掌握Tensorflow/Pytorch等至少一种主流深度学习框架，了解Hadoop/Spark/Flink等大数据平台工具的使用；</li>
-            <li>优秀的逻辑思维能力，优秀的分析问题与解决问题的能力，对解决具有挑战性的问题充满激情；</li>
-            <li>善于沟通，工作积极主动，责任心强，自驱力强，能持续学习，具备良好的团队协作能力。</li>
-          </ul>
+        <!-- 岗位描述 -->
+        <div class="detail-section full-width-section" id="description-section" ref="descriptionSection">
+          <div class="section-header">
+            <h3 class="section-title">岗位描述</h3>
+          </div>
+          
+          <div class="description-content">
+            <p>{{ positionData.description }}</p>
+            <ul v-if="positionData.descriptionItems && positionData.descriptionItems.length">
+              <li v-for="(item, index) in positionData.descriptionItems" :key="index">
+                {{ item }}
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <div class="bonus-section">
-          <h3>加分项：</h3>
-          <ul>
-            <li>有推荐系统相关项目经验者优先</li>
-            <li>在相关领域发表过论文或获得过竞赛奖项者优先</li>
-          </ul>
+        <!-- 岗位要求 -->
+        <div class="detail-section full-width-section" id="requirement-section" ref="requirementSection">
+          <div class="section-header">
+            <h3 class="section-title">岗位要求</h3>
+          </div>
+          
+          <div class="requirement-content">
+            <ul v-if="positionData.requirements && positionData.requirements.length">
+              <li v-for="(req, index) in positionData.requirements" :key="index">
+                {{ req }}
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
 
-      <!-- 操作按钮 -->
-      <div class="action-section">
-        <button class="edit-btn" @click="editPosition">编辑岗位</button>
-        <button class="publish-btn" @click="publishPosition">发布岗位</button>
-        <button class="back-btn" @click="goBack">返回列表</button>
+        <!-- 加分项 -->
+        <div class="detail-section full-width-section" id="bonus-section" ref="bonusSection">
+          <div class="section-header">
+            <h3 class="section-title">加分项</h3>
+          </div>
+          
+          <div class="bonus-content">
+            <ul v-if="positionData.bonus && positionData.bonus.length">
+              <li v-for="(bonus, index) in positionData.bonus" :key="index">
+                {{ bonus }}
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -107,22 +180,151 @@ export default {
       required: true
     }
   },
-  methods: {
-    // 编辑岗位 - 跳转到发布模式选择页面
-    editPosition() {
-      this.$router.push('/post-method-choice')
-    },
-    // 发布岗位 - 跳转到发布模式选择页面
-    publishPosition() {
-      this.$router.push('/post-method-choice')
-    },
-    // 返回列表
-    goBack() {
-      this.$router.push('/position-manage')
+  data() {
+    return {
+      activeSection: 'basic',
+      sections: [
+        { id: 'basic', name: '基本信息' },
+        { id: 'description', name: '岗位描述' },
+        { id: 'requirement', name: '岗位要求' },
+        { id: 'bonus', name: '加分项' }
+      ],
+      positionStatus: 'published', // 'published' 或 'draft'
+      positionData: {
+        title: '推荐算法工程师',
+        tags: ['AI', '算法', '机器学习', 'Python'],
+        salaryRange: '8500-9499',
+        location: '广东省广州市天河区上渡路136号',
+        category: '校招',
+        functionCategory: '算法',
+        department: 'xx部门',
+        recruitCount: 3,
+        deadline: '2025-11-11',
+        recruitDeadline: '2025-10-11',
+        description: '作为推荐算法方向的研究工程师，你可以：',
+        descriptionItems: [
+          '负责推荐系统中具体推荐业务的召回、排序等模型算法及策略的设计与优化；',
+          '深入理解业务场景，通过对数据的敏锐洞察挖掘产品潜在价值和需求，针对现有业务场景特点优化推荐策略和模型，不断提升用户体验和业务指标；',
+          '基于大规模深度神经网络模型和机器学习系统，探索业界前沿推荐技术的研发工作，通过技术创新推动产品成长，包含但不限于推荐多模态大模型、图神经网络、多任务学习、超长序列建模、强化学习等技术方向。'
+        ],
+        requirements: [
+          '本科及以上学历，计算机、数学、人工智能等相关专业；',
+          '扎实的编程能力和算法功能，熟练掌握Python/C++/Java等至少一种编程语言；',
+          '扎实的机器学习/深度学习理论基础，熟练掌握Tensorflow/Pytorch等至少一种主流深度学习框架，了解Hadoop/Spark/Flink等大数据平台工具的使用；',
+          '优秀的逻辑思维能力，优秀的分析问题与解决问题的能力，对解决具有挑战性的问题充满激情；',
+          '善于沟通，工作积极主动，责任心强，自驱力强，能持续学习，具备良好的团队协作能力。'
+        ],
+        bonus: [
+          '有推荐系统相关项目经验者优先',
+          '在相关领域发表过论文或获得过竞赛奖项者优先'
+        ]
+      }
     }
   },
   mounted() {
     console.log('加载岗位详情，ID:', this.id)
+    this.setupScrollSpy()
+    // 模拟根据ID获取岗位状态
+    this.getPositionStatus()
+  },
+  methods: {
+    // 根据ID获取岗位状态（模拟）
+    getPositionStatus() {
+      // 这里应该调用API获取岗位状态
+      // 模拟：根据ID判断状态
+      if (this.id % 2 === 0) {
+        this.positionStatus = 'published'
+      } else {
+        this.positionStatus = 'draft'
+      }
+    },
+
+    // 滚动到指定区域
+    scrollToSection(sectionId) {
+      this.activeSection = sectionId
+      const element = this.$refs[`${sectionId}Section`]
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        })
+        
+        // 添加高亮效果
+        element.classList.add('highlight')
+        setTimeout(() => {
+          element.classList.remove('highlight')
+        }, 2000)
+      }
+    },
+    
+    setupScrollSpy() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const sectionId = entry.target.id.replace('-section', '')
+            this.activeSection = sectionId
+          }
+        })
+      }, {
+        threshold: 0.5
+      })
+
+      // 观察所有章节
+      Object.values(this.$refs).forEach(ref => {
+        if (ref) observer.observe(ref)
+      })
+    },
+
+    // 下线岗位
+    handleOffline() {
+      if (confirm('确定要下线该岗位吗？下线后将不再对外展示。')) {
+        // 调用API下线岗位
+        console.log('下线岗位:', this.id)
+        alert('岗位已下线')
+        this.positionStatus = 'offline'
+      }
+    },
+
+    // 删除草稿
+    handleDeleteDraft() {
+      if (confirm('确定要删除该草稿吗？删除后将无法恢复。')) {
+        // 调用API删除草稿
+        console.log('删除草稿:', this.id)
+        alert('草稿已删除')
+        this.$router.push('/position-manage')
+      }
+    },
+
+    // 编辑/继续完善
+    handleEdit() {
+      // 准备传递给PositionForm的数据
+      const formData = {
+        positionName: this.positionData.title,
+        category: this.positionData.category,
+        department: this.positionData.department,
+        recruitCount: this.positionData.recruitCount,
+        location: this.positionData.location,
+        salaryRange: this.positionData.salaryRange,
+        deadline: this.positionData.deadline,
+        recruitDeadline: this.positionData.recruitDeadline,
+        tags: this.positionData.tags,
+        description: this.positionData.description + '\n' + 
+                    this.positionData.descriptionItems.join('\n'),
+        requirements: this.positionData.requirements.join('\n'),
+        bonus: this.positionData.bonus ? this.positionData.bonus.join('\n') : '',
+        positionId: this.id,
+        isDraft: this.positionStatus === 'draft'
+      }
+
+      // 跳转到PositionForm并传递数据
+      this.$router.push({
+        path: '/position-form',
+        query: {
+          editData: JSON.stringify(formData),
+          positionId: this.id
+        }
+      })
+    }
   }
 }
 </script>
@@ -175,26 +377,164 @@ export default {
   color: #666;
 }
 
-.content-wrapper {
+/* 详情布局 */
+.detail-layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: flex-start;
   padding-top: 85px;
 }
 
-/* 基本信息区域 */
-.basic-info-section {
+/* 左侧边栏 - 固定位置 */
+.fixed-sidebar {
+  width: 280px;
   background: white;
-  padding: 40px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  padding: 30px;
+  flex-shrink: 0;
+  position: fixed;
+  top: 220px;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
-.section-header {
-  margin-bottom: 25px;
+.sidebar-title {
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.title-divider {
+  height: 1px;
+  background: #d8d8d8;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.sidebar-item {
+  padding: 15px 0;
+  cursor: pointer;
+  font-size: 22px;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.sidebar-item:hover {
+  color: #325e21;
+  background: #f8f9fa;
+}
+
+.sidebar-item.active {
+  color: #325e21;
+  font-weight: bold;
+  background: #f0f7f0;
+}
+
+/* 右侧内容 - 充满剩余空间 */
+.full-width {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  margin-left: 300px;
+}
+
+.full-width-section {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.full-width-section.highlight {
+  box-shadow: 0 0 0 3px #325e21;
+}
+
+/* 基本信息区域样式 */
+.basic-info-section {
+  position: relative;
+  padding: 40px;
+}
+
+/* 顶部操作按钮 */
+.action-buttons-top {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  display: flex;
+  gap: 30px;
+}
+
+.offline-btn, .delete-draft-btn, .edit-btn {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.offline-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.offline-btn:hover {
+  background: #c82333;
+}
+
+.delete-draft-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.delete-draft-btn:hover {
+  background: #5a6268;
+}
+
+.edit-btn {
+  background: #325e21;
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #2a4e1b;
+}
+
+/* 主要内容区域 */
+.main-content-area {
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+}
+
+/* 左侧信息组 */
+.left-info-group {
+  flex: 1;
+  margin-top:70px;
+  
+}
+
+/* 岗位标题和标签 */
+.position-header {
+  margin-bottom: 30px;
+  margin-top:18px;
+  margin-left:20px;
 }
 
 .position-title {
   color: #325e21;
-  margin: 0 0 15px 0;
+  margin: 0 0 20px 0;
   font-size: 32px;
   font-weight: bold;
 }
@@ -208,174 +548,175 @@ export default {
 .tag {
   background: #e8f5e8;
   color: #325e21;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
 }
 
-.position-meta {
+/* 主要信息组 */
+.main-info-group {
   display: flex;
-  gap: 30px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  
 }
 
-.meta-item {
-  color: #666;
-  font-size: 16px;
+.info-item-main {
+  flex: 1;
+  padding: 25px 20px;
+  position: relative;
+  text-align: left;
 }
 
-.meta-item strong {
+/* 分割线 */
+.info-item-main:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25px;
+  bottom: 25px;
+  width: 1px;
+  background: #d8d8d8;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-label {
+  font-size: 26px;
   color: #333;
+  margin-bottom: 8px;
+  font-weight: 550;
 }
 
-.position-details {
+.info-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #cab156;
+}
+
+/* 右侧详细信息组 - 每个信息单独成行 */
+.right-details-group {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
+  margin-top: 100px;
+  margin-left:200px;
 }
 
-.detail-row {
+.info-item-detail {
   display: flex;
+  
   align-items: center;
+  padding: 12px 0;
+  
+}
+
+.info-item-detail:last-child {
+  border-bottom: none;
 }
 
 .detail-label {
-  color: #666;
-  min-width: 140px;
-  font-weight: 500;
+  color: #346024;
+  font-weight: 550;
+  font-size: 24px;
+  min-width: 100px;
 }
 
 .detail-value {
   color: #333;
+  font-weight: 500;
+  font-size: 24px;
+  margin-left:20px;
 }
 
-/* 详情区域 */
-.detail-section {
-  background: white;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+/* 章节头部 */
+.section-header {
+  margin-bottom: 25px;
 }
 
 .section-title {
   color: #325e21;
-  margin: 0 0 30px 0;
+  margin: 0;
   font-size: 28px;
   font-weight: bold;
   border-left: 4px solid #325e21;
   padding-left: 12px;
 }
 
-.description-section,
-.requirement-section,
-.bonus-section {
-  margin-bottom: 30px;
-}
-
-.description-section h3,
-.requirement-section h3,
-.bonus-section h3 {
+/* 内容样式 */
+.description-content, .requirement-content, .bonus-content {
   color: #333;
-  margin: 0 0 15px 0;
+  line-height: 1.7;
+}
+
+.description-content p {
+  margin-bottom: 20px;
   font-size: 20px;
+  font-weight: 500;
 }
 
-.description-section p,
-.requirement-section p,
-.bonus-section p {
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 15px;
-}
-
-.description-section ul,
-.requirement-section ul,
-.bonus-section ul {
-  color: #666;
-  line-height: 1.8;
+.description-content ul, .requirement-content ul, .bonus-content ul {
   padding-left: 20px;
 }
 
-.description-section li,
-.requirement-section li,
-.bonus-section li {
-  margin-bottom: 8px;
-}
-
-/* 操作按钮 */
-.action-section {
-  background: white;
-  padding: 30px 40px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-
-.edit-btn,
-.publish-btn,
-.back-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.edit-btn {
-  background: #325e21;
-  color: white;
-}
-
-.publish-btn {
-  background: #1976d2;
-  color: white;
-}
-
-.back-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.edit-btn:hover {
-  background: #2a4e1b;
-}
-
-.publish-btn:hover {
-  background: #1565c0;
-}
-
-.back-btn:hover {
-  background: #5a6268;
+.description-content li, .requirement-content li, .bonus-content li {
+  margin-bottom: 12px;
+  font-size: 20px;
+  color: #555;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .position-meta {
+  .detail-layout {
     flex-direction: column;
-    gap: 15px;
   }
   
-  .detail-row {
+  .fixed-sidebar {
+    width: 100%;
+    position: static;
+    height: auto;
+  }
+  
+  .full-width {
+    margin-left: 0;
+  }
+  
+  .action-buttons-top {
+    position: static;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .main-content-area {
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .main-info-group {
+    flex-direction: column;
+  }
+  
+  .info-item-main:not(:last-child)::after {
+    display: none;
+  }
+  
+  .info-item-main:not(:last-child) {
+    border-bottom: 1px solid #d8d8d8;
+  }
+  
+  .info-item-detail {
     flex-direction: column;
     align-items: flex-start;
     gap: 5px;
   }
   
-  .action-section {
-    flex-direction: column;
-  }
-  
-  .edit-btn,
-  .publish-btn,
-  .back-btn {
-    width: 100%;
+  .detail-label, .detail-value {
+    text-align: left;
   }
 }
 </style>
