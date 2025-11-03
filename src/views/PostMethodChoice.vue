@@ -326,15 +326,17 @@ export default {
   font-size: 36px;
   font-weight: bold;
   margin-bottom: 50px;
+  margin-top: 30px;
 }
 
 .choice-container {
   display: flex;
-  gap: 40px;
+  gap: 330px;
   justify-content: center;
   align-items: stretch;
-  max-width: 1400px;
+  max-width: 2000px;
   margin: 0 auto;
+  margin-top: 60px;
 }
 
 .choice-card {
@@ -348,7 +350,7 @@ export default {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 650px;
+  min-height: 800px;
   display: flex;
   flex-direction: column;
 }
@@ -360,7 +362,7 @@ export default {
 
 .card-title {
   text-align: center;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: bold;
   color: #333;
   margin-bottom: 30px;
@@ -375,7 +377,7 @@ export default {
 
 .card-description {
   color: #666;
-  font-size: 16px;
+  font-size: 24px;
   line-height: 1.8;
   margin-bottom: 30px;
   text-align: left;
@@ -407,7 +409,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(50, 94, 33, 0.95);
+  background: rgba(50, 94, 33, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -416,7 +418,7 @@ export default {
 }
 
 .ai-overlay {
-  background: rgba(25, 118, 210, 0.95);
+  background: rgba(153, 197, 210, 0.7);;
 }
 
 .choice-card:hover .card-hover-overlay {
