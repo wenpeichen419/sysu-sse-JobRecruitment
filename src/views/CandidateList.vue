@@ -14,17 +14,7 @@
       </button>
       <div class="candidate-list-page">
         <div class="filters-container">
-          <div class="filters">
-            <label class="filter-checkbox">
-              <input type="checkbox" v-model="filters.intern" @change="filterCandidates">
-              只看实习生
-            </label>
-            <label class="filter-checkbox">
-              <input type="checkbox" v-model="filters.freshGraduate" @change="filterCandidates">
-              只看应届生
-            </label>
-            <button class="filter-btn">筛选</button>
-          </div>
+  
         </div>
 
         <div class="candidates-list">
@@ -120,7 +110,6 @@ export default {
           id: '487',
           name: 'ChoAi',
           grade: '2020级本科生',
-          type: '实习生',
           status: '已发送面试通知',
           resumeUrl: '/resumes/487.pdf',
           avatar: ''
@@ -129,7 +118,6 @@ export default {
           id: '488',
           name: 'DMD',
           grade: '2023级本科生',
-          type: '应届生',
           status: '已拒绝',
           resumeUrl: '/resumes/488.pdf',
           avatar: ''
@@ -138,7 +126,6 @@ export default {
           id: '489',
           name: 'Jelly',
           grade: '2022级本科生',
-          type: '实习生',
           status: '未审核',
           resumeUrl: '/resumes/489.pdf',
           avatar: ''
@@ -147,7 +134,6 @@ export default {
           id: '490',
           name: 'XMX',
           grade: '2021级研究生',
-          type: '应届生',
           status: '已候选',
           resumeUrl: '/resumes/490.pdf',
           avatar: ''
@@ -156,7 +142,6 @@ export default {
           id: '491',
           name: '张三',
           grade: '2023级本科生',
-          type: '实习生',
           status: '未审核',
           resumeUrl: '/resumes/491.pdf',
           avatar: ''
