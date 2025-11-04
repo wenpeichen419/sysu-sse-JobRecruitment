@@ -2,9 +2,25 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import CandidateList from '../views/CandidateList.vue'
 import StudentHome from '@/views/StudentHome.vue'
+
 const routes = [
+  // 学生端路由
   {
     path: '/',
+    name: 'StudentHome',
+    component: StudentHome,
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/resume-manage',
+    name: 'ResumeManage',
+    component: () => import('../views/ResumeManage.vue'),
+    meta: { layout: 'student' }
+  },
+  
+  // 企业端路由
+  {
+    path: '/enterprise-home',
     name: 'HomePage',
     component: HomePage
   },
@@ -51,21 +67,6 @@ const routes = [
     name: 'EnterpriseEdit',
     component: () => import('../views/EnterpriseEdit.vue')
   }
-  ,
-  {
-    path: '/student-home',
-    name: 'StudentHome',
-    component: StudentHome,
-    meta: { layout: 'student' }
-  }
-  ,
-  {
-    path: '/resume-manage',
-    name: 'ResumeManage',
-    component: () => import('../views/ResumeManage.vue'),
-    meta: { layout: 'student' }
-  }
-  
 ]
 
 const router = createRouter({
