@@ -171,7 +171,7 @@ export default {
 
     // 跳转
     viewPosition(p) {
-      this.$router.push({ name: 'PositionDetail', params: { id: p.id } })
+      this.$router.push({ name: 'JobDetail', params: { id: p.id } })
     },
     goActivities() {
       alert('活动列表页面待接入')

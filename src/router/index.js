@@ -17,6 +17,26 @@ const routes = [
     component: () => import('../views/ResumeManage.vue'),
     meta: { layout: 'student' }
   },
+  {
+    path: '/job-center',
+    name: 'JobCenter',
+    component: () => import('../views/JobCenter.vue'),
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/job-detail/:id',
+    name: 'JobDetail',
+    component: () => import('../views/JobDetail.vue'),
+    props: true,
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/company-info/:id',
+    name: 'CompanyInfo',
+    component: () => import('../views/CompanyInfo.vue'),
+    props: true,
+    meta: { layout: 'student' }
+  },
   
   // 企业端路由
   {

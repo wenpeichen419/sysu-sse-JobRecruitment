@@ -41,8 +41,8 @@ export default {
       logoUrl: url,
       // 与企业端一致的 Tab 布局，但路径为学生端页面
       navLinks: [
-        { path: '/student-home', text: '首页', exact: true },
-        { path: '/job',          text: '求职中心' },
+        { path: '/', text: '首页', exact: true },
+        { path: '/job-center',          text: '求职中心' },
         { path: '/resume-manage',       text: '简历管理' },
         { path: '/delivery',     text: '投递情况' }
       ]
@@ -78,11 +78,13 @@ export default {
 .logo-section {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  min-width: 280px; /* 固定Logo区域宽度，防止压缩 */
 }
 
 .logo-image {
   height: 80px;
-  margin-right: 40px;
+  margin-right: 20px;
   display: block;
 }
 
@@ -90,24 +92,26 @@ export default {
   display: flex;
   list-style: none;
   flex: 1;
-  justify-content: center;
+  justify-content: space-evenly; /* 均匀分布，所有间隔都相等 */
   margin: 0;
   padding: 0;
 }
 
 .nav-links li {
-  margin: 0 140px; /* 与企业端保持一致的间距 */
+  margin: 0;
 }
 
 .nav-links a {
   color: white;
   text-decoration: none;
-  font-weight: bold;
-  font-size: 28px;
-  padding: 8px 12px;
-  border-radius: 4px;
+  font-weight: 600;
+  font-size: 26px;
+  padding: 10px 20px;
+  border-radius: 6px;
   transition: all 0.3s ease;
   cursor: pointer;
+  display: inline-block;
+  white-space: nowrap; /* 防止文字换行 */
 }
 
 .nav-links a:hover {
@@ -121,21 +125,25 @@ export default {
 .user-section {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  min-width: 200px; /* 固定用户区域宽度 */
+  justify-content: flex-end;
 }
 
 .user-greeting {
   color: white;
-  font-size: 20px;
-  margin-right: 0px;
+  font-size: 22px;
+  margin-right: 5px;
+  font-weight: 500;
 }
 
 .user-link {
   color: #cc8e58;
-  font-weight: bold;
+  font-weight: 600;
   text-decoration: none;
-  font-size: 20px;
-  padding: 6px 10px;
-  border-radius: 4px;
+  font-size: 22px;
+  padding: 8px 12px;
+  border-radius: 6px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
