@@ -51,8 +51,18 @@ export default {
   methods: {
     // 高亮规则：exact 时严格相等；否则使用 startsWith（和企业端观感一致）
     isActive(link) {
-      return link.exact ? this.$route.path === link.path
-                        : this.$route.path.startsWith(link.path)
+      if (link.exact) {
+        return this.$route.path === link.path
+      }
+      
+      // 特殊处理：求职中心相关页面都高亮求职中心
+      if (link.path === '/job-center') {
+        return this.$route.path.startsWith('/job-center') || 
+               this.$route.path.startsWith('/job-detail') || 
+               this.$route.path.startsWith('/company-info')
+      }
+      
+      return this.$route.path.startsWith(link.path)
     }
   }
 }

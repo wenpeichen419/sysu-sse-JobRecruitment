@@ -12,7 +12,21 @@
       <div class="main-content">
         <!-- 岗位标题卡片 -->
         <div class="job-header-card">
-          <h1 class="job-title">{{ jobInfo.title }}</h1>
+          <div class="header-top">
+            <h1 class="job-title">{{ jobInfo.title }}</h1>
+            <!-- 操作按钮 - 移到标题右侧 -->
+            <div class="action-buttons">
+              <button class="btn-favorite" @click="toggleFavorite" :class="{ favorited: isFavorited }">
+                <span class="icon">{{ isFavorited ? '★' : '☆' }}</span>
+                <span class="text">{{ isFavorited ? '已收藏' : '收藏' }}</span>
+              </button>
+              <button class="btn-apply" @click="showResumeDialog = true">
+                <span class="icon">📄</span>
+                <span class="text">投递</span>
+              </button>
+            </div>
+          </div>
+          
           <div class="job-meta">
             <span class="salary">{{ jobInfo.salary }}</span>
             <span class="divider">|</span>
@@ -26,18 +40,6 @@
             <span class="publish-date">{{ jobInfo.publishDate }}发布</span>
             <span class="divider">·</span>
             <span class="view-count">浏览次数: {{ jobInfo.viewCount }}</span>
-            <span class="divider">·</span>
-            <span class="deadline">完善简历</span>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <button class="btn-favorite" @click="toggleFavorite">
-              {{ isFavorited ? '已收藏' : '职位收藏' }}
-            </button>
-            <button class="btn-apply" @click="showResumeDialog = true">
-              简历投递
-            </button>
           </div>
         </div>
 
@@ -97,6 +99,13 @@
         <!-- 基本信息卡片 -->
         <div class="info-card">
           <h3 class="info-title">基本信息</h3>
+          
+          <!-- 公司Logo -->
+          <div class="company-logo-section">
+            <img :src="companyInfo.logo" :alt="companyInfo.name" class="company-logo" />
+            <div class="company-name">{{ companyInfo.name }}</div>
+          </div>
+          
           <div class="info-item">
             <span class="info-label">企业性质:</span>
             <span class="info-value">{{ companyInfo.nature }}</span>
@@ -225,6 +234,8 @@ export default {
       
       // 公司信息
       companyInfo: {
+        name: '浙商银行股份有限公司',
+        logo: require('@/assets/BDance_logo.png'),
         nature: '民营企业',
         industry: '金融业',
         scale: '10000人以上',
@@ -329,17 +340,18 @@ export default {
 <style scoped>
 .job-detail-page {
   min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  background: #f5f5f5;
+  padding: 30px;
 }
 
 /* 面包屑导航 */
 .breadcrumb {
   background: white;
-  padding: 15px 20px;
+  padding: 20px 30px;
   margin-bottom: 20px;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .crumb-item {
@@ -382,30 +394,41 @@ export default {
 /* 岗位标题卡片 */
 .job-header-card {
   background: white;
-  padding: 30px;
+  padding: 40px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 标题和按钮在同一行 */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 20px;
 }
 
 .job-title {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: bold;
   color: #333;
-  margin: 0 0 15px 0;
+  margin: 0;
+  flex: 1;
 }
 
 .job-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 15px;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 18px;
 }
 
 .salary {
   color: #ff6b35;
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 20px;
 }
 
 .divider {
@@ -415,75 +438,103 @@ export default {
 .job-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 10px;
+  font-size: 16px;
   color: #999;
-  margin-bottom: 25px;
 }
 
+/* 操作按钮 - 紧凑设计 */
 .action-buttons {
   display: flex;
-  gap: 15px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-.btn-favorite {
-  flex: 1;
-  padding: 12px 24px;
-  background: white;
-  color: #2a5e23;
-  border: 1px solid #2a5e23;
-  border-radius: 4px;
-  font-size: 16px;
+.btn-favorite,
+.btn-apply {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-favorite {
+  background: white;
+  color: #666;
+  border: 1.5px solid #ddd;
 }
 
 .btn-favorite:hover {
-  background: #f0f8f0;
+  border-color: #2a5e23;
+  color: #2a5e23;
+  background: #f8fdf8;
+}
+
+.btn-favorite.favorited {
+  background: #fff8e1;
+  border-color: #ffd700;
+  color: #f39c12;
+}
+
+.btn-favorite.favorited:hover {
+  background: #fff3cd;
 }
 
 .btn-apply {
-  flex: 1;
-  padding: 12px 24px;
   background: #2a5e23;
   color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
+  border: 1.5px solid #2a5e23;
 }
 
 .btn-apply:hover {
   background: #1d4518;
+  border-color: #1d4518;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(42, 94, 35, 0.3);
+}
+
+.btn-favorite .icon,
+.btn-apply .icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn-favorite .text,
+.btn-apply .text {
+  font-size: 15px;
 }
 
 /* 标签区 */
 .tags-section {
   background: white;
-  padding: 20px 30px;
+  padding: 25px 40px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  font-size: 14px;
+  gap: 16px;
+  font-size: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .tag-label {
   color: #666;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tag {
-  padding: 4px 12px;
-  background: #e7f5ef;
-  color: #2a5e23;
-  border-radius: 4px;
-  font-size: 13px;
+  padding: 6px 14px;
+  background: #eef5ee;
+  color: #325e21;
+  border-radius: 16px;
+  font-size: 16px;
 }
 
 .recruit-info,
@@ -495,20 +546,23 @@ export default {
 /* 内容卡片 */
 .section-card {
   background: white;
-  padding: 30px;
+  padding: 40px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: 30px;
+  font-weight: bold;
+  color: #325e21;
   margin: 0 0 20px 0;
+  border-left: 4px solid #325e21;
+  padding-left: 12px;
 }
 
 .section-content {
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.8;
   color: #555;
 }
@@ -524,25 +578,54 @@ export default {
 /* 侧边栏信息卡片 */
 .info-card {
   background: white;
-  padding: 25px;
+  padding: 30px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .info-title {
-  font-size: 18px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #325e21;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* 公司Logo区域 */
+.company-logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.company-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  margin-bottom: 15px;
+}
+
+.company-name {
+  font-size: 16px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 20px 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #f0f0f0;
+  text-align: center;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 18px;
 }
 
 .info-item:last-child {
@@ -560,11 +643,12 @@ export default {
 
 .link-item {
   display: block;
-  color: #2a5e23;
+  color: #325e21;
   text-decoration: none;
-  font-size: 14px;
-  padding: 8px 0;
+  font-size: 18px;
+  padding: 10px 0;
   transition: color 0.3s;
+  font-weight: 500;
 }
 
 .link-item:hover {
@@ -577,10 +661,11 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 15px 0;
   border-bottom: 1px solid #f5f5f5;
   cursor: pointer;
   transition: color 0.3s;
+  font-size: 18px;
 }
 
 .other-job-item:last-child {

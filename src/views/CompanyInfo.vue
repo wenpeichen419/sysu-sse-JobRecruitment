@@ -49,8 +49,16 @@
         <!-- 企业地址 -->
         <div class="section-card">
           <h2 class="section-title">企业地址:</h2>
-          <div class="section-content">
-            <p>{{ companyInfo.address }}</p>
+          <div class="address-container">
+            <div class="address-inner">
+              <div class="address-text">
+                <p>{{ companyInfo.address }}</p>
+              </div>
+              <button class="view-map-btn" @click="openBaiduMap">
+                <img src="@/assets/map_logo.png" alt="地图" class="map-logo">
+                <span class="btn-text">点击查看地图</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -164,6 +172,14 @@ export default {
     // 跳转到职位详情
     goToJobDetail(jobId) {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
+    },
+    
+    // 打开百度地图
+    openBaiduMap() {
+      // 使用百度地图API打开地址
+      const address = encodeURIComponent(this.companyInfo.address);
+      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=webapp.baidu.openAPIdemo`;
+      window.open(url, '_blank');
     }
   }
 }
@@ -172,17 +188,18 @@ export default {
 <style scoped>
 .company-info-page {
   min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  background: #f5f5f5;
+  padding: 30px;
 }
 
 /* 面包屑导航 */
 .breadcrumb {
   background: white;
-  padding: 15px 20px;
+  padding: 20px 30px;
   margin-bottom: 20px;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .crumb-item {
@@ -225,12 +242,13 @@ export default {
 /* 企业头部 */
 .company-header {
   background: white;
-  padding: 30px;
+  padding: 40px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
   display: flex;
-  gap: 25px;
+  gap: 30px;
   align-items: flex-start;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .company-logo {
@@ -254,15 +272,15 @@ export default {
 }
 
 .company-name {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: bold;
   color: #333;
-  margin: 0 0 20px 0;
+  margin: 0 0 25px 0;
 }
 
 .company-stats {
   display: flex;
-  gap: 40px;
+  gap: 50px;
 }
 
 .stat-item {
@@ -272,34 +290,38 @@ export default {
 }
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 600;
-  color: #2a5e23;
-  margin-bottom: 5px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #325e21;
+  margin-bottom: 8px;
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 16px;
   color: #666;
+  font-weight: 500;
 }
 
 /* 内容卡片 */
 .section-card {
   background: white;
-  padding: 30px;
+  padding: 40px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: 30px;
+  font-weight: bold;
+  color: #325e21;
   margin: 0 0 20px 0;
+  border-left: 4px solid #325e21;
+  padding-left: 12px;
 }
 
 .section-content {
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.8;
   color: #555;
 }
@@ -313,6 +335,69 @@ export default {
   margin-bottom: 0;
 }
 
+/* 地址容器样式 */
+.address-container {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.address-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.address-text {
+  flex: 1;
+  font-size: 18px;
+  line-height: 1.8;
+  color: #555;
+}
+
+.address-text p {
+  margin: 0;
+  text-indent: 0;
+}
+
+.view-map-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(50, 94, 33, 0.3);
+}
+
+.view-map-btn:hover {
+  background: linear-gradient(135deg, #4a7c35 0%, #325e21 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(50, 94, 33, 0.4);
+}
+
+.view-map-btn:active {
+  transform: translateY(0);
+}
+
+.map-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.btn-text {
+  white-space: nowrap;
+}
+
 /* 职位列表 */
 .job-list {
   border-top: 1px solid #f0f0f0;
@@ -322,49 +407,50 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 0;
+  padding: 20px 0;
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .job-row:hover {
-  padding-left: 10px;
-  color: #2a5e23;
+  padding-left: 12px;
+  color: #325e21;
 }
 
 .job-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .job-date {
-  font-size: 14px;
+  font-size: 16px;
   color: #999;
 }
 
 /* 侧边栏信息卡片 */
 .info-card {
   background: white;
-  padding: 25px;
+  padding: 30px;
   margin-bottom: 20px;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .info-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+  color: #325e21;
   margin: 0 0 20px 0;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #f0f0f0;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 18px;
 }
 
 .info-item:last-child {
@@ -382,11 +468,12 @@ export default {
 
 .link-item {
   display: block;
-  color: #2a5e23;
+  color: #325e21;
   text-decoration: none;
-  font-size: 14px;
-  padding: 8px 0;
+  font-size: 18px;
+  padding: 10px 0;
   transition: color 0.3s;
+  font-weight: 500;
 }
 
 .link-item:hover {
