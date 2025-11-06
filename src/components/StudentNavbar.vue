@@ -20,12 +20,14 @@
     <!-- 右侧用户信息 -->
     <div class="user-section">
       <span class="user-greeting">您好，</span>
-      <router-link to="/student-profile" class="user-link">学生名称</router-link>
+      <router-link to="/student-center" class="user-link">{{ studentName }}</router-link>
     </div>
   </nav>
 </template>
 
 <script>
+import mockStudent from '@/data/mockStudentData'
+
 let url = ''
 try {
   // 和企业端保持同一张 Logo；若没有此文件，不显示图片也不会报错
@@ -39,6 +41,7 @@ export default {
   data() {
     return {
       logoUrl: url,
+      studentName: mockStudent.name,
       // 与企业端一致的 Tab 布局，但路径为学生端页面
       navLinks: [
         { path: '/', text: '首页', exact: true },
@@ -60,6 +63,11 @@ export default {
         return this.$route.path.startsWith('/job-center') || 
                this.$route.path.startsWith('/job-detail') || 
                this.$route.path.startsWith('/company-info')
+      }
+      
+      // 特殊处理：投递情况相关页面都高亮投递情况
+      if (link.path === '/applied') {
+        return this.$route.path.startsWith('/applied')
       }
       
       return this.$route.path.startsWith(link.path)
