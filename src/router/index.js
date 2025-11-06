@@ -4,6 +4,7 @@ import CandidateList from '../views/CandidateList.vue'
 import StudentHome from '@/views/StudentHome.vue'
 import AppliedList from '@/views/AppliedList.vue'
 import AppliedDetail from '@/views/AppliedDetail.vue'
+
 const routes = [
   // 学生端路由
   {
@@ -51,6 +52,31 @@ const routes = [
     props: true,
     meta: { layout: 'student' }
   },
+  {
+    path: '/student-center',
+    name: 'StudentCenter',
+    component: () => import('../views/StudentCenter.vue'),
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/student-profile',
+    name: 'StudentProfile',
+    component: () => import('../views/StudentProfile.vue'),
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/my-favorites',
+    name: 'MyFavorites',
+    component: () => import('../views/MyFavorites.vue'),
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/my-applications',
+    name: 'MyApplications',
+    component: () => import('../views/MyApplications.vue'),
+    meta: { layout: 'student' }
+  },
+  
   // 企业端路由
   {
     path: '/enterprise-home',
