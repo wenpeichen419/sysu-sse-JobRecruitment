@@ -70,12 +70,6 @@ const routes = [
     component: () => import('../views/MyFavorites.vue'),
     meta: { layout: 'student' }
   },
-  {
-    path: '/my-applications',
-    name: 'MyApplications',
-    component: () => import('../views/MyApplications.vue'),
-    meta: { layout: 'student' }
-  },
   
   // 企业端路由
   {
