@@ -268,7 +268,7 @@ export default {
     
     // 跳转到投递进度
     goToApplications() {
-      this.$router.push({ name: 'MyApplications' })
+      this.$router.push({ name: 'AppliedList' })
     },
     
     // 取消修改密码
