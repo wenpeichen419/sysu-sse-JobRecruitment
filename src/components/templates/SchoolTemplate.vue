@@ -194,6 +194,20 @@ export default {
 .meta .right{ margin-left:auto; }
 .desc{ white-space: pre-wrap; margin-top:8px; }
 
+
+/* 让打印导出保留颜色 */
+.page.school, .page.school * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* 防止块被硬拆页 */
+.block, .section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+
 /* 技能 - 小圆点列表 */
 .bullets{ margin:0; padding-left: 18px; }
 .bullets li{ margin:4px 0; }
@@ -201,3 +215,4 @@ export default {
 /* 打印分页友好 */
 .section{ page-break-inside: avoid; }
 </style>
+
