@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import CandidateList from '../views/CandidateList.vue'
 import StudentHome from '@/views/StudentHome.vue'
-
+import AppliedList from '@/views/AppliedList.vue'
+import AppliedDetail from '@/views/AppliedDetail.vue'
 const routes = [
   // 学生端路由
   {
@@ -37,7 +38,19 @@ const routes = [
     props: true,
     meta: { layout: 'student' }
   },
-  
+  {
+    path: '/applied',
+    name: 'AppliedList',
+    component: AppliedList,
+    meta: { layout: 'student' }
+  },
+  {
+    path: '/applied/:id',
+    name: 'AppliedDetail',
+    component: AppliedDetail,
+    props: true,
+    meta: { layout: 'student' }
+  },
   // 企业端路由
   {
     path: '/enterprise-home',
