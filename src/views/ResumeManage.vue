@@ -5,7 +5,7 @@
       <div class="breadcrumb">
         <router-link to="/student-home" class="breadcrumb-link">主页</router-link>
         <span class="breadcrumb-separator">></span>
-        <span class="breadcrumb-current">简历管理</span>
+        <span class="breadcrumb-current">简历编辑器</span>
 
         <div class="edit-actions">
           <button class="btn ghost" @click="clearAll">清空</button>
@@ -208,7 +208,7 @@
 
         <div class="card small-card">
           <div class="list-head">
-            <h3 class="section-title">简历列表</h3>
+            <h3 class="section-title">我的简历</h3>
             <button class="icon-btn" @click="triggerUpload" title="上传本地 PDF 到列表">＋</button>
             <input ref="fileInput" type="file" accept="application/pdf" class="hidden-input" @change="importFromLocal" />
           </div>
@@ -329,7 +329,7 @@ export default {
         await savePDF(id, blob)
         await saveMeta({ id, fileName: file.name, size: blob.size, createdAt: Date.now(), template: 'upload' })
         this.fileList = await listMeta()
-        ElMessage.success('已加入简历列表')
+        ElMessage.success('已加入我的简历')
       } catch (err) { console.error(err); ElMessage.error('上传失败，请重试') }
     },
     async downloadFromList(item) {
@@ -544,7 +544,7 @@ export default {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
         URL.revokeObjectURL(url)
-        ElMessage.success('PDF 已导出并写入右侧“简历列表”。')
+        ElMessage.success('PDF 已导出并写入右侧“我的简历”。')
       } catch (e) { console.error(e); ElMessage.error('导出失败，请重试') }
       finally { this.exporting = false }
     }
@@ -643,7 +643,7 @@ export default {
 .preview-toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:10px; }
 .preview-paper{ margin:0 auto; background:#fff; box-shadow:0 2px 18px rgba(0,0,0,.08); }
 
-/* 右侧：简历列表（简约风） */
+/* 右侧：我的简历（简约风） */
 .list-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .icon-btn{
   width:32px; height:32px; line-height:32px; text-align:center;

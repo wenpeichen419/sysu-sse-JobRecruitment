@@ -181,6 +181,8 @@
 </template>
 
 <script>
+import { jobs } from '@/data/jobs.mock'
+
 export default {
   name: 'JobCenter',
   data() {
@@ -188,12 +190,12 @@ export default {
       // 搜索筛选条件
       searchJobTitle: '',
       searchCompanyName: '',
-      selectedProvince: '', // 选择的省份
-      selectedCity: '', // 选择的城市
+      selectedProvince: '',
+      selectedCity: '',
       selectedCategory: '',
       selectedSkill: '',
       selectedType: '',
-      
+
       // 省市数据
       provinceCity: {
         '广东省': ['广州', '深圳', '珠海', '佛山', '东莞', '中山', '惠州'],
@@ -203,324 +205,118 @@ export default {
         '江苏省': ['南京', '苏州', '无锡', '常州', '南通'],
         '四川省': ['成都', '绵阳', '德阳', '乐山', '宜宾']
       },
-      
+
       // 收藏相关
       showFavoriteOnly: false,
-      favoriteJobIds: [], // 收藏的岗位ID列表
-      
+      favoriteJobIds: [],
+
       // 分页
       currentPage: 1,
-      pageSize: 5, // 改为5条每页，这样10条数据会显示2页
-      
-      // 岗位数据 (模拟数据)
-      allJobs: [
-        {
-          id: 1,
-          title: '推荐算法工程师',
-          company: '百度在线网络技术（北京）有限公司',
-          category: '算法',
-          department: 'xx部门',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '校招',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 2,
-          title: '产品经理',
-          company: '华为技术有限公司',
-          category: '产品',
-          department: '产品部',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '实习',
-          recruitCount: 3,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 3,
-          title: '产品设计',
-          company: '支付宝（中国）网络技术有限公司',
-          category: '设计',
-          department: '设计部',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '广州',
-          location: '广东省广州市天河区',
-          type: '校招',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 4,
-          title: '前端开发工程师',
-          company: '腾讯科技（深圳）有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '8000-10000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '校招',
-          recruitCount: 10,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 5,
-          title: '算法工程师',
-          company: '北京字节跳动科技有限公司',
-          category: '算法',
-          department: 'AI部门',
-          salary: '15000-20000',
-          province: '北京市',
-          city: '海淀区',
-          location: '北京市海淀区',
-          type: '校招',
-          recruitCount: 8,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 6,
-          title: 'Java后端开发',
-          company: '阿里巴巴（中国）网络技术有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '10000-15000',
-          province: '浙江省',
-          city: '杭州',
-          location: '浙江省杭州市余杭区',
-          type: '校招',
-          recruitCount: 15,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 7,
-          title: 'UI设计师',
-          company: '美团网（北京）科技有限公司',
-          category: '设计',
-          department: '设计部',
-          salary: '8000-12000',
-          province: '北京市',
-          city: '朝阳区',
-          location: '北京市朝阳区',
-          type: '校招',
-          recruitCount: 4,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 8,
-          title: '数据分析师',
-          company: '京东集团股份有限公司',
-          category: '算法',
-          department: '数据部',
-          salary: '9000-13000',
-          province: '北京市',
-          city: '朝阳区',
-          location: '北京市朝阳区',
-          type: '实习',
-          recruitCount: 6,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 9,
-          title: '运营专员',
-          company: '小红书科技有限公司',
-          category: '运营',
-          department: '运营部',
-          salary: '7000-9000',
-          province: '上海市',
-          city: '浦东新区',
-          location: '上海市浦东新区',
-          type: '实习',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 10,
-          title: 'Python工程师',
-          company: '网易（杭州）网络有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '10000-14000',
-          province: '浙江省',
-          city: '杭州',
-          location: '浙江省杭州市滨江区',
-          type: '校招',
-          recruitCount: 7,
-          logo: require('@/assets/BDance_logo.png')
-        }
-      ]
+      pageSize: 5,
+
+      // 岗位数据（从 mock 引入）
+      allJobs: jobs
     }
   },
   computed: {
-    // 省份列表
     provinceList() {
       return Object.keys(this.provinceCity)
     },
-    
-    // 根据选择的省份获取可用的城市列表
     availableCities() {
-      if (!this.selectedProvince) {
-        return []
-      }
+      if (!this.selectedProvince) return []
       return this.provinceCity[this.selectedProvince] || []
     },
-    
-    // 过滤后的岗位列表
+
     filteredJobs() {
-      let jobs = this.allJobs
+      let list = Array.isArray(this.allJobs) ? [...this.allJobs] : []
 
-      // 如果显示收藏,只显示收藏的岗位
       if (this.showFavoriteOnly) {
-        jobs = jobs.filter(job => this.isFavorited(job.id))
+        list = list.filter(job => this.isFavorited(job.id))
       }
-
-      // 职位名称搜索
       if (this.searchJobTitle.trim()) {
-        const keyword = this.searchJobTitle.toLowerCase()
-        jobs = jobs.filter(job => 
-          job.title.toLowerCase().includes(keyword)
-        )
+        const kw = this.searchJobTitle.toLowerCase()
+        list = list.filter(job => job.title.toLowerCase().includes(kw))
       }
-
-      // 公司名称搜索
       if (this.searchCompanyName.trim()) {
-        const keyword = this.searchCompanyName.toLowerCase()
-        jobs = jobs.filter(job => 
-          job.company.toLowerCase().includes(keyword)
-        )
+        const kw = this.searchCompanyName.toLowerCase()
+        list = list.filter(job => job.company.toLowerCase().includes(kw))
       }
-
-      // 省份筛选
-      if (this.selectedProvince) {
-        jobs = jobs.filter(job => job.province === this.selectedProvince)
-      }
-
-      // 城市筛选
-      if (this.selectedCity) {
-        jobs = jobs.filter(job => job.city === this.selectedCity)
-      }
-
-      // 职能类别筛选
-      if (this.selectedCategory) {
-        jobs = jobs.filter(job => job.category === this.selectedCategory)
-      }
-
-      // 技能筛选
+      if (this.selectedProvince) list = list.filter(job => job.province === this.selectedProvince)
+      if (this.selectedCity)     list = list.filter(job => job.city === this.selectedCity)
+      if (this.selectedCategory) list = list.filter(job => job.category === this.selectedCategory)
       if (this.selectedSkill) {
-        jobs = jobs.filter(job => 
-          job.title.includes(this.selectedSkill) || 
-          job.category.includes(this.selectedSkill)
+        list = list.filter(job =>
+          job.title.includes(this.selectedSkill) || job.category.includes(this.selectedSkill)
         )
       }
+      if (this.selectedType)     list = list.filter(job => job.type.includes(this.selectedType))
 
-      // 工作性质筛选
-      if (this.selectedType) {
-        jobs = jobs.filter(job => job.type.includes(this.selectedType))
-      }
-
-      return jobs
+      return list
     },
-    
-    // 总岗位数
+
+    // ↓ 这里改为内联，移除临时变量，解决 no-unused-vars
+    displayedJobs() {
+      const start = (this.currentPage - 1) * this.pageSize
+      return (Array.isArray(this.filteredJobs) ? this.filteredJobs : []).slice(start, start + this.pageSize)
+    },
+
     totalJobs() {
       return this.filteredJobs.length
     },
-    
-    // 总页数
     totalPages() {
       return Math.ceil(this.totalJobs / this.pageSize)
     },
-    
-    // 当前页显示的岗位
-    displayedJobs() {
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
-      return this.filteredJobs.slice(start, end)
-    },
-
-    // 中间的页码
     middlePages() {
       const pages = []
       const start = Math.max(2, this.currentPage - 1)
       const end = Math.min(this.totalPages - 1, this.currentPage + 1)
-      
       for (let i = start; i <= end; i++) {
-        if (i !== 1 && i !== this.totalPages) {
-          pages.push(i)
-        }
+        if (i !== 1 && i !== this.totalPages) pages.push(i)
       }
       return pages
     },
-
-    // 是否显示省略号
     showEllipsis() {
       return this.totalPages > 5 && this.currentPage < this.totalPages - 2
     }
   },
   mounted() {
-    // 从本地存储读取收藏列表
     const saved = localStorage.getItem('favoriteJobs')
-    if (saved) {
-      this.favoriteJobIds = JSON.parse(saved)
-    }
+    if (saved) this.favoriteJobIds = JSON.parse(saved)
   },
   methods: {
-    // 省份变化时重置城市选择
     onProvinceChange() {
-      this.selectedCity = '' // 切换省份时清空城市选择
-      this.currentPage = 1 // 回到第一页
+      this.selectedCity = ''
+      this.currentPage = 1
     },
-    
-    // 搜索
     handleSearch() {
-      this.currentPage = 1 // 搜索后回到第一页
+      this.currentPage = 1
     },
-    
-    // 切换收藏视图
     toggleFavoriteView() {
       this.showFavoriteOnly = !this.showFavoriteOnly
       this.currentPage = 1
     },
-    
-    // 判断是否收藏
     isFavorited(jobId) {
       return this.favoriteJobIds.includes(jobId)
     },
-    
-    // 切换收藏状态
     toggleFavorite(jobId) {
-      const index = this.favoriteJobIds.indexOf(jobId)
-      if (index > -1) {
-        this.favoriteJobIds.splice(index, 1)
-      } else {
-        this.favoriteJobIds.push(jobId)
-      }
-      // 保存到本地存储
+      const idx = this.favoriteJobIds.indexOf(jobId)
+      if (idx > -1) this.favoriteJobIds.splice(idx, 1)
+      else this.favoriteJobIds.push(jobId)
       localStorage.setItem('favoriteJobs', JSON.stringify(this.favoriteJobIds))
     },
-    
-    // 跳转到岗位详情
     goToJobDetail(jobId) {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
     },
-    
-    // 切换页码
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
-        // 滚动到顶部
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
   }
 }
 </script>
+
 
 <style scoped>
 .job-center-page {
