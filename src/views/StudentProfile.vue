@@ -178,6 +178,8 @@
 <script>
 import mockStudent from '@/data/mockStudentData'
 
+const PROFILE_KEY = 'student_profile_v1';
+
 export default {
   name: 'StudentProfile',
   data() {
@@ -324,10 +326,37 @@ export default {
     
     // 提交表单
     submitForm() {
-      // 这里应该调用API保存数据
-      alert('信息提交成功！')
-      this.$router.push({ name: 'StudentCenter' })
+  // 组织成规范字段（与你之前的字段规范一致）
+  const payload = {
+    full_name: this.formData.name,
+    date_of_birth: this.formData.birthday,          // 建议 "YYYY-MM"
+    email: this.formData.email,
+    gender: this.formData.gender === 'male' ? '男' : (this.formData.gender === 'female' ? '女' : ''),
+    job_seeking_status: this.formData.jobStatus === 'active' ? '求职中' : '暂不求职',
+    phone_number: this.formData.phone,
+    education: {
+      school_name: this.formData.school,
+      major: this.formData.major,
+      major_rank: this.formData.ranking,
+      start_date: this.formData.admissionDate,      // 建议 "YYYY.MM"
+      end_date: this.formData.graduationDate,       // 建议 "YYYY.MM"
+      degree: (()=>{
+        if (this.formData.degree === 'bachelor') return '本科';
+        if (this.formData.degree === 'master')   return '硕士';
+        if (this.formData.degree === 'doctor')   return '博士';
+        return '';
+      })()
     }
+  }
+
+  // 1) 本地持久化（作为简历编辑器的同步源）
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(payload));
+
+  // 2) 正常提示 & 返回
+  alert('信息提交成功！已同步到简历编辑器的基础信息');
+  this.$router.push({ name: 'StudentCenter' });
+}
+
   }
 }
 </script>
