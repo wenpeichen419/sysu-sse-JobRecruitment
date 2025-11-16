@@ -39,7 +39,7 @@
               <span class="status-chip" :class="item.status">{{ statusText(item.status) }}</span>
             </div>
             <div class="job-details">
-              <span class="salary">{{ item.salary }}</span>
+              <span class="salary">{{ formatSalaryRangeToK(item.salary) }}</span>
               <span class="divider">|</span>
               <span class="location">{{ item.province }} · {{ item.city }}</span>
               <span class="divider">|</span>
@@ -82,6 +82,7 @@
   
   <script>
   import { listApplied } from '@/mock/applied'
+  import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
   
   export default {
     name: 'AppliedList',
@@ -137,7 +138,10 @@
           : s==='passed'    ? '已通过'
           : s==='stopped'   ? '流程中止'
           : s
-      }
+      },
+      
+      // 格式化薪资显示
+      formatSalaryRangeToK,
     }
   }
   </script>

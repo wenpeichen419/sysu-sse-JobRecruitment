@@ -65,15 +65,22 @@
       </div>
 
       <div class="search-group">
-        <label>需求能力</label>
-        <select v-model="selectedSkill" class="search-select">
-          <option value="">不限</option>
-          <option value="AI">AI</option>
-          <option value="算法">算法</option>
-          <option value="机器学习">机器学习</option>
-          <option value="Python">Python</option>
-          <option value="Java">Java</option>
-        </select>
+        <label>薪资范围</label>
+        <div class="salary-range-inputs">
+          <input 
+            v-model.number="minSalary" 
+            type="number" 
+            class="salary-input" 
+            placeholder="最低薪资"
+          />
+          <span class="separator">-</span>
+          <input 
+            v-model.number="maxSalary" 
+            type="number" 
+            class="salary-input" 
+            placeholder="最高薪资"
+          />
+        </div>
       </div>
 
       <div class="search-group">
@@ -110,7 +117,7 @@
         <div class="job-left-info">
           <div class="job-title">{{ job.title }}</div>
           <div class="job-details">
-            <span class="salary">{{ job.salary }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(job.salary) }}</span>
             <span class="divider">|</span>
             <span class="location">{{ job.location }}</span>
             <span class="divider">|</span>
@@ -182,6 +189,7 @@
 
 <script>
 import { jobs } from '@/data/jobs.mock'
+import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 
 export default {
   name: 'JobCenter',
@@ -193,7 +201,8 @@ export default {
       selectedProvince: '',
       selectedCity: '',
       selectedCategory: '',
-      selectedSkill: '',
+      minSalary: null,
+      maxSalary: null,
       selectedType: '',
 
       // 省市数据
@@ -244,12 +253,26 @@ export default {
       if (this.selectedProvince) list = list.filter(job => job.province === this.selectedProvince)
       if (this.selectedCity)     list = list.filter(job => job.city === this.selectedCity)
       if (this.selectedCategory) list = list.filter(job => job.category === this.selectedCategory)
-      if (this.selectedSkill) {
-        list = list.filter(job =>
-          job.title.includes(this.selectedSkill) || job.category.includes(this.selectedSkill)
-        )
-      }
       if (this.selectedType)     list = list.filter(job => job.type.includes(this.selectedType))
+
+      // 薪资范围筛选
+      if ((this.minSalary !== null && this.minSalary !== '') || (this.maxSalary !== null && this.maxSalary !== '')) {
+        list = list.filter(job => {
+          // 解析薪资字符串，格式为 "7000-8000"
+          const salaryRange = job.salary.split('-');
+          if (salaryRange.length !== 2) return false;
+          
+          const minJobSalary = parseInt(salaryRange[0]);
+          const maxJobSalary = parseInt(salaryRange[1]);
+          
+          // 检查薪资范围是否匹配
+          // 用户输入的是k为单位，需要转换为原始数字进行比较
+          const minMatch = (this.minSalary === null || this.minSalary === '') || maxJobSalary >= this.minSalary * 1000;
+          const maxMatch = (this.maxSalary === null || this.maxSalary === '') || minJobSalary <= this.maxSalary * 1000;
+          
+          return minMatch && maxMatch;
+        });
+      }
 
       return list
     },
@@ -284,6 +307,7 @@ export default {
     if (saved) this.favoriteJobIds = JSON.parse(saved)
   },
   methods: {
+    formatSalaryRangeToK,
     onProvinceChange() {
       this.selectedCity = ''
       this.currentPage = 1
@@ -419,6 +443,33 @@ export default {
   color: #999;
   cursor: not-allowed;
   border-color: #e0e0e0;
+}
+
+/* 薪资范围输入框样式 */
+.salary-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.salary-input {
+  padding: 12px 16px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  font-size: 18px;
+  width: 100%;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.salary-input:focus {
+  border-color: #2a5e23;
+}
+
+.separator {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
 }
 
 .search-btn {

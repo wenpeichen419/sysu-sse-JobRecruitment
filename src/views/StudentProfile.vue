@@ -177,6 +177,7 @@
 
 <script>
 import mockStudent from '@/data/mockStudentData'
+import { formatSalaryRangeToK, convertKToSalary } from '@/utils/salaryFormatter'
 
 const PROFILE_KEY = 'student_profile_v1';
 
@@ -212,7 +213,7 @@ export default {
         major: mockStudent.major,
         ranking: mockStudent.ranking,
         desiredPosition: mockStudent.desiredPosition,
-        expectedSalary: mockStudent.expectedSalary,
+        expectedSalary: formatSalaryRangeToK(mockStudent.expectedSalary),
         tags: [...mockStudent.tags]
       },
       
@@ -334,6 +335,7 @@ export default {
     gender: this.formData.gender === 'male' ? '男' : (this.formData.gender === 'female' ? '女' : ''),
     job_seeking_status: this.formData.jobStatus === 'active' ? '求职中' : '暂不求职',
     phone_number: this.formData.phone,
+    expected_salary: convertKToSalary(this.formData.expectedSalary),  // 将k格式转换回原始格式
     education: {
       school_name: this.formData.school,
       major: this.formData.major,
