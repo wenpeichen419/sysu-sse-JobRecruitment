@@ -3,7 +3,7 @@
     <!-- 左侧灰色矩形区域 -->
     <div class="left-panel">
       <div class="welcome-section">
-        <h2>欢迎您，字节跳动！</h2>
+        <h2>欢迎您，{{ companyName }}！</h2>
         <a class="enterprise-link" @click="goToEnterpriseInfo">企业信息管理 ></a>
       </div>
       
@@ -14,17 +14,19 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">我发布的岗位总数</div>
-            <div class="stat-value position-count">13</div>
+            <div class="stat-value position-count">{{ totalJobs }}</div>
+            <a class="process-link" @click="goToPositionManage">查看详情 ></a>
           </div>
           
           <div class="stat-card">
             <div class="stat-label">岗位投递总人次</div>
-            <div class="stat-value delivery-count">124</div>
+            <div class="stat-value delivery-count">{{ totalApplications }}</div>
+            <a class="process-link" @click="goToTalentPool">查看详情 ></a>
           </div>
           
           <div class="stat-card urgent-card">
             <div class="stat-label urgent-label">*待审核简历数</div>
-            <div class="stat-value urgent-count">16</div>
+            <div class="stat-value urgent-count">{{ pendingReviews }}</div>
             <a class="process-link" @click="goToTalentPool">立刻处理 ></a>
           </div>
         </div>
@@ -72,11 +74,17 @@ export default {
     return {
       currentSlide: 0,
       totalSlides: 2,
-      autoPlayInterval: null
+      autoPlayInterval: null,
+      companyName: '字节跳动',
+      totalJobs: 0,
+      totalApplications: 0,
+      pendingReviews: 0
     }
   },
   mounted() {
     this.startAutoPlay();
+    this.fetchCompanyProfile();
+    this.fetchJobStats();
   },
   beforeUnmount() {
     this.stopAutoPlay();
@@ -104,6 +112,71 @@ export default {
     },
     goToTalentPool() {
       this.$router.push('/talent-pool');
+    },
+    goToPositionManage() {
+      this.$router.push('/position-manage');
+    },
+    
+    // 获取公司信息
+    async fetchCompanyProfile() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/hr/company/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.code === 200 && data.data) {
+          this.companyName = data.data.company_name
+        }
+      } catch (error) {
+        console.error('获取公司信息失败:', error)
+      }
+    },
+    
+    // 获取岗位统计数据
+    async fetchJobStats() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/api/hr/jobs?page=1&page_size=100', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.code === 200 && data.data) {
+            // 我发布的岗位总数
+            this.totalJobs = data.data.pagination.total_items
+            
+            // 计算岗位投递总人次
+            this.totalApplications = data.data.job_list.reduce((sum, job) => {
+              return sum + (job.received_num || 0)
+            }, 0)
+            
+            // 计算待审核简历数
+            this.pendingReviews = data.data.job_list.reduce((sum, job) => {
+              return sum + (job.no_review_num || 0)
+            }, 0)
+          }
+        }
+      } catch (error) {
+        console.error('获取岗位统计数据失败:', error)
+      }
     }
   }
 }

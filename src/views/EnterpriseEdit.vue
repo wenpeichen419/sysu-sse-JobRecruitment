@@ -2,15 +2,19 @@
   <div class="enterprise-edit-page">
     <!-- 面包屑导航 -->
     <div class="breadcrumb-wrapper">
-    <div class="breadcrumb">
-      <router-link to="/" class="breadcrumb-link">主页</router-link>
-      <span class="breadcrumb-separator">></span>
-      <router-link to="/enterprise-info" class="breadcrumb-link">企业信息管理</router-link>
-      <span class="breadcrumb-separator">></span>
-      <span class="breadcrumb-current">修改简介</span>
+      <div class="breadcrumb">
+        <router-link to="/" class="breadcrumb-link">主页</router-link>
+        <span class="breadcrumb-separator">></span>
+        <router-link to="/enterprise-info" class="breadcrumb-link">企业信息管理</router-link>
+        <span class="breadcrumb-separator">></span>
+        <span class="breadcrumb-current">修改简介</span>
+      </div>
     </div>
-    </div>
-    <div class="edit-layout">
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">加载中...</div>
+
+    <div v-else class="edit-layout">
       <!-- 左侧导航 - 固定位置 -->
       <div class="left-sidebar fixed-sidebar">
         <div class="sidebar-title">修改简介</div>
@@ -29,33 +33,36 @@
       <!-- 右侧编辑区域 - 充满剩余空间 -->
       <div class="right-content full-width">
         <!-- 企业头像 -->
-        <div class="edit-section full-width-section" id="avatar-section" ref="avatarSection">
-          <div class="section-header">
-            <h3 class="section-title">企业头像</h3>
-          </div>
-          <div class="avatar-edit">
-            <div class="current-avatar">
-              <h4>当前头像</h4>
-              <img src="@/assets/BDance_logo.png" alt="企业头像" class="avatar-preview">
-            </div>
-            <div class="upload-avatar">
-              <h4>新头像</h4>
-              <el-upload
-                class="avatar-uploader"
-                action="/api/upload"  
-                :show-file-list="false"
-                :on-success="handleAvatarSuccess"
-                :before-upload="beforeAvatarUpload"
-                :on-error="handleAvatarError">
-                <img v-if="newAvatar" :src="newAvatar" class="avatar-preview">
-                <div v-else class="avatar-uploader-icon">
-                  <el-icon><Plus /></el-icon>
-                  <div>点击上传</div>
-                </div>
-              </el-upload>
-            </div>
-          </div>
+<div class="edit-section full-width-section" id="avatar-section" ref="avatarSection">
+  <div class="section-header">
+    <h3 class="section-title">企业头像</h3>
+  </div>
+  <div class="avatar-edit">
+    <div class="current-avatar">
+      <h4>当前头像</h4>
+      <div class="avatar-container">
+        <img :src="getLogoUrl(enterpriseInfo.logo_url)" alt="企业头像" class="avatar-preview">
+      </div>
+    </div>
+    <div class="upload-avatar">
+      <h4>新头像</h4>
+      <el-upload
+        class="avatar-uploader"
+        action="http://localhost:8080/upload/company-logo"
+        :show-file-list="false"
+        :on-success="handleAvatarSuccess"
+        :before-upload="beforeAvatarUpload"
+        :on-error="handleAvatarError"
+        :headers="uploadHeaders">
+        <img v-if="newAvatar" :src="newAvatar" class="avatar-preview">
+        <div v-else class="avatar-uploader-icon">
+          <el-icon><Plus /></el-icon>
+          <div>点击上传</div>
         </div>
+      </el-upload>
+    </div>
+  </div>
+</div>
 
         <!-- 企业介绍 -->
         <div class="edit-section full-width-section" id="intro-section" ref="introSection">
@@ -63,7 +70,7 @@
             <h3 class="section-title">企业介绍</h3>
           </div>
           <textarea 
-            v-model="enterpriseInfo.introduction"
+            v-model="enterpriseInfo.description"
             class="intro-textarea"
             placeholder="请输入企业介绍..."
             rows="10"
@@ -78,7 +85,7 @@
           <div class="address-edit">
             <input 
               type="text" 
-              v-model="enterpriseInfo.address"
+              v-model="enterpriseInfo.company_address"
               class="address-input"
               placeholder="请输入企业地址"
             >
@@ -109,31 +116,27 @@
                 <label>企业性质</label>
                 <select v-model="enterpriseInfo.nature">
                   <option value="">请选择</option>
-                  <option value="民营企业">民营企业</option>
-                  <option value="国有企业">国有企业</option>
-                  <option value="外资企业">外资企业</option>
-                  <option value="合资企业">合资企业</option>
+                  <option v-for="nature in options.natures" :key="nature" :value="nature">
+                    {{ nature }}
+                  </option>
                 </select>
               </div>
               <div class="info-field">
                 <label>企业行业</label>
                 <select v-model="enterpriseInfo.industry">
                   <option value="">请选择</option>
-                  <option value="互联网科技">互联网科技</option>
-                  <option value="金融">金融</option>
-                  <option value="制造业">制造业</option>
-                  <option value="服务业">服务业</option>
+                  <option v-for="industry in options.industries" :key="industry" :value="industry">
+                    {{ industry }}
+                  </option>
                 </select>
               </div>
               <div class="info-field">
                 <label>企业规模</label>
-                <select v-model="enterpriseInfo.scale">
+                <select v-model="enterpriseInfo.company_scale">
                   <option value="">请选择</option>
-                  <option value="1-50人">1-50人</option>
-                  <option value="50-100人">50-100人</option>
-                  <option value="100-500人">100-500人</option>
-                  <option value="500-1000人">500-1000人</option>
-                  <option value="1000人以上">1000人以上</option>
+                  <option v-for="scale in options.scales" :key="scale" :value="scale">
+                    {{ scale }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -142,7 +145,7 @@
                 <label>企业联系人</label>
                 <input 
                   type="text" 
-                  v-model="enterpriseInfo.contactPerson"
+                  v-model="enterpriseInfo.contact_person_name"
                   placeholder="请输入联系人姓名"
                 >
               </div>
@@ -150,7 +153,7 @@
                 <label>联系电话</label>
                 <input 
                   type="text" 
-                  v-model="enterpriseInfo.contactPhone"
+                  v-model="enterpriseInfo.contact_person_phone"
                   placeholder="请输入联系电话"
                   @blur="validatePhone"
                 >
@@ -168,12 +171,12 @@
           <div class="links-edit">
             <div class="existing-links">
               <div 
-                v-for="(link, index) in enterpriseInfo.links"
+                v-for="(link, index) in enterpriseInfo.external_links"
                 :key="index"
                 class="link-item"
               >
-                <span class="link-label">{{ link.label }}</span>
-                <span class="link-url">{{ link.url }}</span>
+                <span class="link-label">{{ link.link_name }}</span>
+                <span class="link-url">{{ link.link_url }}</span>
                 <button class="edit-link-btn" @click="editLink(index)">编辑</button>
                 <button class="delete-link-btn" @click="deleteLink(index)">删除</button>
               </div>
@@ -189,13 +192,13 @@
               <div v-if="isAddingLink" class="link-inputs">
                 <input 
                   type="text"
-                  v-model="newLink.label"
+                  v-model="newLink.link_name"
                   placeholder="链接标识"
                   class="link-label-input"
                 >
                 <input 
                   type="text"
-                  v-model="newLink.url"
+                  v-model="newLink.link_url"
                   placeholder="链接网址"
                   class="link-url-input"
                 >
@@ -208,7 +211,9 @@
         <div class="edit-section full-width-section action-section">
           <div class="action-buttons">
             <button class="cancel-btn" @click="cancelEdit">取消修改</button>
-            <button class="submit-btn" @click="submitEdit">提交修改</button>
+            <button class="submit-btn" @click="submitEdit" :disabled="submitting">
+              {{ submitting ? '提交中...' : '提交修改' }}
+            </button>
           </div>
         </div>
       </div>
@@ -219,6 +224,7 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'  
+
 export default {
   name: 'EnterpriseEdit',
   components: {
@@ -226,7 +232,10 @@ export default {
   },
   data() {
     return {
+      loading: true,
+      submitting: false,
       activeSection: 'avatar',
+      uploadedLogoUrl: null,
       sections: [
         { id: 'avatar', name: '企业头像' },
         { id: 'intro', name: '企业介绍' },
@@ -235,34 +244,152 @@ export default {
         { id: 'links', name: '相关链接' }
       ],
       enterpriseInfo: {
-        introduction: `字节跳动是一家成立于2012年3月的中国互联网科技公司，总部位于北京。公司致力于开发智能化的内容分发平台，通过人工智能技术为用户提供个性化的信息流服务。
-
-字节跳动的产品和服务已覆盖全球150个国家和地区，75个语种，曾在40多个国家和地区排在应用商店总榜前列。旗下产品包括今日头条、抖音、TikTok、西瓜视频、飞书等知名应用。`,
-        address: '北京市海淀区北三环西路27号字节跳动大厦',
-        nature: '民营企业',
-        industry: '互联网科技',
-        scale: '100000人以上',
-        contactPerson: '张经理',
-        contactPhone: '13800138000',
-        links: [
-          { label: '企业官网', url: 'https://www.bytedance.com/zh/' }
-        ]
+        company_name: '',
+        description: '',
+        logo_url: '',
+        nature: '',
+        industry: '',
+        company_scale: '',
+        contact_person_name: '',
+        contact_person_phone: '',
+        company_address: '',
+        external_links: []
+      },
+      options: {
+        industries: [],
+        natures: [],
+        scales: []
       },
       newAvatar: null,
+      uploadHeaders: {
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg`
+      },
       locationResults: [],
       phoneError: '',
       isAddingLink: false,
       newLink: {
-        label: '',
-        url: ''
+        link_name: '',
+        link_url: ''
       },
       editingLinkIndex: -1
     }
   },
-  mounted() {
-    this.setupScrollSpy();
+  async mounted() {
+    await this.fetchCompanyProfile()
+    await this.fetchOptions()
+    this.setupScrollSpy()
   },
   methods: {
+    async fetchCompanyProfile() {
+  try {
+    this.loading = true
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+    
+    const response = await fetch('http://localhost:8080/hr/company/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    if (data.code === 200 && data.data) {
+      this.enterpriseInfo = data.data
+      console.log('企业信息加载成功:', this.enterpriseInfo)
+      
+      // 获取企业logo - 新增这部分
+      if (this.enterpriseInfo.logo_url) {
+        const logoUrl = await this.fetchCompanyLogo(this.enterpriseInfo.logo_url)
+        this.enterpriseInfo.logo_url = logoUrl
+      }
+    } else {
+      console.error('接口返回错误:', data.message)
+    }
+  } catch (error) {
+    console.error('获取企业信息失败:', error)
+    ElMessage.error('获取企业信息失败')
+  } finally {
+    this.loading = false
+  }
+},
+
+    // 添加获取企业logo的方法
+async fetchCompanyLogo(logoUrl) {
+  try {
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+    
+    let fullLogoUrl = logoUrl
+    if (logoUrl.startsWith('/')) {
+      fullLogoUrl = `http://localhost:8080${logoUrl}`
+    }
+    
+    console.log('请求图片URL:', fullLogoUrl)
+    
+    const response = await fetch(fullLogoUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    })
+    
+    console.log('图片响应状态:', response.status)
+    
+    if (response.ok) {
+      const blob = await response.blob()
+      return URL.createObjectURL(blob)
+    } else {
+      console.error('获取企业logo失败，状态码:', response.status)
+      return require('@/assets/BDance_logo.png')
+    }
+  } catch (error) {
+    console.error('获取企业logo失败:', error)
+    return require('@/assets/BDance_logo.png')
+  }
+},
+
+    async fetchOptions() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/hr/company/options', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.code === 200 && data.data) {
+          this.options = data.data
+          console.log('选项数据加载成功:', this.options)
+        } else {
+          console.error('选项接口返回错误:', data.message)
+        }
+      } catch (error) {
+        console.error('获取选项数据失败:', error)
+        ElMessage.error('获取选项数据失败')
+      }
+    },
+
+    getLogoUrl(logoUrl) {
+  if (!logoUrl) {
+    return require('@/assets/BDance_logo.png')
+  }
+  return logoUrl
+},
+
     scrollToSection(sectionId) {
       this.activeSection = sectionId;
       const element = this.$refs[`${sectionId}Section`];
@@ -299,11 +426,21 @@ export default {
     },
     
     // Element Upload 组件方法
-    handleAvatarSuccess(res, file) {
-      // 上传成功后的处理
-      this.newAvatar = URL.createObjectURL(file.raw);
-      ElMessage.success('头像上传成功')
-    },
+
+handleAvatarSuccess(res, file) {
+  if (res.code === 200 && res.data) {
+    // 只更新预览，不更新企业信息中的logo_url
+    // this.enterpriseInfo.logo_url = res.data.url  // 删除这行
+    this.newAvatar = URL.createObjectURL(file.raw);
+    ElMessage.success('头像上传成功')
+    console.log('新头像URL:', res.data.url)
+    
+    // 可以在这里保存新头像URL到临时变量，供提交时使用
+    this.uploadedLogoUrl = res.data.url;
+  } else {
+    ElMessage.error('头像上传失败')
+  }
+},
     
     beforeAvatarUpload(file) {
       const isImage = file.type.startsWith('image/');
@@ -311,17 +448,17 @@ export default {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
       if (!isImage) {
-        this.$message.error('上传文件只能是图片格式!');
+        ElMessage.error('上传文件只能是图片格式!');
         return false;
       }
       
       if (!allowedTypes.includes(file.type)) {
-        this.$message.error('上传头像图片只能是 JPG、PNG、GIF 或 WebP 格式!');
+        ElMessage.error('上传头像图片只能是 JPG、PNG、GIF 或 WebP 格式!');
         return false;
       }
       
       if (!isLt2M) {
-        this.$message.error('上传头像图片大小不能超过 2MB!');
+        ElMessage.error('上传头像图片大小不能超过 2MB!');
         return false;
       }
       
@@ -343,15 +480,15 @@ export default {
     },
     
     selectLocation(location) {
-      this.enterpriseInfo.address = location.name;
+      this.enterpriseInfo.company_address = location.name;
       this.locationResults = [];
     },
     
     validatePhone() {
       const phoneRegex = /^1[3-9]\d{9}$/;
-      if (!this.enterpriseInfo.contactPhone) {
+      if (!this.enterpriseInfo.contact_person_phone) {
         this.phoneError = '联系电话不能为空';
-      } else if (!phoneRegex.test(this.enterpriseInfo.contactPhone)) {
+      } else if (!phoneRegex.test(this.enterpriseInfo.contact_person_phone)) {
         this.phoneError = '请输入正确的手机号码';
       } else {
         this.phoneError = '';
@@ -363,34 +500,34 @@ export default {
         this.confirmAddLink();
       } else {
         this.isAddingLink = true;
-        this.newLink = { label: '', url: '' };
+        this.newLink = { link_name: '', link_url: '' };
         this.editingLinkIndex = -1;
       }
     },
     
     confirmAddLink() {
-      if (this.newLink.label && this.newLink.url) {
+      if (this.newLink.link_name && this.newLink.link_url) {
         if (this.editingLinkIndex >= 0) {
           // 编辑现有链接
-          this.enterpriseInfo.links[this.editingLinkIndex] = { ...this.newLink };
+          this.enterpriseInfo.external_links[this.editingLinkIndex] = { ...this.newLink };
         } else {
           // 添加新链接
-          this.enterpriseInfo.links.push({ ...this.newLink });
+          this.enterpriseInfo.external_links.push({ ...this.newLink });
         }
         this.isAddingLink = false;
-        this.newLink = { label: '', url: '' };
+        this.newLink = { link_name: '', link_url: '' };
         this.editingLinkIndex = -1;
       }
     },
     
     editLink(index) {
       this.isAddingLink = true;
-      this.newLink = { ...this.enterpriseInfo.links[index] };
+      this.newLink = { ...this.enterpriseInfo.external_links[index] };
       this.editingLinkIndex = index;
     },
     
     deleteLink(index) {
-      this.enterpriseInfo.links.splice(index, 1);
+      this.enterpriseInfo.external_links.splice(index, 1);
     },
     
     cancelEdit() {
@@ -399,20 +536,81 @@ export default {
       }
     },
     
-    submitEdit() {
-      this.validatePhone();
-      if (!this.phoneError) {
-        // 这里应该调用API保存数据
-        console.log('提交企业信息:', this.enterpriseInfo);
-        ElMessage.success('修改已保存！');
-        this.$router.push('/enterprise-info');
-      }
+    async submitEdit() {
+  this.validatePhone();
+  if (this.phoneError) {
+    ElMessage.error('请修正表单错误');
+    return;
+  }
+
+  try {
+    this.submitting = true;
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM1MTE2NzYsImV4cCI6MTc2MzU5ODA3Nn0.iAh2YxsqvmL3dhyNn8W0HxM2Q78H_RPJTbmjhgJFYas'
+    
+    const submitData = {
+      description: this.enterpriseInfo.description,
+      company_address: this.enterpriseInfo.company_address,
+      nature: this.enterpriseInfo.nature,
+      industry: this.enterpriseInfo.industry,
+      company_scale: this.enterpriseInfo.company_scale,
+      contact_person_name: this.enterpriseInfo.contact_person_name,
+      contact_person_phone: this.enterpriseInfo.contact_person_phone,
+      external_links: this.enterpriseInfo.external_links
     }
+
+    // 如果上传了新头像，添加到提交数据中
+    if (this.uploadedLogoUrl) {
+      submitData.logo_url = this.uploadedLogoUrl;
+    }
+
+    console.log('提交的数据:', submitData)
+
+    const response = await fetch('http://localhost:8080/hr/company/profile', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(submitData)
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    if (data.code === 200) {
+      ElMessage.success('修改已保存！');
+      // 保存成功后，如果需要可以更新本地数据
+      if (this.uploadedLogoUrl) {
+        this.enterpriseInfo.logo_url = this.uploadedLogoUrl;
+        this.uploadedLogoUrl = null; // 清空临时变量
+      }
+      this.$router.push('/enterprise-info');
+    } else {
+      ElMessage.error(data.message || '保存失败');
+    }
+  } catch (error) {
+    console.error('提交修改失败:', error);
+    ElMessage.error('提交修改失败，请重试');
+  } finally {
+    this.submitting = false;
+  }
+}
   }
 }
 </script>
 
 <style scoped>
+/* 加载状态样式 */
+.loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 18px;
+  color: #666;
+}
+
 .enterprise-edit-page {
   padding: 30px;
   background: #f5f5f5;
@@ -425,7 +623,7 @@ export default {
   left: 0;
   width: 100%;
   background: #f4f4f4;
-  padding: 20px 30px; /* 给白色面包屑留出边距 */
+  padding: 20px 30px;
   z-index: 1000;
   height: 115px;
 }
@@ -523,7 +721,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-width: 0; /* 防止flex item溢出 */
+  min-width: 0;
   margin-left:300px;
 }
 
@@ -562,7 +760,35 @@ export default {
   margin-left: 440px;
 }
 
-.current-avatar, .upload-avatar {
+.current-avatar
+{
+  flex: 1;
+  object-fit: contain;
+}
+
+.current-avatar .avatar-container {
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 当前头像的图片使用和上传预览完全相同的样式 */
+.current-avatar .avatar-container img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.upload-avatar {
   flex: 1;
 }
 
@@ -584,9 +810,10 @@ export default {
   width: 150px;
   height: 150px;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
   border: 2px solid #e9ecef;
 }
+
 
 /* Element Upload 组件样式 */
 .avatar-uploader {
@@ -892,9 +1119,15 @@ export default {
   color: white;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   background: #2a4e1b;
 }
+
+.submit-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
 /* 强制让上传区域的内容居中 */
 :deep(.avatar-uploader .el-upload) {
   width: 100% !important;

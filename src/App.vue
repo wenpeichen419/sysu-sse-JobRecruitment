@@ -29,7 +29,9 @@
       <!-- 右侧用户信息 -->
       <div class="user-section">
         <span class="user-greeting">您好，</span>
-        <router-link to="/enterprise-info" class="user-link">字节跳动</router-link>
+        <router-link to="/enterprise-info" class="user-link">
+          {{ companyName }}
+        </router-link>
       </div>
     </nav>
 
@@ -50,10 +52,12 @@ export default {
     return {
       // 企业端导航链接
       navLinks: [
-        { path: '/', text: '主页' },
+        { path: '/enterprise-home', text: '主页' },
         { path: '/position-manage', text: '岗位管理' },
         { path: '/talent-pool', text: '人才库' }
-      ]
+      ],
+      // 添加 companyName 属性
+      companyName: '字节跳动' // 默认值
     }
   },
   computed: {
@@ -67,6 +71,56 @@ export default {
     contentTop() {
       // 学生端 StudentNavbar企业端 105px
       return this.layout === 'student' ? '105px' : '105px'
+    }
+  },
+  methods: {
+    // 获取公司信息 - 使用 fetch 并添加鉴权
+    async fetchCompanyProfile() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/hr/company/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.code === 200 && data.data) {
+          this.companyName = data.data.company_name
+          console.log('公司名称更新为:', this.companyName)
+        }
+      } catch (error) {
+        console.error('获取公司信息失败:', error)
+      }
+    }
+  },
+  mounted() {
+    console.log('App mounted, 当前路由:', this.$route.path)
+    console.log('当前布局:', this.layout)
+    // 如果是企业端布局，才调用接口
+    if (this.layout === 'enterprise') {
+      console.log('mounted中调用fetchCompanyProfile')
+      this.fetchCompanyProfile()
+    }
+  },
+  watch: {
+    // 监听路由变化，当切换到企业端时获取公司信息
+    '$route'(to) {
+      console.log('路由变化到:', to.path)
+      const toLayout = to.meta && to.meta.layout ? to.meta.layout : 'enterprise'
+      console.log('新路由布局:', toLayout)
+      if (toLayout === 'enterprise') {
+        console.log('路由监听中调用fetchCompanyProfile')
+        this.fetchCompanyProfile()
+      }
     }
   }
 }

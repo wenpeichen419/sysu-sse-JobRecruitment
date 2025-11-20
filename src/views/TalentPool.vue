@@ -18,17 +18,18 @@
               v-model="filters.positionName"
               placeholder="输入查询关键字"
               class="filter-input"
+              @input="handleSearch"
             >
           </div>
           <div class="filter-item">
             <label>招聘目标</label>
-            <select v-model="filters.recruitTarget" class="filter-select">
+            <select v-model="filters.recruitTarget" class="filter-select" @change="handleSearch">
               <option value="">请选择</option>
-              <option value="intern">实习生</option>
-              <option value="graduate">应届生</option>
+              <option value="full-time">应届生</option>
+              <option value="internship">实习生</option>
             </select>
           </div>
-          <button class="search-btn">筛选</button>
+          <button class="search-btn" @click="handleSearch">筛选</button>
         </div>
       </div>
 
@@ -43,15 +44,50 @@
         <div class="table-body">
           <div 
             v-for="position in positions" 
-            :key="position.id"
+            :key="position.job_id"
             class="table-row"
-            @click="viewCandidates(position.id)"
+            @click="viewCandidates(position.job_id)"
           >
-            <div class="table-col">{{ position.name }}</div>
-            <div class="table-col">{{ position.recruitTargetText }}</div>
-            <div class="table-col">{{ position.totalApplications }}人</div>
-            <div class="table-col">{{ position.pendingReviews }}份</div>
+            <div class="table-col">{{ position.title }}</div>
+            <div class="table-col">{{ getRecruitTargetText(position.work_nature) }}</div>
+            <div class="table-col">{{ position.received_num }}人</div>
+            <div class="table-col">{{ position.no_review_num }}份</div>
           </div>
+        </div>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pagination" v-if="totalPages > 1">
+        <span class="page-info">共 {{ totalItems }} 条数据</span>
+        
+        <div class="page-controls">
+          <button 
+            class="page-btn" 
+            :class="{ active: currentPage === 1 }"
+            @click="changePage(1)"
+          >1</button>
+          
+          <button 
+            v-for="page in middlePages" 
+            :key="page"
+            class="page-btn"
+            :class="{ active: currentPage === page }"
+            @click="changePage(page)"
+          >{{ page }}</button>
+
+          <span v-if="showEllipsis" class="ellipsis">...</span>
+          
+          <button 
+            class="page-btn"
+            :class="{ active: currentPage === totalPages }"
+            @click="changePage(totalPages)"
+          >{{ totalPages }}</button>
+
+          <button 
+            class="page-next" 
+            :disabled="currentPage >= totalPages"
+            @click="changePage(currentPage + 1)"
+          >›</button>
         </div>
       </div>
     </div>
@@ -67,117 +103,118 @@ export default {
         positionName: '',
         recruitTarget: ''
       },
-      positions: [
-        {
-          id: 1,
-          name: '官培士',
-          totalApplications: 100,
-          pendingReviews: 5,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 2,
-          name: '导航算法工程师',
-          totalApplications: 85,
-          pendingReviews: 12,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 3,
-          name: 'SLAM算法工程师',
-          totalApplications: 76,
-          pendingReviews: 8,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 4,
-          name: '运营培训生',
-          totalApplications: 234,
-          pendingReviews: 45,
-          recruitTarget: 'intern',
-          recruitTargetText: '实习生'
-        },
-        {
-          id: 5,
-          name: '技术培训生',
-          totalApplications: 189,
-          pendingReviews: 23,
-          recruitTarget: 'intern',
-          recruitTargetText: '实习生'
-        },
-        {
-          id: 6,
-          name: '财务培训生',
-          totalApplications: 156,
-          pendingReviews: 18,
-          recruitTarget: 'intern',
-          recruitTargetText: '实习生'
-        },
-        {
-          id: 7,
-          name: 'IT工程师',
-          totalApplications: 98,
-          pendingReviews: 6,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 8,
-          name: '设备工程师',
-          totalApplications: 67,
-          pendingReviews: 4,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 9,
-          name: '工艺工程师',
-          totalApplications: 89,
-          pendingReviews: 7,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 10,
-          name: '质量工程师',
-          totalApplications: 78,
-          pendingReviews: 5,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 11,
-          name: '工艺综合工程师',
-          totalApplications: 65,
-          pendingReviews: 3,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 12,
-          name: '技术研发工程师',
-          totalApplications: 112,
-          pendingReviews: 15,
-          recruitTarget: 'graduate',
-          recruitTargetText: '应届生'
-        },
-        {
-          id: 13,
-          name: '产品开发助理',
-          totalApplications: 145,
-          pendingReviews: 22,
-          recruitTarget: 'intern',
-          recruitTargetText: '实习生'
-        }
-      ]
+      positions: [],
+      // 分页相关
+      currentPage: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+      loading: false
     }
   },
+  computed: {
+    // 中间的页码
+    middlePages() {
+      const pages = []
+      const start = Math.max(2, this.currentPage - 1)
+      const end = Math.min(this.totalPages - 1, this.currentPage + 1)
+      
+      for (let i = start; i <= end; i++) {
+        if (i !== 1 && i !== this.totalPages) {
+          pages.push(i)
+        }
+      }
+      return pages
+    },
+
+    // 是否显示省略号
+    showEllipsis() {
+      return this.totalPages > 5 && this.currentPage < this.totalPages - 2
+    }
+  },
+  mounted() {
+    this.fetchPositions()
+  },
   methods: {
+    async fetchPositions() {
+      if (this.loading) return;
+      
+      this.loading = true;
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        // 构建查询参数
+        const params = new URLSearchParams({
+          page: this.currentPage,
+          pageSize: this.pageSize
+        });
+
+        // 添加搜索条件
+        if (this.filters.positionName) {
+          params.append('titleKeyword', this.filters.positionName);
+        }
+        if (this.filters.recruitTarget) {
+          params.append('workNature', this.filters.recruitTarget);
+        }
+
+        console.log('请求参数:', params.toString());
+
+        const response = await fetch(`http://localhost:8080/api/hr/jobs?${params}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        console.log('接口返回数据:', data);
+        
+        if (data.code === 200 && data.data) {
+          this.positions = data.data.job_list || []
+          this.totalItems = data.data.pagination?.total_items || 0
+          this.totalPages = data.data.pagination?.total_pages || 0
+          this.currentPage = data.data.pagination?.current_page || 1
+        } else {
+          console.error('接口返回错误:', data.message)
+        }
+      } catch (error) {
+        console.error('获取岗位列表失败:', error)
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    getRecruitTargetText(workNature) {
+      const targetMap = {
+        'full-time': '应届生',
+        'internship': '实习生'
+      }
+      return targetMap[workNature] || workNature
+    },
+
+    handleSearch() {
+      console.log('开始搜索，关键词:', this.filters.positionName, '招聘目标:', this.filters.recruitTarget);
+      this.currentPage = 1
+      this.fetchPositions()
+    },
+
     viewCandidates(positionId) {
       this.$router.push(`/candidates/${positionId}`)
+    },
+
+    // 切换页码
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+        this.fetchPositions()
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
   }
 }
@@ -289,6 +326,7 @@ export default {
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
 .table-header {
@@ -326,6 +364,80 @@ export default {
   text-align: center;
 }
 
+/* 分页样式 */
+.pagination {
+  background: white;
+  padding: 25px 35px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.page-info {
+  font-size: 18px;
+  color: #666;
+  font-weight: 500;
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-btn {
+  min-width: 45px;
+  height: 45px;
+  padding: 0 16px;
+  border: 1.5px solid #d8d8d8;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.page-btn:hover {
+  border-color: #325e21;
+  color: #325e21;
+}
+
+.page-btn.active {
+  background: #325e21;
+  color: white;
+  border-color: #325e21;
+}
+
+.page-next {
+  min-width: 45px;
+  height: 45px;
+  border: 1.5px solid #d8d8d8;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 24px;
+  transition: all 0.3s;
+  font-weight: 600;
+}
+
+.page-next:hover:not(:disabled) {
+  border-color: #325e21;
+  color: #325e21;
+}
+
+.page-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ellipsis {
+  padding: 0 8px;
+  color: #999;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .filter-row {
@@ -343,6 +455,11 @@ export default {
   
   .table-col {
     padding: 12px 20px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
   }
 }
 </style>

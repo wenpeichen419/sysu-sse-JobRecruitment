@@ -31,26 +31,30 @@
         <div class="basic-info-section full-width-section" id="basic-section" ref="basicSection">
           <!-- 操作按钮放在右上角 -->
           <div class="action-buttons-top">
+            <!-- 草稿状态 -->
             <button 
-              v-if="positionStatus === 'published'" 
-              class="offline-btn"
-              @click="handleOffline"
-            >
-              下线岗位
-            </button>
-            <button 
-              v-else-if="positionStatus === 'draft'" 
+              v-if="positionStatus === 1" 
               class="delete-draft-btn"
               @click="handleDeleteDraft"
             >
               删除草稿
             </button>
             
+            <!-- 已发布状态 -->
+            <button 
+              v-if="positionStatus === 20" 
+              class="offline-btn"
+              @click="handleOffline"
+            >
+              下线岗位
+            </button>
+            
+            <!-- 编辑按钮 - 不同状态显示不同文字 -->
             <button 
               class="edit-btn"
               @click="handleEdit"
             >
-              {{ positionStatus === 'published' ? '修改' : '继续完善' }}
+              {{ getEditButtonText() }}
             </button>
           </div>
 
@@ -64,10 +68,10 @@
                 <div class="position-tags">
                   <span 
                     v-for="tag in positionData.tags" 
-                    :key="tag" 
+                    :key="tag.tag_id" 
                     class="tag"
                   >
-                    {{ tag }}
+                    {{ tag.tag_name }}
                   </span>
                 </div>
               </div>
@@ -77,19 +81,19 @@
                 <div class="info-item-main">
                   <div class="info-content">
                     <div class="info-label">薪资范围</div>
-                    <div class="info-value">{{ positionData.salaryRange }}</div>
+                    <div class="info-value">{{ positionData.min_salary }}k - {{ positionData.max_salary }}k</div>
                   </div>
                 </div>
                 <div class="info-item-main">
                   <div class="info-content">
                     <div class="info-label">工作地点</div>
-                    <div class="info-value">{{ positionData.location }}</div>
+                    <div class="info-value">{{ getFullWorkAddress() }}</div>
                   </div>
                 </div>
                 <div class="info-item-main">
                   <div class="info-content">
                     <div class="info-label">招聘类型</div>
-                    <div class="info-value">{{ positionData.category }}</div>
+                    <div class="info-value">{{ getWorkNatureText(positionData.work_nature) }}</div>
                   </div>
                 </div>
               </div>
@@ -99,28 +103,32 @@
                 <!-- 前三行 -->
                 <div class="details-row first-row">
                   <div class="info-item-detail">
-                    <span class="detail-label">职能类别：</span>
-                    <span class="detail-value">{{ positionData.functionCategory }}</span>
-                  </div>
-                  <div class="info-item-detail">
                     <span class="detail-label">部门：</span>
                     <span class="detail-value">{{ positionData.department }}</span>
                   </div>
                   <div class="info-item-detail">
                     <span class="detail-label">招聘人数：</span>
-                    <span class="detail-value">{{ positionData.recruitCount }}人</span>
+                    <span class="detail-value">{{ positionData.headcount }}人</span>
+                  </div>
+                  <div class="info-item-detail">
+                    <span class="detail-label">学历要求：</span>
+                    <span class="detail-value">{{ getDegreeText(positionData.required_degree) }}</span>
                   </div>
                 </div>
                 
                 <!-- 后两行 -->
                 <div class="details-row second-row">
                   <div class="info-item-detail">
+                    <span class="detail-label">岗位类别：</span>
+                    <span class="detail-value">{{ getPositionTypeText(positionData.type) }}</span>
+                  </div>
+                  <div class="info-item-detail">
                     <span class="detail-label">要求到岗：</span>
-                    <span class="detail-value">{{ positionData.deadline }}</span>
+                    <span class="detail-value">{{ formatDate(positionData.required_start_date) }}</span>
                   </div>
                   <div class="info-item-detail">
                     <span class="detail-label">招聘截止：</span>
-                    <span class="detail-value">{{ positionData.recruitDeadline }}</span>
+                    <span class="detail-value">{{ formatDate(positionData.deadline) }}</span>
                   </div>
                 </div>
               </div>
@@ -135,12 +143,7 @@
           </div>
           
           <div class="description-content">
-            <p>{{ positionData.description }}</p>
-            <ul v-if="positionData.descriptionItems && positionData.descriptionItems.length">
-              <li v-for="(item, index) in positionData.descriptionItems" :key="index">
-                {{ item }}
-              </li>
-            </ul>
+            <div v-html="formatText(positionData.description)"></div>
           </div>
         </div>
 
@@ -151,11 +154,7 @@
           </div>
           
           <div class="requirement-content">
-            <ul v-if="positionData.requirements && positionData.requirements.length">
-              <li v-for="(req, index) in positionData.requirements" :key="index">
-                {{ req }}
-              </li>
-            </ul>
+            <div v-html="formatText(positionData.tech_requirements)"></div>
           </div>
         </div>
 
@@ -166,11 +165,7 @@
           </div>
           
           <div class="bonus-content">
-            <ul v-if="positionData.bonus && positionData.bonus.length">
-              <li v-for="(bonus, index) in positionData.bonus" :key="index">
-                {{ bonus }}
-              </li>
-            </ul>
+            <div v-html="formatText(positionData.bonus_points)"></div>
           </div>
         </div>
       </div>
@@ -179,6 +174,8 @@
 </template>
 
 <script>
+import { ElMessage, ElMessageBox } from 'element-plus'
+
 export default {
   name: 'PositionDetail',
   props: {
@@ -196,54 +193,169 @@ export default {
         { id: 'requirement', name: '岗位要求' },
         { id: 'bonus', name: '加分项' }
       ],
-      positionStatus: 'published', // 'published' 或 'draft'
+      positionStatus: 0,
       positionData: {
-        title: '推荐算法工程师',
-        tags: ['AI', '算法', '机器学习', 'Python'],
-        salaryRange: '8500-9499',
-        location: '广东省广州市天河区上渡路136号',
-        category: '校招',
-        functionCategory: '算法',
-        department: 'xx部门',
-        recruitCount: 3,
-        deadline: '2025-11-11',
-        recruitDeadline: '2025-10-11',
-        description: '作为推荐算法方向的研究工程师，你可以：',
-        descriptionItems: [
-          '负责推荐系统中具体推荐业务的召回、排序等模型算法及策略的设计与优化；',
-          '深入理解业务场景，通过对数据的敏锐洞察挖掘产品潜在价值和需求，针对现有业务场景特点优化推荐策略和模型，不断提升用户体验和业务指标；',
-          '基于大规模深度神经网络模型和机器学习系统，探索业界前沿推荐技术的研发工作，通过技术创新推动产品成长，包含但不限于推荐多模态大模型、图神经网络、多任务学习、超长序列建模、强化学习等技术方向。'
-        ],
-        requirements: [
-          '本科及以上学历，计算机、数学、人工智能等相关专业；',
-          '扎实的编程能力和算法功能，熟练掌握Python/C++/Java等至少一种编程语言；',
-          '扎实的机器学习/深度学习理论基础，熟练掌握Tensorflow/Pytorch等至少一种主流深度学习框架，了解Hadoop/Spark/Flink等大数据平台工具的使用；',
-          '优秀的逻辑思维能力，优秀的分析问题与解决问题的能力，对解决具有挑战性的问题充满激情；',
-          '善于沟通，工作积极主动，责任心强，自驱力强，能持续学习，具备良好的团队协作能力。'
-        ],
-        bonus: [
-          '有推荐系统相关项目经验者优先',
-          '在相关领域发表过论文或获得过竞赛奖项者优先'
-        ]
-      }
+        title: '',
+        tags: [],
+        min_salary: 0,
+        max_salary: 0,
+        province_id: null,
+        city_id: null,
+        address_detail: '',
+        work_nature: '',
+        department: '',
+        headcount: 0,
+        type: null,
+        required_degree: 0,
+        required_start_date: '',
+        deadline: '',
+        description: '',
+        tech_requirements: '',
+        bonus_points: ''
+      },
+      provinceList: [],
+      cityList: []
     }
   },
   mounted() {
     console.log('加载岗位详情，ID:', this.id)
+    this.fetchPositionDetail()
+    this.fetchLocations()
     this.setupScrollSpy()
-    // 模拟根据ID获取岗位状态
-    this.getPositionStatus()
   },
   methods: {
-    // 根据ID获取岗位状态（模拟）
-    getPositionStatus() {
-      // 这里应该调用API获取岗位状态
-      // 模拟：根据ID判断状态
-      if (this.id % 2 === 0) {
-        this.positionStatus = 'published'
-      } else {
-        this.positionStatus = 'draft'
+    async fetchPositionDetail() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.code === 200 && data.data) {
+          const jobDetails = data.data.job_details
+          this.positionData = {
+            ...jobDetails
+          }
+          this.positionStatus = jobDetails.status
+        }
+      } catch (error) {
+        console.error('获取岗位详情失败:', error)
+        ElMessage.error('获取岗位详情失败')
       }
+    },
+
+    async fetchLocations() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/api/locations', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        const data = await response.json()
+        if (data.code === 200) {
+          this.provinceList = data.data || []
+        }
+      } catch (error) {
+        console.error('获取省市数据失败:', error)
+      }
+    },
+
+    getWorkNatureText(workNature) {
+      const natureMap = {
+        1: '实习',
+        2: '全职'
+      }
+      return natureMap[workNature] || '全职'
+    },
+
+    getPositionTypeText(type) {
+      const typeMap = {
+        1: '产品',
+        2: '开发',
+        3: '测试',
+        4: '算法'
+      }
+      return typeMap[type] || '未知类型'
+    },
+
+    getDegreeText(degree) {
+      const degreeMap = {
+        0: '本科以上',
+        1: '硕士以上',
+        2: '博士以上'
+      }
+      return degreeMap[degree] || '本科以上'
+    },
+
+    getFullWorkAddress() {
+  let address = ''
+  
+  // 查找省份名称
+  if (this.positionData.province_id && this.provinceList.length > 0) {
+    const province = this.provinceList.find(p => p.province_id === this.positionData.province_id)
+    if (province) {
+      address += province.name
+      
+      // 查找城市名称
+      if (this.positionData.city_id && province.cities) {
+        const city = province.cities.find(c => c.city_id === this.positionData.city_id)
+        if (city) {
+          address += city.name
+        }
+      }
+    }
+  }
+  
+  // 添加详细地址
+  if (this.positionData.address_detail) {
+    if (address) {
+      address += this.positionData.address_detail
+    } else {
+      address = this.positionData.address_detail
+    }
+  }
+  
+  return address || '未设置工作地点'
+},
+
+    formatDate(dateString) {
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      return date.toLocaleDateString('zh-CN')
+    },
+
+    formatText(text) {
+      if (!text) return ''
+      // 将换行符转换为HTML换行
+      return text.replace(/\n/g, '<br>')
+    },
+
+    getEditButtonText() {
+      const statusMap = {
+        1: '继续完善', // 草稿
+        10: '申请修改', // 待审核
+        20: '申请修改', // 已发布
+        30: '重新修改' // 审核未通过
+      }
+      return statusMap[this.positionStatus] || '编辑'
     },
 
     // 滚动到指定区域
@@ -283,52 +395,88 @@ export default {
     },
 
     // 下线岗位
-    handleOffline() {
-      if (confirm('确定要下线该岗位吗？下线后将不再对外展示。')) {
-        // 调用API下线岗位
-        console.log('下线岗位:', this.id)
-        alert('岗位已下线')
-        this.positionStatus = 'offline'
+    async handleOffline() {
+      try {
+        await ElMessageBox.confirm('确定要下线该岗位吗？下线后将不再对外展示。', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 40 // 下线状态
+          })
+        })
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        const data = await response.json()
+        if (data.code === 200) {
+          ElMessage.success('岗位已下线')
+          this.positionStatus = 40
+        } else {
+          throw new Error(data.message || '下线失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('下线岗位失败:', error)
+          ElMessage.error('下线岗位失败：' + error.message)
+        }
       }
     },
 
     // 删除草稿
-    handleDeleteDraft() {
-      if (confirm('确定要删除该草稿吗？删除后将无法恢复。')) {
-        // 调用API删除草稿
-        console.log('删除草稿:', this.id)
-        alert('草稿已删除')
-        this.$router.push('/position-manage')
+    async handleDeleteDraft() {
+      try {
+        await ElMessageBox.confirm('确定要删除该草稿吗？删除后将无法恢复。', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        const data = await response.json()
+        if (data.code === 200) {
+          ElMessage.success('草稿已删除')
+          this.$router.push('/position-manage')
+        } else {
+          throw new Error(data.message || '删除失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除草稿失败:', error)
+          ElMessage.error('删除草稿失败：' + error.message)
+        }
       }
     },
 
     // 编辑/继续完善
     handleEdit() {
-      // 准备传递给PositionForm的数据
-      const formData = {
-        positionName: this.positionData.title,
-        category: this.positionData.category,
-        department: this.positionData.department,
-        recruitCount: this.positionData.recruitCount,
-        location: this.positionData.location,
-        salaryRange: this.positionData.salaryRange,
-        deadline: this.positionData.deadline,
-        recruitDeadline: this.positionData.recruitDeadline,
-        tags: this.positionData.tags,
-        description: this.positionData.description + '\n' + 
-                    this.positionData.descriptionItems.join('\n'),
-        requirements: this.positionData.requirements.join('\n'),
-        bonus: this.positionData.bonus ? this.positionData.bonus.join('\n') : '',
-        positionId: this.id,
-        isDraft: this.positionStatus === 'draft'
-      }
-
-      // 跳转到PositionForm并传递数据
+      // 跳转到PositionForm并传递岗位ID，在PositionForm中处理数据回显
       this.$router.push({
         path: '/position-form',
         query: {
-          editData: JSON.stringify(formData),
-          positionId: this.id
+          positionId: this.id,
+          isEdit: true
         }
       })
     }
@@ -337,6 +485,7 @@ export default {
 </script>
 
 <style scoped>
+/* 原有的样式保持不变，这里省略重复的CSS代码 */
 .position-detail-page {
   padding: 30px;
   background: #f5f5f5;
@@ -560,7 +709,6 @@ export default {
   font-weight: 500;
 }
 
-
 /* 主要信息组 */
 .main-info-group {
   display: flex;
@@ -568,21 +716,18 @@ export default {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 40px;
-  /* 新增以下属性 */
-  width: fit-content; /* 让宽度根据内容自适应 */
-  margin-left: -20px; /* 确保靠左对齐 */
-  padding: 0; /* 移除内边距 */
+  width: fit-content;
+  margin-left: -20px;
+  padding: 0;
 }
 
 .info-item-main {
-  padding: 25px 40px; /* 调整左右内边距，可以根据需要调整 */
+  padding: 25px 40px;
   position: relative;
   text-align: left;
-  /* 移除 flex: 1 或者改为 auto */
-  flex: none; /* 不让它们自动拉伸 */
+  flex: none;
 }
 
-/* 分割线 */
 .info-item-main:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -609,11 +754,9 @@ export default {
 .info-value {
   font-size: 24px;
   font-weight: bold;
-  color: #cab156;
+  color: #ff6b35;
 }
 
-/* 详细信息组 - 放在下方 */
-/* 详细信息组 - 放在下方 */
 .details-group-below {
   width: 100%;
   margin-left: 20px;
@@ -639,15 +782,15 @@ export default {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  flex: none; /* 改为 none 而不是 1 */
-  width: 400px; /* 设置固定宽度，确保所有项目宽度一致 */
+  flex: none;
+  width: 400px;
 }
 
 .detail-label {
   color: #346024;
   font-weight: 550;
   font-size: 24px;
-  min-width: 120px; /* 设置标签的最小宽度 */
+  min-width: 120px;
 }
 
 .detail-value {
@@ -657,7 +800,6 @@ export default {
   margin-left: 10px;
 }
 
-/* 章节头部 */
 .section-header {
   margin-bottom: 25px;
 }
@@ -671,26 +813,10 @@ export default {
   padding-left: 12px;
 }
 
-/* 内容样式 */
 .description-content, .requirement-content, .bonus-content {
   color: #333;
   line-height: 1.7;
-}
-
-.description-content p {
-  margin-bottom: 20px;
   font-size: 20px;
-  font-weight: 500;
-}
-
-.description-content ul, .requirement-content ul, .bonus-content ul {
-  padding-left: 20px;
-}
-
-.description-content li, .requirement-content li, .bonus-content li {
-  margin-bottom: 12px;
-  font-size: 20px;
-  color: #555;
 }
 
 /* 响应式设计 */

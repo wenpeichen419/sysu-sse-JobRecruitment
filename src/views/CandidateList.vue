@@ -2,76 +2,123 @@
   <div class="candidate-layout">
     <!-- 侧边栏 -->
     <CandidateSidebar 
-      :candidates="allCandidates"
+      :candidates="sidebarCandidates"
       :activeCandidateId="activeCandidateId"
       @candidate-selected="onCandidateSelected"
     />
     
     <!-- 主内容区域 -->
     <div class="main-content">
-      <button class="back-to-talent-pool-btn" @click="backToTalentPool">
-      返回人才总库
-      </button>
-      <div class="candidate-list-page">
-        <div class="filters-container">
-         <div class="filters">
-            <!-- 候选人名字筛选 -->
-             <div class="filter-item">
-                <label>候选人名字</label>
-      <input 
-        type="text" 
-        v-model="filters.candidateName"
-        placeholder="输入候选人名字"
-        class="filter-input"
-      >
-          </div>
-    
-    <!-- 简历状态筛选 -->
-    <div class="filter-item">
-      <label>简历状态</label>
-      <select v-model="filters.resumeStatus" class="filter-select">
-        <option value="">请选择</option>
-        <option value="未审核">未审核</option>
-        <option value="已候选">已候选</option>
-        <option value="已发送面试通知">已发送面试通知</option>
-        <option value="已拒绝">已拒绝</option>
-      </select>
-    </div>
-    
-               <!-- 筛选按钮 -->
-              <button class="filter-btn" @click="handleFilter">筛选</button>
-               </div>
-         </div>
+      <!-- 面包屑导航 -->
+      <div class="breadcrumb-wrapper">
+        <div class="breadcrumb">
+          <router-link to="/talent-pool" class="breadcrumb-link">人才库</router-link>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-current">{{ currentPosition.title }} - 候选人列表</span>
+        </div>
+      </div>
 
-        <div class="candidates-list">
-          <div 
-            v-for="candidate in filteredCandidates" 
-            :key="candidate.id"
-            class="candidate-row"
-            @click="onCandidateSelected(candidate)"
-          >
-            <!-- 左侧头像 -->
-            <div class="candidate-avatar">
-              <img v-if="candidate.avatar" :src="candidate.avatar" alt="头像">
-              <div v-else class="avatar-placeholder">
-                {{ candidate.name.charAt(0) }}
-              </div>
+      <div class="content-wrapper">
+        <!-- 筛选区 -->
+        <div class="filter-section fixed-filter">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label>候选人名字</label>
+              <input 
+                type="text" 
+                v-model="filters.candidateName"
+                placeholder="输入候选人名字"
+                class="filter-input"
+                @input="handleSearch"
+              >
             </div>
-            
-            <!-- 中间信息 -->
-            <div class="candidate-info">
-              <div class="name-section">
-                <h3 class="candidate-name">{{ candidate.name }}</h3>
-                <span class="candidate-grade">{{ candidate.grade }} </span>
-              </div>
+            <div class="filter-item">
+              <label>简历状态</label>
+              <select v-model="filters.resumeStatus" class="filter-select" @change="handleSearch">
+                <option value="">请选择</option>
+                <option value="10">已投递</option>
+                <option value="20">已候选</option>
+                <option value="30">面试邀请</option>
+                <option value="40">通过</option>
+                <option value="50">拒绝</option>
+              </select>
             </div>
-            
-            <!-- 右侧状态 -->
-            <div class="candidate-status" :style="{ color: getStatusColor(candidate.status) }">
-              {{ candidate.status }}
+            <button class="search-btn" @click="handleSearch">筛选</button>
+          </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-col">候选人</div>
+            <div class="table-col">年级</div>
+            <div class="table-col">学历</div>
+            <div class="table-col">简历状态</div>
+          </div>
+          <div class="table-body">
+            <div 
+              v-for="candidate in sortedCandidates" 
+              :key="candidate.application_id"
+              class="table-row"
+              @click="onCandidateSelected(candidate)"
+            >
+              <div class="table-col candidate-info-col">
+                <div class="candidate-avatar">
+                  <img src="@/assets/campus.png" alt="头像">
+                </div>
+                <span class="candidate-name">{{ candidate.candidate_name }}</span>
+              </div>
+              <div class="table-col grade-col">{{ candidate.grade }}</div>
+              <div class="table-col degree-col">{{ getDegreeText(candidate.degree) }}</div>
+              <div class="table-col status-col">
+                <span :class="['status-tag', getStatusClass(candidate.resume_status)]">
+                  {{ candidate.resume_status }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- 分页 -->
+<div class="pagination" v-if="totalItems > 0">
+  <span class="page-info">共 {{ totalItems }} 条数据</span>
+  
+  <div class="page-controls">
+    <!-- 只有当总页数大于1时才显示第一页按钮 -->
+    <button 
+      v-if="totalPages > 1"
+      class="page-btn" 
+      :class="{ active: currentPage === 1 }"
+      @click="changePage(1)"
+    >1</button>
+    
+    <button 
+      v-for="page in middlePages" 
+      :key="page"
+      class="page-btn"
+      :class="{ active: currentPage === page }"
+      @click="changePage(page)"
+    >{{ page }}</button>
+
+    <span v-if="showEllipsis" class="ellipsis">...</span>
+    
+    <!-- 只有当总页数大于1时才显示最后一页按钮 -->
+    <button 
+      v-if="totalPages > 1"
+      class="page-btn"
+      :class="{ active: currentPage === totalPages }"
+      @click="changePage(totalPages)"
+    >{{ totalPages }}</button>
+
+    <!-- 只有当总页数大于1时才显示下一页按钮 -->
+    <button 
+      v-if="totalPages > 1"
+      class="page-next" 
+      :disabled="currentPage >= totalPages"
+      @click="changePage(currentPage + 1)"
+    >›</button>
+  </div>
+</div>
       </div>
     </div>
   </div>
@@ -94,141 +141,250 @@ export default {
   data() {
     return {
       filters: {
-        intern: false,
-        freshGraduate: false
+        candidateName: '',
+        resumeStatus: ''
       },
-      currentPosition: {},
+      currentPosition: { title: '加载中...' },
       allCandidates: [],
-      filteredCandidates: [],
-      activeCandidateId: ''
+      sortedCandidates: [],
+      activeCandidateId: '',
+      // 分页相关
+      currentPage: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+      loading: false
     }
+  },
+  computed: {
+    // 侧边栏候选人数据 - 状态为"候选人"的
+    sidebarCandidates() {
+      return this.allCandidates
+        .filter(candidate => candidate.resume_status === '候选人')
+        .map(candidate => ({
+          id: candidate.application_id,
+          name: candidate.candidate_name,
+          status: candidate.resume_status,
+          avatar: ''
+        }))
+    },
+
+    // 中间的页码
+    middlePages() {
+  // 如果总页数小于等于3，不显示中间页码
+  if (this.totalPages <= 3) {
+    return []
+  }
+  
+  const pages = []
+  const start = Math.max(2, this.currentPage - 1)
+  const end = Math.min(this.totalPages - 1, this.currentPage + 1)
+  
+  for (let i = start; i <= end; i++) {
+    if (i !== 1 && i !== this.totalPages) {
+      pages.push(i)
+    }
+  }
+  return pages
+},
+
+    // 是否显示省略号
+    showEllipsis() {
+  return this.totalPages > 5 && this.currentPage < this.totalPages - 2
+}
   },
   mounted() {
     this.loadPositionData()
     this.loadCandidates()
   },
   methods: {
-     backToTalentPool() {
-    this.$router.push('/talent-pool'); // 根据您的路由配置调整
-    },
-    loadPositionData() {
-      const positions = {
-        1: { id: 1, name: '官培士' },
-        2: { id: 2, name: '导航算法工程师' },
-        3: { id: 3, name: 'SLAM算法工程师' },
-        4: { id: 4, name: '运营培训生' },
-        5: { id: 5, name: '技术培训生' },
-        6: { id: 6, name: '财务培训生' },
-        7: { id: 7, name: 'IT工程师' },
-        8: { id: 8, name: '设备工程师' },
-        9: { id: 9, name: '工艺工程师' },
-        10: { id: 10, name: '质量工程师' },
-        11: { id: 11, name: '工艺综合工程师' },
-        12: { id: 12, name: '技术研发工程师' },
-        13: { id: 13, name: '产品开发助理' }
+    async loadPositionData() {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.positionId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        console.log('岗位详情接口返回数据:', data);
+        
+        if (data.code === 200 && data.data) {
+          this.currentPosition = data.data.job_details || { title: '未知岗位' }
+        } else {
+          throw new Error(data.message || '获取岗位信息失败')
+        }
+      } catch (error) {
+        console.error('获取岗位信息失败:', error)
+        this.currentPosition = { title: '未知岗位' }
       }
-      this.currentPosition = positions[this.positionId] || { name: '未知岗位' }
     },
 
-    loadCandidates() {
+    async loadCandidates() {
+      if (this.loading) return;
+      
+      this.loading = true;
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        // 构建查询参数
+        const params = new URLSearchParams({
+          page: this.currentPage,
+          page_size: this.pageSize
+        });
+
+        // 添加搜索条件
+        if (this.filters.candidateName) {
+          params.append('name_keyword', this.filters.candidateName);
+        }
+        if (this.filters.resumeStatus) {
+          params.append('status', this.filters.resumeStatus);
+        }
+
+        const response = await fetch(`http://localhost:8080/api/hr/talentpool/job/list/${this.positionId}?${params}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        console.log('候选人列表接口返回数据:', data);
+        
+        if (data.code === 200 && data.data) {
+          this.allCandidates = data.data.candidate_list || []
+          this.sortCandidates()
+          this.totalItems = data.data.pagination?.total_items || 0
+          this.totalPages = data.data.pagination?.total_pages || 0
+          this.currentPage = data.data.pagination?.current_page || 1
+        } else {
+          console.error('接口返回错误:', data.message)
+          this.useMockData()
+        }
+      } catch (error) {
+        console.error('获取候选人列表失败:', error)
+        this.useMockData()
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // 排序候选人，将"已投递"状态的放在最前面
+    sortCandidates() {
+      this.sortedCandidates = [...this.allCandidates].sort((a, b) => {
+        if (a.resume_status === '已投递' && b.resume_status !== '已投递') {
+          return -1;
+        } else if (a.resume_status !== '已投递' && b.resume_status === '已投递') {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+    },
+
+    useMockData() {
+      // 模拟数据，当接口不可用时使用
       this.allCandidates = [
         {
-          id: '487',
-          name: 'ChoAi',
-          grade: '2020级本科生',
-          status: '已发送面试通知',
-          resumeUrl: '/resumes/487.pdf',
-          avatar: ''
+          application_id: 1,
+          candidate_name: '陈雯珮',
+          grade: '2023级',
+          degree: 'bachelor',
+          resume_status: '候选人'
         },
         {
-          id: '488',
-          name: 'DMD',
-          grade: '2023级本科生',
-          status: '已拒绝',
-          resumeUrl: '/resumes/488.pdf',
-          avatar: ''
+          application_id: 2,
+          candidate_name: '大眼眼',
+          grade: '2022级',
+          degree: 'bachelor',
+          resume_status: '已投递'
         },
         {
-          id: '489',
-          name: 'Jelly',
-          grade: '2022级本科生',
-          status: '未审核',
-          resumeUrl: '/resumes/489.pdf',
-          avatar: ''
+          application_id: 3,
+          candidate_name: '大韩寒',
+          grade: '2023级',
+          degree: 'master',
+          resume_status: '邀请面试'
         },
         {
-          id: '490',
-          name: 'XMX',
-          grade: '2021级研究生',
-          status: '已候选',
-          resumeUrl: '/resumes/490.pdf',
-          avatar: ''
+          application_id: 4,
+          candidate_name: '无名氏',
+          grade: '2023级',
+          degree: 'bachelor',
+          resume_status: '通过'
         },
         {
-          id: '491',
-          name: '张三',
-          grade: '2023级本科生',
-          status: '未审核',
-          resumeUrl: '/resumes/491.pdf',
-          avatar: ''
+          application_id: 5,
+          candidate_name: '测试用户',
+          grade: '2021级',
+          degree: 'doctor',
+          resume_status: '拒绝'
         }
       ]
-      this.filteredCandidates = [...this.allCandidates]
+      this.sortCandidates()
+      this.totalItems = this.allCandidates.length
+      this.totalPages = 1
     },
 
-    filterCandidates() {
-      let filtered = [...this.allCandidates]
-      
-      if (this.filters.intern && !this.filters.freshGraduate) {
-        filtered = filtered.filter(c => c.type === '实习生')
-      } else if (this.filters.freshGraduate && !this.filters.intern) {
-        filtered = filtered.filter(c => c.type === '应届生')
-      } else if (this.filters.intern && this.filters.freshGraduate) {
-        filtered = filtered.filter(c => c.type === '实习生' || c.type === '应届生')
+    getDegreeText(degree) {
+      const degreeMap = {
+        'bachelor': '本科',
+        'master': '硕士',
+        'doctor': '博士'
       }
-      
-      this.filteredCandidates = filtered
+      return degreeMap[degree] || degree
     },
 
-    getStatusColor(status) {
-      const statusColors = {
-        '已发送面试通知': '#5b9862',
-        '已拒绝': '#cf7774',
-        '已候选': '#cc8e58',
-        '未审核': '#90959e'
+    getStatusClass(status) {
+      const statusClassMap = {
+        '已投递': 'submitted',
+        '候选人': 'candidate',
+        '面试邀请': 'interview',
+        '通过': 'passed',
+        '拒绝': 'rejected'
       }
-      return statusColors[status] || '#90959e'
+      return statusClassMap[status] || 'submitted'
+    },
+
+    handleSearch() {
+      console.log('开始搜索，候选人名字:', this.filters.candidateName, '简历状态:', this.filters.resumeStatus);
+      this.currentPage = 1
+      this.loadCandidates()
     },
 
     onCandidateSelected(candidate) {
-      this.activeCandidateId = candidate.id
-      // 跳转到简历页面
+      this.activeCandidateId = candidate.application_id || candidate.id
+      
+      // 跳转到简历页面 - 修复路由参数问题
       this.$router.push({
         name: 'CandidateResume',
         params: { 
           positionId: this.positionId,
-          candidateId: candidate.id
+          candidateId: candidate.application_id || candidate.id
         }
       })
     },
 
-    sendInterview(candidateId) {
-      this.updateCandidateStatus(candidateId, '已发送面试通知')
-    },
-
-    rejectCandidate(candidateId) {
-      this.updateCandidateStatus(candidateId, '已拒绝')
-    },
-
-    reserveCandidate(candidateId) {
-      this.updateCandidateStatus(candidateId, '已候选')
-    },
-
-    updateCandidateStatus(candidateId, newStatus) {
-      const candidate = this.allCandidates.find(c => c.id === candidateId)
-      if (candidate) {
-        candidate.status = newStatus
-        this.filterCandidates()
+    // 切换页码
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+        this.loadCandidates()
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
   }
@@ -244,116 +400,193 @@ export default {
 .main-content {
   margin-left: 320px;
   flex: 1;
-  margin-top: 0px;
   background: #f5f5f5;
   min-height: calc(100vh - 105px);
 }
 
-.back-to-talent-pool-btn {
-  position: fixed;
-  top: 160px; /* 距离页面顶端超过105px */
-  left: 480px; /* 距离页面左边超过320px */
-  background: #4a7328;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 22px;
-  font-weight: 540;
-  cursor: pointer;
-  z-index: 1001;
-  transition: background-color 0.3s ease;
-}
-
-.back-to-talent-pool-btn:hover {
-  background: #1d5e25;
-}
-
-.candidate-list-page {
-  padding: 30px;
-  min-height: calc(100vh - 105px);
-  padding-top: 160px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.candidate-row {
-  cursor: pointer;
-}
-
-.header-left h1 {
-  color: #325e21;
-  margin: 0 0 10px 0;
-  font-size: 28px;
-}
-
-.position-name {
-  color: #666;
-  font-size: 18px;
-  margin: 0;
-}
-
-.user-info {
-  color: #666;
-  font-size: 16px;
-}
-
-.filters-container {
+/* 面包屑导航 */
+.breadcrumb-wrapper {
   position: fixed;
   top: 105px;
   left: 320px;
   right: 0;
-  height: 150px;
+  background: #f4f4f4;
+  padding: 20px 30px;
   z-index: 1000;
-  background: #f5f5f5;
+  height: 115px;
+}
+
+.breadcrumb {
+  background: white;
+  padding: 20px 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  font-size: 20px;
+  box-sizing: border-box;
+  width: calc(100% - 60px);
+  position: fixed;
+  top: 130px;
+  left: 350px;
+}
+
+.breadcrumb-link {
+  color: #325e21;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  margin: 0 10px;
+  color: #666;
+}
+
+.breadcrumb-current {
+  color: #666;
+}
+
+.content-wrapper {
+  padding-top: 120px;
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 30px;
+}
+
+/* 筛选区样式 */
+.fixed-filter {
+  background: white;
+  padding: 25px 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  position: sticky;
+  top: 220px;
+  z-index: 999;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 120px;
+  flex-wrap: wrap;
+  margin-left: 200px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.filter-item label {
+  font-size: 22px;
+  color: #333;
+  font-weight: 500;
+}
+
+.filter-input, .filter-select {
+  padding: 10px 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  font-size: 22px;
+  min-width: 150px;
+}
+
+.filter-input:focus, .filter-select:focus {
+  outline: none;
+  border-color: #325e21;
+}
+
+.search-btn {
+  background: #325e21;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 22px;
+  transition: background-color 0.3s ease;
+  align-self: center;
+  margin-left: 50px;
+}
+
+.search-btn:hover {
+  background: #2a4e1b;
+}
+
+/* 表格样式 */
+.table-section {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.table-header {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.table-header .table-col {
+  font-size: 26px !important;
+  font-weight: bold;
+  color: #2a5e23;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: calc(1400px - 320px);
-  margin: 0 auto;
 }
 
-
-.candidates-list {
+.table-row {
   display: flex;
-  flex-direction: column;
-  gap: 22px;
-  max-height: calc(100vh - 350px);
-  margin-top:30px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  min-height: 90px;
 }
 
-.candidate-row {
-  background: white;
-  border-radius: 12px;
-  padding: 0px 25px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.table-row:hover {
+  background: #f8f9fa;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-col {
+  flex: 1;
+  padding: 20px;
+  text-align: center;
+  font-size: 22px;
   display: flex;
   align-items: center;
-  gap: 40px;
-  transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
-  min-width: 100%;
-  min-height: 150px;
-  margin-left: 0;
-  
+  justify-content: center;
 }
 
-.candidate-row:hover {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+.candidate-info-col {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: flex-start;
+  padding-left: 40px;
+}
+
+.grade-col, .degree-col, .status-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .candidate-avatar {
-  width: 70px;
-  height: 70px;
+  width: 75px;
+  height: 75px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: #f8f9fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #e9ecef;
 }
 
 .candidate-avatar img {
@@ -362,173 +595,161 @@ export default {
   object-fit: cover;
 }
 
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #325e21, #4a7c2f);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.candidate-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.name-section {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
 .candidate-name {
-  margin: 0;
-  color: #333;
-  font-size: 30px;
-  font-weight: 600;
-  padding-left: 100px;
+  font-weight: 500;
+  font-size: 24px;
 }
 
-.candidate-grade {
-  color: #666;
-  font-size: 22px;
-  padding-left: 100px;
-  font-weight: normal;
-  margin-left:150px;
-}
-
-.candidate-status {
-  font-size: 22px;
+.status-tag {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 20px;
   font-weight: bold;
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 120px;
-  text-align: center;
 }
 
-.candidate-actions {
+.status-tag.submitted {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-tag.candidate {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+.status-tag.interview {
+  background: #f3e5f5;
+  color: #9c27b0;
+}
+
+.status-tag.passed {
+  background: #e8f5e8;
+  color: #4caf50;
+}
+
+.status-tag.rejected {
+  background: #ffebee;
+  color: #f44336;
+}
+
+/* 分页样式 */
+.pagination {
+  background: white;
+  padding: 25px 35px;
+  border-radius: 10px;
   display: flex;
-  gap: 10px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
 }
 
-.btn-action {
-  border: none;
-  padding: 6px 12px;
+.page-info {
+  font-size: 18px;
+  color: #666;
+  font-weight: 500;
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-btn {
+  min-width: 45px;
+  height: 45px;
+  padding: 0 16px;
+  border: 1.5px solid #d8d8d8;
+  background: white;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 18px;
+  transition: all 0.3s;
   font-weight: 500;
-  transition: all 0.2s ease;
 }
 
-.filters {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 80px;
-  padding: 0 30px;
-  margin-top:40px;
+.page-btn:hover {
+  border-color: #325e21;
+  color: #325e21;
 }
 
-.filter-item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 15px;
-}
-
-.filter-item label {
-  font-size: 22px;
-  color: #333;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.filter-input, .filter-select {
-  padding: 12px 15px;
-  border: 1px solid #d8d8d8;
-  border-radius: 6px;
-  font-size: 20px;
-  min-width: 200px;
-}
-
-.filter-input:focus, .filter-select:focus {
-  outline: none;
+.page-btn.active {
+  background: #325e21;
+  color: white;
   border-color: #325e21;
 }
 
-.filter-btn {
-  background: #325e21;
-  color: white;
-  border: none;
-  padding: 12px 25px;
+.page-next {
+  min-width: 45px;
+  height: 45px;
+  border: 1.5px solid #d8d8d8;
+  background: white;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 22px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-  white-space: nowrap;
+  font-size: 24px;
+  transition: all 0.3s;
+  font-weight: 600;
 }
 
-.filter-btn:hover {
-  background: #2a4e1b;
+.page-next:hover:not(:disabled) {
+  border-color: #325e21;
+  color: #325e21;
 }
 
+.page-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ellipsis {
+  padding: 0 8px;
+  color: #999;
+}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .candidate-row {
-    padding: 15px;
-    gap: 15px;
-    flex-wrap: wrap;
-  }
-  
-  .candidate-avatar {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .candidate-name {
-    font-size: 16px;
-    padding-left: 0;
-  }
-  
-  .candidate-grade {
-    padding-left: 0;
-  }
-  
-  .candidate-actions {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    margin-top: 10px;
-  }
-  
-  .filters-container {
-    left: 0;
-    max-width: 100%;
-  }
-  
   .main-content {
     margin-left: 0;
   }
-    .filters {
-    flex-direction: column;
-    gap: 20px;
+  
+  .breadcrumb-wrapper {
+    left: 0;
   }
   
-  .filter-item {
-    width: 100%;
-    justify-content: space-between;
+  .breadcrumb {
+    left: 30px;
+    width: calc(100% - 90px);
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
   }
   
   .filter-input, .filter-select {
-    min-width: 150px;
+    min-width: auto;
+  }
+  
+  .table-header, .table-row {
+    flex-direction: column;
+  }
+  
+  .table-col {
+    padding: 12px 20px;
+  }
+  
+  .candidate-info-col {
+    justify-content: center;
+    padding-left: 20px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+    width: calc(100% - 20px);
   }
 }
 </style>

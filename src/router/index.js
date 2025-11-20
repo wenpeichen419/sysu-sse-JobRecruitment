@@ -75,7 +75,8 @@ const routes = [
   {
     path: '/enterprise-home',
     name: 'HomePage',
-    component: HomePage
+    component: HomePage,
+    meta: { layout: 'enterprise' }
   },
   {
     path: '/position-manage',

@@ -7,27 +7,30 @@
       <span class="breadcrumb-current">企业信息管理</span>
     </div>
 
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">加载中...</div>
+
     <!-- 第一个矩形：企业头部信息 -->
-    <div class="info-card enterprise-header-card">
+    <div v-else class="info-card enterprise-header-card">
       <div class="enterprise-basic">
         <div class="enterprise-avatar">
-          <img src="@/assets/BDance_logo.png" alt="字节跳动" class="avatar-image">
-        </div>
+  <img :src="companyLogo" :alt="companyInfo.company_name" class="avatar-image">
+</div>
         <div class="enterprise-details">
-          <h1 class="enterprise-name">字节跳动</h1>
+          <h1 class="enterprise-name">{{ companyInfo.company_name }}</h1>
           <div class="enterprise-stats">
             <div class="stat-item">
-              <div class="stat-number">2个</div>
+              <div class="stat-number">{{ companyInfo.open_jobs_count }}个</div>
               <div class="stat-label">在招岗位数</div>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <div class="stat-number">70%</div>
+              <div class="stat-number">{{ (companyInfo.resume_process_rate * 100).toFixed(0) }}%</div>
               <div class="stat-label">简历处理率</div>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <div class="stat-number">2天前</div>
+              <div class="stat-number">{{ formatLastLogin(companyInfo.last_login_at) }}</div>
               <div class="stat-label">单位最近登录</div>
             </div>
           </div>
@@ -41,61 +44,16 @@
           账号设置
         </button>
       </div>
-      
     </div>
     
-    <!-- 添加密码修改弹框 -->
-<div v-if="showPasswordDialog" class="modal-overlay" @click="showPasswordDialog = false">
-  <div class="modal-content" @click.stop>
-    <div class="modal-header">
-      <h2 class="modal-title">修改密码</h2>
-      <button class="modal-close" @click="showPasswordDialog = false">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="input-group">
-        <label for="oldPassword">原密码</label>
-        <input 
-          type="password" 
-          id="oldPassword" 
-          v-model="passwordForm.oldPassword" 
-          placeholder="请输入原密码"
-        >
-      </div>
-      <div class="input-group">
-        <label for="newPassword">新密码</label>
-        <input 
-          type="password" 
-          id="newPassword" 
-          v-model="passwordForm.newPassword" 
-          placeholder="请输入新密码"
-        >
-      </div>
-      <div class="input-group">
-        <label for="confirmPassword">确认密码</label>
-        <input 
-          type="password" 
-          id="confirmPassword" 
-          v-model="passwordForm.confirmPassword" 
-          placeholder="请再次输入新密码"
-        >
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="cancel-btn" @click="showPasswordDialog = false">取消修改</button>
-      <button class="confirm-btn" @click="confirmPasswordChange">确认修改</button>
-    </div>
-  </div>
-</div>
-
     <!-- 第二个和第三个矩形并排 -->
-    <div class="info-cards-row">
+    <div v-if="!loading" class="info-cards-row">
       <!-- 第二个矩形：企业介绍和地址 -->
       <div class="info-card content-left">
         <div class="info-section">
           <h3 class="section-title">企业介绍</h3>
           <div class="section-content">
-            <p>字节跳动是一家成立于2012年3月的中国互联网科技公司，总部位于北京。公司致力于开发智能化的内容分发平台，通过人工智能技术为用户提供个性化的信息流服务。</p>
-            <p>字节跳动的产品和服务已覆盖全球150个国家和地区，75个语种，曾在40多个国家和地区排在应用商店总榜前列。旗下产品包括今日头条、抖音、TikTok、西瓜视频、飞书等知名应用。</p>
+            <p>{{ companyInfo.description || '暂无企业介绍' }}</p>
           </div>
         </div>
         
@@ -104,7 +62,7 @@
           <div class="address-container">
             <div class="address-inner">
               <div class="address-text">
-                <p>河北省秦皇岛市经济技术开发区龙海道185号</p>
+                <p>{{ companyInfo.company_address || '暂无地址信息' }}</p>
               </div>
               <button class="view-map-btn" @click="openBaiduMap">
                <img src="@/assets/map_logo.png" alt="地图" class="map-logo">
@@ -122,23 +80,23 @@
           <div class="basic-info-list">
             <div class="info-item">
               <span class="info-label">企业性质：</span>
-              <span class="info-value">民营企业</span>
+              <span class="info-value">{{ companyInfo.nature || '暂无信息' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">企业行业：</span>
-              <span class="info-value">互联网科技</span>
+              <span class="info-value">{{ companyInfo.industry || '暂无信息' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">企业规模：</span>
-              <span class="info-value">100000人以上</span>
+              <span class="info-value">{{ companyInfo.company_scale || '暂无信息' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">企业联系人：</span>
-              <span class="info-value">张经理</span>
+              <span class="info-value">{{ companyInfo.contact_person_name || '暂无信息' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">联系电话：</span>
-              <span class="info-value">13800138000</span>
+              <span class="info-value">{{ companyInfo.contact_person_phone || '暂无信息' }}</span>
             </div>
           </div>
         </div>
@@ -146,10 +104,62 @@
         <div class="info-section">
           <h3 class="section-title">相关链接</h3>
           <div class="link-list">
-            <a href="https://www.bytedance.com/zh/" target="_blank" class="external-link">
-              企业官网
-            </a>
+            <div v-if="companyInfo.external_links && companyInfo.external_links.length > 0">
+              <a 
+                v-for="link in companyInfo.external_links" 
+                :key="link.id"
+                :href="link.link_url" 
+                target="_blank" 
+                class="external-link"
+              >
+                {{ link.link_name }}
+              </a>
+            </div>
+            <div v-else class="no-links">暂无相关链接</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 密码修改弹框 -->
+    <div v-if="showPasswordDialog" class="modal-overlay" @click="showPasswordDialog = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2 class="modal-title">修改密码</h2>
+          <button class="modal-close" @click="showPasswordDialog = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <label for="oldPassword">原密码</label>
+            <input 
+              type="password" 
+              id="oldPassword" 
+              v-model="passwordForm.oldPassword" 
+              placeholder="请输入原密码"
+            >
+          </div>
+          <div class="input-group">
+            <label for="newPassword">新密码</label>
+            <input 
+              type="password" 
+              id="newPassword" 
+              v-model="passwordForm.newPassword" 
+              placeholder="请输入新密码"
+            >
+          </div>
+          <div class="input-group">
+            <label for="confirmPassword">确认密码</label>
+            <input 
+              type="password" 
+              id="confirmPassword" 
+              v-model="passwordForm.confirmPassword" 
+              placeholder="请再次输入新密码"
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="showPasswordDialog = false">取消修改</button>
+          <button class="confirm-btn" @click="confirmPasswordChange">确认修改</button>
         </div>
       </div>
     </div>
@@ -161,6 +171,23 @@ export default {
   name: 'EnterpriseInfo',
   data() {
     return {
+      loading: true,
+      companyInfo: {
+        company_name: '',
+        description: '',
+        logo_url: '',
+        nature: '',
+        industry: '',
+        company_scale: '',
+        contact_person_name: '',
+        contact_person_phone: '',
+        company_address: '',
+        open_jobs_count: 0,
+        resume_process_rate: 0,
+        last_login_at: '',
+        external_links: []
+      },
+      companyLogo: require('@/assets/BDance_logo.png'), // 默认图片
       showPasswordDialog: false,
       passwordForm: {
         oldPassword: '',
@@ -170,33 +197,133 @@ export default {
     }
   },
   methods: {
+    async fetchCompanyProfile() {
+      try {
+        this.loading = true
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        const response = await fetch('http://localhost:8080/hr/company/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.code === 200 && data.data) {
+          this.companyInfo = data.data
+          console.log('企业信息:', this.companyInfo)
+          
+          // 获取企业logo
+          if (this.companyInfo.logo_url) {
+            await this.fetchCompanyLogo(this.companyInfo.logo_url)
+          }
+        } else {
+          console.error('接口返回错误:', data.message)
+        }
+      } catch (error) {
+        console.error('获取企业信息失败:', error)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchCompanyLogo(logoUrl) {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        
+        let fullLogoUrl = logoUrl
+        if (logoUrl.startsWith('/')) {
+          fullLogoUrl = `http://localhost:8080${logoUrl}`
+        }
+        
+        console.log('请求图片URL:', fullLogoUrl)
+        
+        const response = await fetch(fullLogoUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
+        
+        console.log('图片响应状态:', response.status)
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          this.companyLogo = URL.createObjectURL(blob)
+          console.log('图片加载成功')
+        } else {
+          console.error('获取企业logo失败，状态码:', response.status)
+          // 使用默认图片，不修改 companyLogo
+        }
+      } catch (error) {
+        console.error('获取企业logo失败:', error)
+        // 使用默认图片，不修改 companyLogo
+      }
+    },
+
+    formatLastLogin(lastLoginAt) {
+      if (!lastLoginAt) return '暂无记录'
+      
+      const loginDate = new Date(lastLoginAt)
+      const now = new Date()
+      const diffTime = Math.abs(now - loginDate)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 1) return '1天前'
+      if (diffDays <= 7) return `${diffDays}天前`
+      if (diffDays <= 30) return `${Math.floor(diffDays / 7)}周前`
+      return `${Math.floor(diffDays / 30)}月前`
+    },
+
     goToEditProfile() {
-      // 暂时跳转到主页，后续可以修改为编辑页面
-      this.$router.push('/enterprise-edit');
+      this.$router.push('/enterprise-edit')
     },
+
     openBaiduMap() {
-      // 使用百度地图API打开地址
-      const address = encodeURIComponent('河北省秦皇岛市经济技术开发区龙海道185号');
-      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=yourCompanyName`;
-      window.open(url, '_blank');
+      const address = encodeURIComponent(this.companyInfo.company_address || '河北省秦皇岛市经济技术开发区龙海道185号')
+      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=yourCompanyName`
+      window.open(url, '_blank')
     },
+
     confirmPasswordChange() {
-      // 这里添加密码修改的逻辑，后续调用接口
-      console.log('修改密码:', this.passwordForm);
-      // 调用API后关闭弹框
-      this.showPasswordDialog = false;
-      // 清空表单
+      console.log('修改密码:', this.passwordForm)
+      this.showPasswordDialog = false
       this.passwordForm = {
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
-      };
+      }
     }
+  },
+  mounted() {
+    this.fetchCompanyProfile()
   }
 }
 </script>
 
 <style scoped>
+/* 加载状态样式 */
+.loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 18px;
+  color: #666;
+}
+
+/* 无链接样式 */
+.no-links {
+  color: #666;
+  font-style: italic;
+}
+
+/* 其他样式保持不变 */
 .enterprise-info-page {
   padding: 30px;
   background: #f5f5f5;
@@ -336,11 +463,11 @@ export default {
 .info-cards-row {
   display: grid;
   grid-template-columns: 3fr 1fr;
-  gap: 20px; /* 控制两个矩形之间的缝隙 */
+  gap: 20px;
 }
 
 .content-left, .content-right {
-  margin: 0; /* 移除之前的margin */
+  margin: 0;
 }
 
 .info-section {
@@ -375,7 +502,7 @@ export default {
   margin-bottom: 0;
 }
 
-/* 地址容器样式 - 新增部分 */
+/* 地址容器样式 */
 .address-container {
   background: #f9f9f9;
   border-radius: 8px;
@@ -469,6 +596,7 @@ export default {
   padding: 8px 0;
   transition: color 0.3s ease;
   font-size:22px;
+  display: block;
 }
 
 .external-link:hover {

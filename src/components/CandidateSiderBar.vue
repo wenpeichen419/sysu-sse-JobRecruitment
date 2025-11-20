@@ -6,7 +6,7 @@
     </div>
     <div class="sidebar-content">
       <div 
-        v-for="candidate in reservedCandidates" 
+        v-for="candidate in candidates" 
         :key="candidate.id"
         class="sidebar-candidate"
         @click="viewCandidateResume(candidate)"
@@ -20,7 +20,7 @@
         </div>
         <span class="sidebar-name">{{ candidate.name }}</span>
       </div>
-      <div v-if="reservedCandidates.length === 0" class="empty-state">
+      <div v-if="candidates.length === 0" class="empty-state">
         暂无候选人员
       </div>
     </div>
@@ -36,13 +36,8 @@ export default {
       default: () => []
     },
     activeCandidateId: {
-      type: String,
+      type: [String, Number],
       default: ''
-    }
-  },
-  computed: {
-    reservedCandidates() {
-      return this.candidates.filter(candidate => candidate.status === '已候选')
     }
   },
   methods: {
