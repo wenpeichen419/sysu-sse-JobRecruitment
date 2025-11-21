@@ -5,7 +5,7 @@
       <div class="breadcrumb">
         <router-link to="/student-home" class="breadcrumb-link">主页</router-link>
         <span class="breadcrumb-separator">></span>
-        <span class="breadcrumb-current">简历管理</span>
+        <span class="breadcrumb-current">简历编辑器</span>
 
         <div class="edit-actions">
           <button class="btn ghost" @click="clearAll">清空</button>
@@ -35,162 +35,204 @@
           {{ s.name }}
         </div>
       </aside>
+<!-- 中间内容 -->
+<main class="center-content">
+  <!-- 个人信息 -->
+  <section id="profile" ref="profile" class="card">
+    <h3 class="section-title">个人信息</h3>
+    <div class="grid-3">
+      <div class="field">
+        <label>姓名</label>
+        <input v-model="form.profile.name"
+               :disabled="isLocked('profile.name') || !editing" />
+      </div>
 
-      <!-- 中间内容 -->
-      <main class="center-content">
-        <!-- 个人信息 -->
-        <section id="profile" ref="profile" class="card">
-          <h3 class="section-title">个人信息</h3>
-          <div class="grid-3">
-            <div class="field"><label>姓名</label><input v-model="form.profile.name" :disabled="!editing" /></div>
-            <div class="field"><label>出生年月</label><input v-model="form.profile.birthday" :disabled="!editing" placeholder="YYYY-MM" /></div>
-            <div class="field"><label>邮箱</label><input v-model="form.profile.email" :disabled="!editing" /></div>
-            <div class="field">
-              <label>性别</label>
-              <select v-model="form.profile.gender" :disabled="!editing">
-                <option value="">请选择</option><option>男</option><option>女</option><option>其他</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>求职状态</label>
-              <select v-model="form.profile.status" :disabled="!editing">
-                <option>实习</option><option>校招</option><option>社招</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>电话</label>
-              <input v-model="form.profile.phone" :disabled="!editing" @blur="validatePhone" />
-              <span v-if="phoneError" class="error-text">{{ phoneError }}</span>
-            </div>
-          </div>
-        </section>
+      <div class="field">
+        <label>出生年月</label>
+        <input v-model="form.profile.birthday"
+               :disabled="isLocked('profile.birthday') || !editing"
+               placeholder="YYYY-MM" />
+      </div>
 
-        <!-- 技能 -->
-        <section id="skills" ref="skills" class="card">
-          <h3 class="section-title">技能掌握</h3>
-          <textarea v-model="form.skills" :disabled="!editing" class="textarea" placeholder="编辑个人优势、熟练技术栈等..."></textarea>
-        </section>
+      <div class="field">
+        <label>邮箱</label>
+        <input v-model="form.profile.email"
+               :disabled="isLocked('profile.email') || !editing" />
+      </div>
 
-        <!-- 工作经历 -->
-        <section id="work" ref="work" class="card">
-          <div class="card-head">
-            <h3 class="section-title">工作经历</h3>
-            <button v-if="editing" class="link-add" @click="addWork">+ 添加</button>
-          </div>
-          <div v-for="(w,i) in form.work" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>公司名称</label><input v-model="w.company" :disabled="!editing"/></div>
-              <div class="field"><label>职位名称</label><input v-model="w.title" :disabled="!editing"/></div>
-              <div class="field">
-                <label>在职时间</label>
-                <div class="inline">
-                  <input v-model="w.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="w.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8">
-              <label>工作内容</label>
-              <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.work.splice(i,1)">删除该经历</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>性别</label>
+        <select v-model="form.profile.gender"
+                :disabled="isLocked('profile.gender') || !editing">
+          <option value="">请选择</option>
+          <option>男</option><option>女</option><option>其他</option>
+        </select>
+      </div>
 
-        <!-- 项目经历 -->
-        <section id="projects" ref="projects" class="card">
-          <div class="card-head">
-            <h3 class="section-title">项目经历</h3>
-            <button v-if="editing" class="link-add" @click="addProject">+ 添加</button>
-          </div>
-          <div v-for="(p,i) in form.projects" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>项目名称</label><input v-model="p.name" :disabled="!editing"/></div>
-              <div class="field"><label>项目角色</label><input v-model="p.role" :disabled="!editing"/></div>
-              <div class="field">
-                <label>项目时间</label>
-                <div class="inline">
-                  <input v-model="p.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="p.end" :disabled="!editing" placeholder="YYYY.MM"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8"><label>项目描述</label>
-              <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.projects.splice(i,1)">删除该项目</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>求职状态</label>
+        <select v-model="form.profile.status"
+                :disabled="isLocked('profile.status') || !editing">
+          <option>实习</option><option>校招</option><option>社招</option>
+        </select>
+      </div>
 
-        <!-- 教育经历 -->
-        <section id="edu" ref="edu" class="card">
-          <div class="card-head">
-            <h3 class="section-title">教育经历</h3>
-            <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button>
-          </div>
-          <div v-for="(e,i) in form.education" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>学校名称</label><input v-model="e.school" :disabled="!editing"/></div>
-              <div class="field"><label>专业</label><input v-model="e.major" :disabled="!editing"/></div>
-              <div class="field"><label>专业排名</label><input v-model="e.rank" :disabled="!editing" placeholder="可选"/></div>
-            </div>
-            <div class="field mt8">
-              <label>时间段</label>
-              <div class="inline">
-                <input v-model="e.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                <span class="to">至</span>
-                <input v-model="e.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-              </div>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.education.splice(i,1)">删除该教育</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>电话</label>
+        <input v-model="form.profile.phone"
+               :disabled="isLocked('profile.phone') || !editing"
+               @blur="validatePhone" />
+        <span v-if="phoneError" class="error-text">{{ phoneError }}</span>
+      </div>
+    </div>
+  </section>
 
-        <!-- 社团/组织 -->
-        <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
-          <div class="card-head">
-            <h3 class="section-title">社团 / 组织经历</h3>
-            <button v-if="editing" class="link-add" @click="addOrg">+ 添加</button>
-          </div>
-          <div v-for="(o,i) in form.orgs" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>社团/组织名称</label><input v-model="o.name" :disabled="!editing"/></div>
-              <div class="field"><label>担任角色</label><input v-model="o.role" :disabled="!editing"/></div>
-              <div class="field">
-                <label>时间段</label>
-                <div class="inline">
-                  <input v-model="o.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="o.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8"><label>经历描述</label>
-              <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.orgs.splice(i,1)">删除该经历</button>
-          </div>
-        </section>
+  <!-- 技能 -->
+  <section id="skills" ref="skills" class="card">
+    <h3 class="section-title">技能掌握</h3>
+    <textarea v-model="form.skills" :disabled="!editing"
+              class="textarea" placeholder="编辑个人优势、熟练技术栈等..."></textarea>
+  </section>
 
-        <!-- 竞赛 -->
-        <section id="competitions" ref="competitions" class="card" v-if="form.competitions?.length || editing">
-          <div class="card-head">
-            <h3 class="section-title">竞赛经历</h3>
-            <button v-if="editing" class="link-add" @click="addCompetition">+ 添加</button>
+  <!-- 工作经历 -->
+  <section id="work" ref="work" class="card">
+    <div class="card-head">
+      <h3 class="section-title">工作经历</h3>
+      <button v-if="editing" class="link-add" @click="addWork">+ 添加</button>
+    </div>
+    <div v-for="(w,i) in form.work" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>公司名称</label><input v-model="w.company" :disabled="!editing"/></div>
+        <div class="field"><label>职位名称</label><input v-model="w.title" :disabled="!editing"/></div>
+        <div class="field">
+          <label>在职时间</label>
+          <div class="inline">
+            <input v-model="w.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="w.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
           </div>
-          <div v-for="(c,i) in form.competitions" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>竞赛名称</label><input v-model="c.name" :disabled="!editing"/></div>
-              <div class="field"><label>担任角色</label><input v-model="c.role" :disabled="!editing"/></div>
-              <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
-            </div>
-            <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
-            <button v-if="editing" class="link-del" @click="form.competitions.splice(i,1)">删除该竞赛</button>
+        </div>
+      </div>
+      <div class="field mt8">
+        <label>工作内容</label>
+        <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.work.splice(i,1)">删除该经历</button>
+    </div>
+  </section>
+
+  <!-- 项目经历 -->
+  <section id="projects" ref="projects" class="card">
+    <div class="card-head">
+      <h3 class="section-title">项目经历</h3>
+      <button v-if="editing" class="link-add" @click="addProject">+ 添加</button>
+    </div>
+    <div v-for="(p,i) in form.projects" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>项目名称</label><input v-model="p.name" :disabled="!editing"/></div>
+        <div class="field"><label>项目角色</label><input v-model="p.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>项目时间</label>
+          <div class="inline">
+            <input v-model="p.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="p.end" :disabled="!editing" placeholder="YYYY.MM"/>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
+      <div class="field mt8"><label>项目描述</label>
+        <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.projects.splice(i,1)">删除该项目</button>
+    </div>
+  </section>
+
+  <!-- 教育经历（仅第 1 条锁定） -->
+  <section id="edu" ref="edu" class="card">
+    <div class="card-head">
+      <h3 class="section-title">教育经历</h3>
+      <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button>
+    </div>
+    <div v-for="(e,i) in form.education" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field">
+          <label>学校名称</label>
+          <input v-model="e.school"
+                 :disabled="(i===0 && isLocked('edu.school')) || !editing" />
+        </div>
+        <div class="field">
+          <label>专业</label>
+          <input v-model="e.major"
+                 :disabled="(i===0 && isLocked('edu.major')) || !editing" />
+        </div>
+        <div class="field">
+          <label>专业排名</label>
+          <input v-model="e.rank"
+                 :disabled="(i===0 && isLocked('edu.rank')) || !editing"
+                 placeholder="可选" />
+        </div>
+      </div>
+      <div class="field mt8">
+        <label>时间段</label>
+        <div class="inline">
+          <input v-model="e.start"
+                 :disabled="(i===0 && isLocked('edu.start')) || !editing"
+                 placeholder="YYYY.MM"/>
+          <span class="to">至</span>
+          <input v-model="e.end"
+                 :disabled="(i===0 && isLocked('edu.end')) || !editing"
+                 placeholder="YYYY.MM/今"/>
+        </div>
+      </div>
+      <!-- 第 1 条（同步来的）不允许删除 -->
+      <button v-if="editing && i>0" class="link-del" @click="form.education.splice(i,1)">删除该教育</button>
+    </div>
+  </section>
+
+  <!-- 社团/组织 -->
+  <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
+    <div class="card-head">
+      <h3 class="section-title">社团 / 组织经历</h3>
+      <button v-if="editing" class="link-add" @click="addOrg">+ 添加</button>
+    </div>
+    <div v-for="(o,i) in form.orgs" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>社团/组织名称</label><input v-model="o.name" :disabled="!editing"/></div>
+        <div class="field"><label>担任角色</label><input v-model="o.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>时间段</label>
+          <div class="inline">
+            <input v-model="o.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="o.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
+          </div>
+        </div>
+      </div>
+      <div class="field mt8"><label>经历描述</label>
+        <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.orgs.splice(i,1)">删除该经历</button>
+    </div>
+  </section>
+
+  <!-- 竞赛 -->
+  <section id="competitions" ref="competitions" class="card" v-if="form.competitions?.length || editing">
+    <div class="card-head">
+      <h3 class="section-title">竞赛经历</h3>
+      <button v-if="editing" class="link-add" @click="addCompetition">+ 添加</button>
+    </div>
+    <div v-for="(c,i) in form.competitions" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>竞赛名称</label><input v-model="c.name" :disabled="!editing"/></div>
+        <div class="field"><label>担任角色</label><input v-model="c.role" :disabled="!editing"/></div>
+        <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
+      </div>
+      <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
+      <button v-if="editing" class="link-del" @click="form.competitions.splice(i,1)">删除该竞赛</button>
+    </div>
+  </section>
+</main>
+
 
       <!-- 右侧：设置 + 列表 -->
       <aside class="right-sidebar fixed-sidebar">
@@ -208,7 +250,7 @@
 
         <div class="card small-card">
           <div class="list-head">
-            <h3 class="section-title">简历列表</h3>
+            <h3 class="section-title">我的简历</h3>
             <button class="icon-btn" @click="triggerUpload" title="上传本地 PDF 到列表">＋</button>
             <input ref="fileInput" type="file" accept="application/pdf" class="hidden-input" @change="importFromLocal" />
           </div>
@@ -263,6 +305,7 @@ import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
 
 const STORAGE_KEY = 'resume_data_v1'
+const PROFILE_KEY = 'student_profile_v1';
 
 export default {
   name: 'ResumeManage',
@@ -302,6 +345,8 @@ export default {
     }
     // 固定为学校模版
     this.form.template = 'school'
+    // ★ 从 StudentProfile 同步基础信息
+    this.loadStudentProfile()
     this.fileList = await listMeta()
     this.setupScrollSpy()
   },
@@ -315,6 +360,65 @@ export default {
       }
     },
 
+    // 需要被锁定的字段集合
+isLocked(path) {
+  // 个人信息
+  const locked = new Set([
+    'profile.name',
+    'profile.birthday',
+    'profile.gender',
+    'profile.status',
+    'profile.email',
+    'profile.phone',
+    'profile.degree',
+    // 教育经历（这里锁定所有条目；若只锁定第一条，可在模板里 i===0 再判断）
+    'edu.school',
+    'edu.major',
+    'edu.rank',
+    'edu.start',
+    'edu.end'
+  ]);
+  return locked.has(path);
+},
+loadStudentProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+
+    // 写入个人信息
+    this.form.profile.name     = p.full_name || '';
+    this.form.profile.birthday = p.date_of_birth || '';
+    this.form.profile.email    = p.email || '';
+    this.form.profile.gender   = p.gender || '';
+    this.form.profile.status   = p.job_seeking_status || this.form.profile.status;
+    this.form.profile.phone    = p.phone_number || '';
+    this.form.profile.degree   = p.education?.degree || this.form.profile.degree;
+
+    // 写入教育经历（如果没有就补一条）
+    const edu = p.education || {};
+    if (!Array.isArray(this.form.education) || this.form.education.length === 0) {
+      this.form.education = [{
+        school: edu.school_name || '',
+        major:  edu.major || '',
+        rank:   edu.major_rank || '',
+        start:  edu.start_date || '',
+        end:    edu.end_date || ''
+      }];
+    } else {
+      // 覆盖第 1 条
+      this.form.education[0].school = edu.school_name || '';
+      this.form.education[0].major  = edu.major || '';
+      this.form.education[0].rank   = edu.major_rank || '';
+      this.form.education[0].start  = edu.start_date || '';
+      this.form.education[0].end    = edu.end_date || '';
+    }
+  } catch (e) {
+    console.warn('读取学生信息失败：', e);
+  }
+},
+
+    
     /* ========== 右侧列表：上传/下载/删除 ========== */
     triggerUpload() { this.$refs.fileInput?.click() },
     async importFromLocal(e) {
@@ -329,7 +433,7 @@ export default {
         await savePDF(id, blob)
         await saveMeta({ id, fileName: file.name, size: blob.size, createdAt: Date.now(), template: 'upload' })
         this.fileList = await listMeta()
-        ElMessage.success('已加入简历列表')
+        ElMessage.success('已加入我的简历')
       } catch (err) { console.error(err); ElMessage.error('上传失败，请重试') }
     },
     async downloadFromList(item) {
@@ -544,7 +648,7 @@ export default {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
         URL.revokeObjectURL(url)
-        ElMessage.success('PDF 已导出并写入右侧“简历列表”。')
+        ElMessage.success('PDF 已导出并写入右侧“我的简历”。')
       } catch (e) { console.error(e); ElMessage.error('导出失败，请重试') }
       finally { this.exporting = false }
     }
@@ -643,7 +747,7 @@ export default {
 .preview-toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:10px; }
 .preview-paper{ margin:0 auto; background:#fff; box-shadow:0 2px 18px rgba(0,0,0,.08); }
 
-/* 右侧：简历列表（简约风） */
+/* 右侧：我的简历（简约风） */
 .list-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .icon-btn{
   width:32px; height:32px; line-height:32px; text-align:center;
@@ -683,4 +787,15 @@ export default {
   .left-sidebar.fixed-sidebar{ position:static; width:100%; height:auto; margin-bottom:20px; }
   .center-content{ margin-left:0; }
 }
+
+/* 只读视觉反馈（被禁用时的输入框更明显） */
+.field input:disabled,
+.field select:disabled,
+.textarea:disabled{
+  background: #f7f7f7;
+  color: #777;
+  cursor: not-allowed;
+}
+
+
 </style>

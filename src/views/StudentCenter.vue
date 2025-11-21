@@ -102,7 +102,7 @@
                 </div>
                 <div class="text-item">
                   <span class="item-label">期望薪资:</span>
-                  <span class="item-value">{{ studentInfo.expectedSalary }}</span>
+                  <span class="item-value">{{ formatSalary(studentInfo.expectedSalary) }}</span>
                 </div>
               </div>
             </div>
@@ -212,6 +212,7 @@
 
 <script>
 import mockStudent from '@/data/mockStudentData'
+import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 
 export default {
   name: 'StudentCenter',
@@ -241,6 +242,11 @@ export default {
       const birthYear = parseInt(birthday.split('-')[0])
       const currentYear = new Date().getFullYear()
       return currentYear - birthYear
+    },
+    
+    // 格式化薪资显示
+    formatSalary(salary) {
+      return formatSalaryRangeToK(salary);
     },
     
     // 跳转到标签编辑（定位到能力标签部分）
