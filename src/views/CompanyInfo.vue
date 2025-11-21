@@ -15,7 +15,11 @@
         <!-- 企业头部信息 -->
         <div class="company-header">
           <div class="company-logo">
-            <img :src="companyInfo.logo" :alt="companyInfo.name" />
+            <img 
+              :src="companyInfo.logo" 
+              :alt="companyInfo.name"
+              @error="handleImageError"
+            />
           </div>
           <div class="company-basic">
             <h1 class="company-name">{{ companyInfo.name }}</h1>
@@ -54,9 +58,9 @@
               <div class="address-text">
                 <p>{{ companyInfo.address }}</p>
               </div>
-              <button class="view-map-btn" @click="openBaiduMap">
+              <button class="view-map-btn" @click="openInAMap">
                 <img src="@/assets/map_logo.png" alt="地图" class="map-logo">
-                <span class="btn-text">点击查看地图</span>
+                <span class="btn-text">在高德地图中查看</span>
               </button>
             </div>
           </div>
@@ -119,35 +123,33 @@
 </template>
 
 <script>
+import { getCompanyDetail } from '@/api/company'
+
 export default {
   name: 'CompanyInfo',
   data() {
     return {
       companyId: null,
+      loading: false,
       
-      // 企业信息 (模拟数据)
+      // 企业信息
       companyInfo: {
-        name: '浙商银行股份有限公司',
+        name: '',
         logo: require('@/assets/BDance_logo.png'),
-        openPositions: 2,
-        progressRate: 70,
-        daysAgo: 2,
-        nature: '民营企业',
-        industry: '金融业',
-        scale: '10000人以上',
-        contact: '郑老师',
-        phone: '0571-88265996',
+        openPositions: 0,
+        progressRate: 0,
+        daysAgo: 0,
+        nature: '',
+        industry: '',
+        scale: '',
+        contact: '',
+        phone: '',
         website: '#',
-        address: '杭州市庆春路288号',
-        introduction: [
-          '浙商银行股份有限公司（简称"浙商银行"）是12家全国性股份制商业银行之一，于2004年8月18日正式开业，总部设在浙江杭州。2016年3月30日，在香港联交所上市，股票代码"2016.HK"；2019年11月26日，在上海证券交易所上市，股票代码"601916"，系全国第13家"A+H"上市银行。开业以来，浙商银行立足浙江，面向全国，稳健发展，已跻身全国城商业银行前列。效益良、风险完善的优质商业银行。'
-        ],
-        positions: [
-          { id: 1, name: '算法工程师', publishDate: '2025-10-09' },
-          { id: 2, name: '管培生', publishDate: '2025-10-09' },
-          { id: 3, name: 'SLAM算法工程师', publishDate: '2025-10-09' },
-          { id: 4, name: '运营培训生', publishDate: '2025-10-09' }
-        ]
+        address: '',
+        longitude: null,  // 经度（如果后端提供）
+        latitude: null,   // 纬度（如果后端提供）
+        introduction: [],
+        positions: []
       }
     }
   },
@@ -155,10 +157,68 @@ export default {
     // 获取路由参数中的企业ID
     this.companyId = this.$route.params.id
     
-    // 这里应该根据企业ID加载对应的企业信息
-    // this.loadCompanyInfo(this.companyId)
+    // 加载企业信息
+    this.loadCompanyInfo()
   },
   methods: {
+    // 加载企业信息
+    async loadCompanyInfo() {
+      try {
+        this.loading = true
+        const response = await getCompanyDetail(this.companyId)
+        
+        // 映射接口数据到页面
+        this.companyInfo = {
+          name: response.company_name || '',
+          logo: response.logo_url || require('@/assets/BDance_logo.png'),
+          openPositions: response.statistics?.active_positions || 0,
+          progressRate: parseInt(response.statistics?.resume_process_rate) || 0,
+          daysAgo: this.calculateDaysAgo(response.statistics?.recent_activity),
+          nature: response.company_nature || '',
+          industry: response.company_industry || '',
+          scale: response.company_scale || '',
+          contact: response.contact_person_name || '',
+          phone: response.contact_person_phone || '',
+          website: response.company_website_url || '#',
+          address: response.company_address || '',
+          longitude: response.longitude || null,  // 经度（如果后端提供）
+          latitude: response.latitude || null,   // 纬度（如果后端提供）
+          introduction: this.parseIntroduction(response.description),
+          positions: (response.other_jobs || []).map(job => ({
+            id: job.job_id,
+            name: job.job_title,
+            publishDate: job.posted_at || ''
+          }))
+        }
+        
+        console.log('【加载企业详情成功】', this.companyInfo)
+      } catch (error) {
+        console.error('【加载企业详情失败】', error)
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    // 解析企业介绍（如果是字符串则转为数组）
+    parseIntroduction(text) {
+      if (Array.isArray(text)) {
+        return text
+      }
+      if (typeof text === 'string') {
+        // 按段落分割
+        return text.split(/\n\n|\r\n\r\n/).filter(para => para.trim())
+      }
+      return []
+    },
+    
+    // 计算最近活动的天数
+    calculateDaysAgo(activityStr) {
+      if (!activityStr) return 0
+      // 如果接口返回的是 "2天前" 这样的字符串，提取数字
+      const match = activityStr.match(/(\d+)/)
+      return match ? parseInt(match[1]) : 0
+    },
+    
     // 返回求职中心
     goToJobCenter() {
       this.$router.push({ name: 'JobCenter' })
@@ -174,12 +234,32 @@ export default {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
     },
     
-    // 打开百度地图
-    openBaiduMap() {
-      // 使用百度地图API打开地址
-      const address = encodeURIComponent(this.companyInfo.address);
-      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=webapp.baidu.openAPIdemo`;
-      window.open(url, '_blank');
+    // 在高德地图中打开
+    openInAMap() {
+      if (!this.companyInfo.address) {
+        alert('地址信息不完整')
+        return
+      }
+      
+      // 如果有经纬度，使用精确定位（优先）
+      if (this.companyInfo.longitude && this.companyInfo.latitude) {
+        // 使用经纬度打开地图（最精确）
+        const name = encodeURIComponent(this.companyInfo.name || '企业地址')
+        const url = `https://uri.amap.com/marker?position=${this.companyInfo.longitude},${this.companyInfo.latitude}&name=${name}&coordinate=gaode&callnative=1`
+        console.log('【高德地图跳转】使用经纬度:', url)
+        window.open(url, '_blank')
+      } else {
+        // 使用地址搜索（备选方案）
+        const query = encodeURIComponent(this.companyInfo.address)
+        const url = `https://www.amap.com/search?query=${query}`
+        console.log('【高德地图跳转】使用地址搜索:', url)
+        window.open(url, '_blank')
+      }
+    },
+    
+    // ✅ 图片加载失败时显示默认图片
+    handleImageError(event) {
+      event.target.src = require('@/assets/BDance_logo.png')
     }
   }
 }

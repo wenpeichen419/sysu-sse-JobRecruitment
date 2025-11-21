@@ -13,6 +13,7 @@
           <input 
             type="text" 
             v-model="searchJobTitle" 
+            @input="onSearchInputChange"
             placeholder="输入职位名称"
             class="search-input"
           />
@@ -26,6 +27,7 @@
           <input 
             type="text" 
             v-model="searchCompanyName" 
+            @input="onSearchInputChange"
             placeholder="输入公司名称"
             class="search-input"
           />
@@ -45,7 +47,7 @@
 
       <div class="search-group">
         <label>选择城市</label>
-        <select v-model="selectedCity" class="search-select" :disabled="!selectedProvince">
+        <select v-model="selectedCity" @change="onCityChange" class="search-select" :disabled="!selectedProvince">
           <option value="">不限</option>
           <option v-for="city in availableCities" :key="city" :value="city">
             {{ city }}
@@ -55,7 +57,7 @@
 
       <div class="search-group">
         <label>职能类别</label>
-        <select v-model="selectedCategory" class="search-select">
+        <select v-model="selectedCategory" @change="onFilterChange" class="search-select">
           <option value="">不限</option>
           <option value="算法">算法</option>
           <option value="产品">产品</option>
@@ -69,6 +71,7 @@
         <div class="salary-range-inputs">
           <input 
             v-model.number="minSalary" 
+            @input="onSalaryChange"
             type="number" 
             class="salary-input" 
             placeholder="最低薪资"
@@ -76,6 +79,7 @@
           <span class="separator">-</span>
           <input 
             v-model.number="maxSalary" 
+            @input="onSalaryChange"
             type="number" 
             class="salary-input" 
             placeholder="最高薪资"
@@ -85,7 +89,7 @@
 
       <div class="search-group">
         <label>工作性质</label>
-        <select v-model="selectedType" class="search-select">
+        <select v-model="selectedType" @change="onFilterChange" class="search-select">
           <option value="">不限</option>
           <option value="校招">校招</option>
           <option value="实习">实习</option>
@@ -102,26 +106,37 @@
 
     <!-- 岗位列表 -->
     <div class="job-list">
+      <!-- ✅ 加载中状态 -->
+      <div v-if="loading" class="loading-state">
+        <p>加载中...</p>
+      </div>
+
+      <!-- ✅ 岗位列表(注意字段名改为后端返回的字段) -->
       <div 
         v-for="job in displayedJobs" 
-        :key="job.id"
+        :key="job.job_id"
         class="job-item"
-        @click="goToJobDetail(job.id)"
+        @click="goToJobDetail(job.job_id)"
+        v-show="!loading"
       >
         <!-- 公司Logo -->
         <div class="job-logo">
-          <img :src="job.logo" :alt="job.company" />
+          <img 
+            :src="job.logo_url || require('@/assets/BDance_logo.png')" 
+            :alt="job.company_name"
+            @error="handleImageError"
+          />
         </div>
 
         <!-- 左侧岗位信息 -->
         <div class="job-left-info">
           <div class="job-title">{{ job.title }}</div>
           <div class="job-details">
-            <span class="salary">{{ formatSalaryRangeToK(job.salary) }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(job.salary_range) }}</span>
             <span class="divider">|</span>
-            <span class="location">{{ job.location }}</span>
+            <span class="location">{{ job.address }}</span>
             <span class="divider">|</span>
-            <span class="type-tag">{{ job.type }}</span>
+            <span class="type-tag">{{ job.work_nature }}</span>
           </div>
         </div>
 
@@ -130,22 +145,22 @@
 
         <!-- 右侧公司信息 -->
         <div class="job-right-info">
-          <div class="company-name">{{ job.company }}</div>
+          <div class="company-name">{{ job.company_name }}</div>
           <div class="company-details">
             <span class="department">{{ job.department }}</span>
             <span class="divider">|</span>
-            <span class="recruit-info">招聘人数 {{ job.recruitCount }}人</span>
+            <span class="recruit-info">招聘人数 {{ job.headcount }}人</span>
           </div>
         </div>
 
         <!-- 收藏按钮 -->
-        <div class="favorite-icon" @click.stop="toggleFavorite(job.id)">
-          <span class="star" :class="{ active: isFavorited(job.id) }">★</span>
+        <div class="favorite-icon" @click.stop="toggleFavorite(job.job_id)">
+          <span class="star" :class="{ active: isFavorited(job.job_id) }">★</span>
         </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-if="displayedJobs.length === 0" class="empty-state">
+      <div v-if="!loading && displayedJobs.length === 0" class="empty-state">
         <p>{{ showFavoriteOnly ? '暂无收藏的岗位' : '暂无岗位信息' }}</p>
       </div>
     </div>
@@ -188,7 +203,9 @@
 </template>
 
 <script>
-import { jobs } from '@/data/jobs.mock'
+// ✅ 导入API方法(替代mock数据)
+import { getJobList, favoriteJob, unfavoriteJob, getFavoriteJobs } from '@/api/job'
+import { getLocations } from '@/api/location'
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 
 export default {
@@ -205,26 +222,26 @@ export default {
       maxSalary: null,
       selectedType: '',
 
-      // 省市数据
-      provinceCity: {
-        '广东省': ['广州', '深圳', '珠海', '佛山', '东莞', '中山', '惠州'],
-        '北京市': ['东城区', '西城区', '朝阳区', '海淀区', '丰台区'],
-        '上海市': ['黄浦区', '徐汇区', '长宁区', '静安区', '浦东新区'],
-        '浙江省': ['杭州', '宁波', '温州', '绍兴', '嘉兴'],
-        '江苏省': ['南京', '苏州', '无锡', '常州', '南通'],
-        '四川省': ['成都', '绵阳', '德阳', '乐山', '宜宾']
-      },
-
+      // 省市数据(从API获取)
+      provinceCity: {},
+      
       // 收藏相关
       showFavoriteOnly: false,
       favoriteJobIds: [],
-
+      
       // 分页
       currentPage: 1,
-      pageSize: 5,
+      pageSize: 10, // ✅ 改为10,与后端API默认值一致
 
-      // 岗位数据（从 mock 引入）
-      allJobs: jobs
+      // ✅ 岗位数据(从API获取,初始为空数组)
+      allJobs: [],
+      
+      // ✅ 新增:总数据量和加载状态
+      totalJobs: 0,
+      loading: false,
+      
+      // ✅ 防抖定时器
+      searchDebounceTimer: null
     }
   },
   computed: {
@@ -236,56 +253,12 @@ export default {
       return this.provinceCity[this.selectedProvince] || []
     },
 
-    filteredJobs() {
-      let list = Array.isArray(this.allJobs) ? [...this.allJobs] : []
-
-      if (this.showFavoriteOnly) {
-        list = list.filter(job => this.isFavorited(job.id))
-      }
-      if (this.searchJobTitle.trim()) {
-        const kw = this.searchJobTitle.toLowerCase()
-        list = list.filter(job => job.title.toLowerCase().includes(kw))
-      }
-      if (this.searchCompanyName.trim()) {
-        const kw = this.searchCompanyName.toLowerCase()
-        list = list.filter(job => job.company.toLowerCase().includes(kw))
-      }
-      if (this.selectedProvince) list = list.filter(job => job.province === this.selectedProvince)
-      if (this.selectedCity)     list = list.filter(job => job.city === this.selectedCity)
-      if (this.selectedCategory) list = list.filter(job => job.category === this.selectedCategory)
-      if (this.selectedType)     list = list.filter(job => job.type.includes(this.selectedType))
-
-      // 薪资范围筛选
-      if ((this.minSalary !== null && this.minSalary !== '') || (this.maxSalary !== null && this.maxSalary !== '')) {
-        list = list.filter(job => {
-          // 解析薪资字符串，格式为 "7000-8000"
-          const salaryRange = job.salary.split('-');
-          if (salaryRange.length !== 2) return false;
-          
-          const minJobSalary = parseInt(salaryRange[0]);
-          const maxJobSalary = parseInt(salaryRange[1]);
-          
-          // 检查薪资范围是否匹配
-          // 用户输入的是k为单位，需要转换为原始数字进行比较
-          const minMatch = (this.minSalary === null || this.minSalary === '') || maxJobSalary >= this.minSalary * 1000;
-          const maxMatch = (this.maxSalary === null || this.maxSalary === '') || minJobSalary <= this.maxSalary * 1000;
-          
-          return minMatch && maxMatch;
-        });
-      }
-
-      return list
-    },
-
-    // ↓ 这里改为内联，移除临时变量，解决 no-unused-vars
+    // ✅ 简化:由于后端已经做了筛选,前端不需要再次过滤
+    // allJobs就是显示的岗位列表
     displayedJobs() {
-      const start = (this.currentPage - 1) * this.pageSize
-      return (Array.isArray(this.filteredJobs) ? this.filteredJobs : []).slice(start, start + this.pageSize)
+      return Array.isArray(this.allJobs) ? this.allJobs : []
     },
 
-    totalJobs() {
-      return this.filteredJobs.length
-    },
     totalPages() {
       return Math.ceil(this.totalJobs / this.pageSize)
     },
@@ -303,39 +276,214 @@ export default {
     }
   },
   mounted() {
-    const saved = localStorage.getItem('favoriteJobs')
-    if (saved) this.favoriteJobIds = JSON.parse(saved)
+    // ✅ 页面加载时获取省市数据和岗位数据
+    this.loadLocations()
+    this.loadJobs()
+  },
+  beforeUnmount() {
+    // ✅ 组件销毁前清理定时器
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer)
+    }
   },
   methods: {
     formatSalaryRangeToK,
+    
+    // ✅ 新增:加载省市数据
+    async loadLocations() {
+      try {
+        // 尝试从缓存读取
+        const cachedData = localStorage.getItem('provinceCity')
+        if (cachedData) {
+          this.provinceCity = JSON.parse(cachedData)
+          console.log('【省市数据】从缓存加载')
+          return
+        }
+
+        // 从API获取
+        const response = await getLocations()
+        console.log('【省市数据API响应】', response)
+        
+        // 转换数据格式: [{name, cities: [...]}] -> {省名: [市名...]}
+        const provinceCity = {}
+        if (response && Array.isArray(response)) {
+          response.forEach(province => {
+            const cities = province.cities.map(city => city.name)
+            provinceCity[province.name] = cities
+          })
+        }
+        
+        this.provinceCity = provinceCity
+        
+        // 缓存到localStorage
+        localStorage.setItem('provinceCity', JSON.stringify(provinceCity))
+        console.log('【省市数据】加载成功,已缓存', Object.keys(provinceCity).length, '个省份')
+        
+      } catch (error) {
+        console.error('【省市数据】加载失败', error)
+        // 如果加载失败，使用一个基础的备份数据
+        this.provinceCity = {
+          '广东省': ['广州市', '深圳市', '珠海市', '佛山市', '东莞市'],
+          '北京市': ['北京市'],
+          '上海市': ['上海市'],
+          '四川省': ['成都市', '绵阳市']
+        }
+      }
+    },
+    
+    // ✅ 新增:加载岗位列表(核心方法)
+    async loadJobs() {
+      try {
+        this.loading = true
+        
+        // 构建查询参数(对应接口文档的参数)
+        const params = {
+          page: this.currentPage,
+          page_size: this.pageSize
+        }
+        
+        // 添加筛选条件(只添加有值的参数)
+        if (this.searchJobTitle) params.title = this.searchJobTitle
+        if (this.searchCompanyName) params.company_name = this.searchCompanyName
+        if (this.selectedProvince) params.province = this.selectedProvince
+        if (this.selectedCity) params.city = this.selectedCity
+        if (this.selectedCategory) params.type = this.selectedCategory
+        if (this.selectedType) params.work_nature = this.selectedType
+        if (this.minSalary) params.min_salary = String(this.minSalary)
+        if (this.maxSalary) params.max_salary = String(this.maxSalary)
+        
+        // 根据是否查看收藏调用不同的API
+        let response
+        if (this.showFavoriteOnly) {
+          response = await getFavoriteJobs({
+            page: params.page,
+            size: params.page_size
+          })
+        } else {
+          response = await getJobList(params)
+        }
+        
+        // 更新数据
+        // 注意:根据接口文档,返回的数据结构是 { total, page, page_size, jobs }
+        this.allJobs = response.jobs || []
+        this.totalJobs = response.total || 0
+        
+        // 打印日志,方便调试
+        console.log('【加载岗位成功】', `共${this.totalJobs}条,当前第${this.currentPage}页`, this.allJobs)
+        
+      } catch (error) {
+        console.error('【加载岗位失败】', error)
+        this.allJobs = []
+        this.totalJobs = 0
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    // ✅ 防抖搜索 - 用于文本输入框
+    debouncedSearch() {
+      // 清除之前的定时器
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchDebounceTimer = setTimeout(() => {
+        this.currentPage = 1
+        this.loadJobs()
+      }, 500)
+    },
+    
+    // ✅ 文本输入框变化（职位名称、公司名称）
+    onSearchInputChange() {
+      this.debouncedSearch()
+    },
+    
+    // ✅ 省份变化
     onProvinceChange() {
-      this.selectedCity = ''
+      this.selectedCity = ''  // 重置城市选择
       this.currentPage = 1
+      this.loadJobs()  // 立即搜索
     },
+    
+    // ✅ 城市变化
+    onCityChange() {
+      this.currentPage = 1
+      this.loadJobs()  // 立即搜索
+    },
+    
+    // ✅ 其他筛选条件变化（职能类别、工作性质）
+    onFilterChange() {
+      this.currentPage = 1
+      this.loadJobs()  // 立即搜索
+    },
+    
+    // ✅ 薪资范围变化
+    onSalaryChange() {
+      this.debouncedSearch()  // 使用防抖，避免频繁搜索
+    },
+    
+    // ✅ 手动搜索按钮（保留，用于强制刷新）
     handleSearch() {
+      // 清除防抖定时器
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
       this.currentPage = 1
+      this.loadJobs()  // 立即搜索
     },
+    
     toggleFavoriteView() {
       this.showFavoriteOnly = !this.showFavoriteOnly
       this.currentPage = 1
+      // ✅ 调用API重新加载
+      this.loadJobs()
     },
+    
     isFavorited(jobId) {
-      return this.favoriteJobIds.includes(jobId)
+      // ✅ 根据后端返回的is_favorited字段判断
+      const job = this.allJobs.find(j => j.job_id === jobId)
+      return job ? job.is_favorited : false
     },
-    toggleFavorite(jobId) {
-      const idx = this.favoriteJobIds.indexOf(jobId)
-      if (idx > -1) this.favoriteJobIds.splice(idx, 1)
-      else this.favoriteJobIds.push(jobId)
-      localStorage.setItem('favoriteJobs', JSON.stringify(this.favoriteJobIds))
+    
+    // ✅ 收藏/取消收藏(调用API)
+    async toggleFavorite(jobId) {
+      try {
+        // 查找当前岗位
+        const job = this.allJobs.find(j => j.job_id === jobId)
+        if (!job) return
+        
+        // 根据当前状态调用对应的API
+        if (job.is_favorited) {
+          await unfavoriteJob(jobId)
+          job.is_favorited = false
+      } else {
+          await favoriteJob(jobId)
+          job.is_favorited = true
+        }
+        
+        console.log('【收藏操作成功】', jobId, '当前状态:', job.is_favorited)
+      } catch (error) {
+        console.error('【收藏操作失败】', error)
+      }
     },
+    
     goToJobDetail(jobId) {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
     },
+    
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
         window.scrollTo({ top: 0, behavior: 'smooth' })
+        // ✅ 调用API加载新页面数据
+        this.loadJobs()
       }
+    },
+    
+    // ✅ 图片加载失败时显示默认图片
+    handleImageError(event) {
+      event.target.src = require('@/assets/BDance_logo.png')
     }
   }
 }
@@ -725,6 +873,15 @@ export default {
 @keyframes starPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.25); }
+}
+
+/* 加载中状态 */
+.loading-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 /* 空状态 */
