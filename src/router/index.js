@@ -4,8 +4,7 @@ import CandidateList from '../views/CandidateList.vue'
 import StudentHome from '@/views/StudentHome.vue'
 import AppliedList from '@/views/AppliedList.vue'
 import AppliedDetail from '@/views/AppliedDetail.vue'
-import ActivityList from '@/views/ActivityList.vue'
-import ActivityDetail from '@/views/ActivityDetail.vue'
+
 const routes = [
   // 学生端路由
   {
@@ -71,17 +70,7 @@ const routes = [
     component: () => import('../views/MyFavorites.vue'),
     meta: { layout: 'student' }
   },
-  { path: '/activities', 
-    name: 'ActivityList', 
-    component: ActivityList ,
-    meta: { layout: 'student' }
-  },
-  { path: '/activities/:id', 
-    name: 'ActivityDetail', 
-    component: ActivityDetail, 
-    props: true ,
-    meta: { layout: 'student' }
-  },
+  
   // 企业端路由
   {
     path: '/enterprise-home',

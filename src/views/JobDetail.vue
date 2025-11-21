@@ -28,7 +28,7 @@
           </div>
           
           <div class="job-meta">
-            <span class="salary">{{ formatSalaryRangeToK(jobInfo.salary) }}</span>
+            <span class="salary">{{ jobInfo.salary }}</span>
             <span class="divider">|</span>
             <span class="location">{{ jobInfo.location }}</span>
             <span class="divider">|</span>
@@ -190,8 +190,6 @@
 </template>
 
 <script>
-import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
-
 export default {
   name: 'JobDetail',
   data() {
@@ -285,9 +283,6 @@ export default {
     goBack() {
       this.$router.push({ name: 'JobCenter' })
     },
-    
-    // 格式化薪资显示
-    formatSalaryRangeToK,
     
     // 检查收藏状态
     checkFavoriteStatus() {

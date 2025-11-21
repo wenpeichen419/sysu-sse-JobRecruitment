@@ -46,7 +46,7 @@ export default {
       navLinks: [
         { path: '/', text: '首页', exact: true },
         { path: '/job-center',          text: '求职中心' },
-        { path: '/resume-manage',       text: '简历编辑器' },
+        { path: '/resume-manage',       text: '简历管理' },
         { path: '/applied',     text: '投递情况' }
       ]
     }
