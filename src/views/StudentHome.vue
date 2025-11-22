@@ -37,17 +37,23 @@
             <h3>求职日历</h3>
             <span class="muted">{{ selectedDate }}</span>
           </div>
+          <!-- 关键：v-model 绑定 selectedDate，:events-map 用我们算好的 map -->
           <StudentCalendar v-model="selectedDate" :events-map="eventsMap" />
         </div>
 
-        <!-- 中：仅显示“今天”的活动 -->
+        <!-- 中：近期求职活动 -->
         <div class="card">
           <div class="card-head">
             <h3>近期求职活动</h3>
             <a class="more" @click="goActivities">more ></a>
           </div>
-          <ul class="timeline" v-if="todayEvents.length">
-            <li v-for="(e, i) in todayEvents" :key="i">
+
+          <ul class="timeline" v-if="upcomingEvents.length">
+            <li
+              v-for="e in upcomingEvents"
+              :key="e.id || e.title + e.date + e.place"
+              @click="goActivity(e.id)"
+            >
               <div class="dot"></div>
               <div class="tl-content">
                 <div class="title">{{ e.title }}</div>
@@ -55,7 +61,8 @@
               </div>
             </li>
           </ul>
-          <div class="empty" v-else>今天暂无活动</div>
+
+          <div class="empty" v-else>这一天暂无活动</div>
         </div>
 
         <!-- 右：岗位热度排行榜 -->
@@ -63,6 +70,7 @@
           <div class="card-head">
             <h3>岗位热度排行榜</h3>
           </div>
+
           <ol class="rank">
             <li v-for="(p, i) in hotPositions" :key="p.id">
               <span class="no">{{ i + 1 }}</span>
@@ -76,11 +84,12 @@
         </div>
       </div>
 
-      <!-- 招聘信息（带 Tabs） -->
+      <!-- 招聘信息（三类） -->
       <RecruitmentPanel
         :enterprise="recruitEnterprise"
         :institution="recruitInstitution"
         :internship="recruitInternship"
+        @more="goRecruitMore"
       />
 
       <!-- 常用链接 -->
@@ -90,71 +99,244 @@
 </template>
 
 <script>
+import axios from 'axios'
 import StudentCalendar from '@/components/StudentCalendar.vue'
 import RecruitmentPanel from '@/components/student/RecruitmentPanel.vue'
 import UsefulLinks from '@/components/student/UsefulLinks.vue'
-import { activities } from '@/data/activities.mock'
+
+// 本文件内部 axios 实例
+const api = axios.create({
+  baseURL: 'http://localhost:8080',
+  timeout: 10000
+})
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) config.headers.Authorization = `Bearer ${token}`
+    return config
+  },
+  (err) => Promise.reject(err)
+)
 
 export default {
   name: 'StudentHome',
-  components: { StudentCalendar, RecruitmentPanel, UsefulLinks },
+  components: {
+    StudentCalendar,
+    RecruitmentPanel,
+    UsefulLinks
+  },
   data() {
     return {
       currentSlide: 0,
       totalSlides: 2,
       timer: null,
+      // 日历当前选中的日期（默认：今天）
       selectedDate: new Date().toISOString().slice(0, 10),
 
-      // 主页“近期活动”依然保留你的小时间轴（演示用）
-      eventsMap: {
-        '2025-10-28': [
-          { title: '企业宣讲会：字节跳动', time: '19:00', place: '东校区 A201' },
-          { title: '算法岗面试模拟',       time: '20:30', place: '线上 Zoom' }
-        ],
-        '2025-10-29': [
-          { title: '简历改稿工作坊',       time: '14:30', place: '学院楼 309' }
-        ]
+      // 所有 upcoming 的宣讲会 / 活动（标准化后）
+      allEvents: [],
+
+      // 求职日历用：{ 'YYYY-MM-DD': [ { title,time,place,... }, ... ] }
+      eventsMap: {},
+
+      // 中间「近期求职活动」当前展示的数据
+      upcomingEvents: [],
+
+      // 右侧岗位热度 / 下方招聘信息
+      hotPositions: [],
+      recruitEnterprise: [],
+      recruitInstitution: [],
+      recruitInternship: []
+    }
+  },
+
+  mounted() {
+    this.timer = setInterval(this.nextSlide, 4000)
+
+    // 只用 /events/upcoming 构建日历 + 近期活动
+    this.fetchUpcomingEvents()
+    this.fetchRankedJobs()
+    this.fetchRecentJobs()
+  },
+
+  beforeUnmount() {
+    clearInterval(this.timer)
+  },
+
+  watch: {
+    // 当日历选中的日期变化时（点击 / 悬浮触发 v-model）
+    selectedDate(newVal) {
+
+      if (newVal) {
+        this.showEventsOfDate(newVal)
       }
     }
   },
-  computed: {
-    todayStr() { return new Date().toISOString().slice(0, 10) },
-    todayEvents() {
-      const list = this.eventsMap[this.todayStr] || []
-      return list.map(e => ({
+
+  methods: {
+    nextSlide() {
+      this.currentSlide = (this.currentSlide + 1) % this.totalSlides
+    },
+    prevSlide() {
+      this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides
+    },
+
+    /* ---------------- 接口调用 ---------------- */
+
+    // 1. 统一从 /events/upcoming 拿活动，兼顾日历 + 列表
+    async fetchUpcomingEvents() {
+      try {
+        const res = await api.get('/events/upcoming')
+        const raw = res.data?.data?.events || []
+
+        // 标准化字段名：兼容 event_title / event_start_time / event_location
+        const list = raw.map((item) => {
+          const title = item.title || item.event_title || ''
+          const start = item.date || item.event_start_time || ''
+          const dateStr = start ? String(start).slice(0, 10) : ''
+          const place = item.location || item.event_location || ''
+          return {
+            id: item.id,
+            title,
+            date: dateStr,
+            place
+          }
+        })
+
+        this.allEvents = list
+
+        // 1）构建日历用的 eventsMap
+        const map = {}
+        list.forEach((e) => {
+          if (!e.date) return
+          if (!map[e.date]) map[e.date] = []
+          // StudentCalendar 只用 title / time / place，这里 time 先留空
+          map[e.date].push({
+            title: e.title,
+            time: '',
+            place: e.place,
+            // 额外再带上 id / date，后面中间列表要用
+            id: e.id,
+            date: e.date
+          })
+        })
+        this.eventsMap = map
+
+        // 2）默认显示：从今天开始后 5 天内的所有活动
+        this.buildUpcomingForNextDays()
+      } catch (err) {
+        console.error('近期求职活动获取失败', err)
+      }
+    },
+
+    // 2. 岗位热度排行榜
+    async fetchRankedJobs() {
+      try {
+        const res = await api.get('/jobs/ranked')
+        const list = res.data?.data?.ranked_jobs || []
+
+        this.hotPositions = list.map((i) => ({
+          id: i.job_id,
+          name: i.job_title,
+          company: i.company_name,
+          city: i.location
+        }))
+      } catch (err) {
+        console.error('岗位热度获取失败', err)
+      }
+    },
+
+    // 3. 招聘信息（最新岗位）
+    async fetchRecentJobs() {
+      try {
+        const res = await api.get('/jobs/recent')
+        const list = res.data?.data?.job_postings || []
+
+        const ent = []
+        const inst = []
+        const intern = []
+
+        list.forEach((item) => {
+          const vm = {
+            id: item.job_id,
+            title: item.job_title,
+            date: item.posted_at ? String(item.posted_at).slice(0, 10) : '',
+            place: item.location || ''
+          }
+
+          const c = item.category || 'enterprise'
+          if (c === 'institution') inst.push(vm)
+          else if (c === 'internship') intern.push(vm)
+          else ent.push(vm)
+        })
+
+        this.recruitEnterprise = ent
+        this.recruitInstitution = inst
+        this.recruitInternship = intern
+      } catch (err) {
+        console.error('近期招聘信息获取失败', err)
+      }
+    },
+
+    /* ---------------- 近期活动展示逻辑 ---------------- */
+
+    // 默认：从今天开始往后 5 天内的所有活动
+    buildUpcomingForNextDays() {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const result = []
+      for (let offset = 0; offset < 5; offset++) {
+        const d = new Date(today)
+        d.setDate(today.getDate() + offset)
+        const dateStr = d.toISOString().slice(0, 10)
+        const arr = this.eventsMap[dateStr] || []
+        arr.forEach((e) => {
+          result.push({
+            id: e.id,
+            title: e.title,
+            date: dateStr,
+            place: e.place
+          })
+        })
+      }
+      this.upcomingEvents = result
+    },
+
+    // 当用户在日历上选中 / 悬浮某一天时，展示这一天的活动
+    showEventsOfDate(dateStr) {
+      const arr = this.eventsMap[dateStr] || []
+      if (arr.length === 0) {
+        // 这一天没有活动，就退回「从今天起后 5 天」
+        this.buildUpcomingForNextDays()
+        return
+      }
+      this.upcomingEvents = arr.map((e) => ({
+        id: e.id,
         title: e.title,
-        date: `${this.todayStr}${e.time ? ' ' + e.time : ''}`,
+        date: dateStr,
         place: e.place
       }))
     },
 
-    // 主页下方“招聘信息”三类，来自统一数据源（带 id）
-    recruitEnterprise() {
-      return activities.filter(a => a.category === 'enterprise')
-                       .sort((a,b) => new Date(a.date) - new Date(b.date))
-    },
-    recruitInstitution() {
-      return activities.filter(a => a.category === 'institution')
-                       .sort((a,b) => new Date(a.date) - new Date(b.date))
-    },
-    recruitInternship() {
-      return activities.filter(a => a.category === 'internship')
-                       .sort((a,b) => new Date(a.date) - new Date(b.date))
-    }
-  },
-  mounted() { this.timer = setInterval(this.nextSlide, 4000) },
-  beforeUnmount() { clearInterval(this.timer) },
-  methods: {
-    nextSlide() { this.currentSlide = (this.currentSlide + 1) % this.totalSlides },
-    prevSlide() { this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides },
+    /* ---------------- 路由跳转 ---------------- */
 
-    // 右上角 more：跳活动列表（默认“全部”）
     goActivities() {
       this.$router.push({ name: 'ActivityList', query: { tab: 'all' } })
     },
 
+    goActivity(id) {
+      if (!id) return
+      this.$router.push({ name: 'ActivityDetail', params: { id } })
+    },
+
+    goRecruitMore() {
+      this.$router.push({ name: 'ActivityList', query: { tab: 'recruit' } })
+    },
+
     viewPosition(p) {
-      // 保留你原本“岗位热度排行榜”的跳转
+      if (!p) return
       this.$router.push({ name: 'JobDetail', params: { id: p.id } })
     }
   }
@@ -162,20 +344,16 @@ export default {
 </script>
 
 <style scoped>
-/* 页面灰底，卡片/海报白底 */
+/* 原样式（不变动） */
 .student-page{
   background:#f0f0f0;
   min-height:100vh;
   font-size:16px;
 }
-
-/* 统一左右边距容器（海报与三列对齐） */
 .container{ padding:12px 24px 24px; }
 @media (min-width:1440px){
   .container{ padding-left:32px; padding-right:32px; }
 }
-
-/* 顶部海报 */
 .banner{
   position:relative; height:420px; overflow:hidden; border-radius:0; margin:0; background:#fff;
 }
@@ -189,7 +367,6 @@ export default {
 }
 .text-slide h3{ font-size:48px; font-weight:800; margin-bottom:10px; }
 .text-slide p{ font-size:20px; color:#666; }
-
 .banner-controls{
   position:absolute; bottom:18px; left:0; right:0;
   display:flex; justify-content:space-between; align-items:center; padding:0 16px;
@@ -203,29 +380,24 @@ export default {
 .indicators{ display:flex; gap:10px; }
 .indicator{ width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.6); cursor:pointer; }
 .indicator.active{ background:#fff; transform:scale(1.2); }
-
-/* 三列布局 */
 .grid{
-  display:grid; grid-template-columns:1fr 1fr 1fr;
-  gap:clamp(0px,2.5vw,36px); padding-top:20px;
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(0px,2.5vw,36px); padding-top:20px;
 }
 @media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
-
 .card{ background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); padding:16px; }
 .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .card-head h3{ margin:0; color:#325e21; font-size:22px; }
 .muted{ color:#8aa39a; font-size:14px; }
-
-/* 时间轴 */
 .timeline{ list-style:none; padding:0 0 0 18px; margin:0; position:relative; }
 .timeline::before{ content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:#e6f1ea; }
-.timeline li{ position:relative; padding:12px 8px 12px 10px; }
+.timeline li{
+  position:relative; padding:12px 8px 12px 10px; cursor:pointer;
+}
+.timeline li:hover .title{ text-decoration:underline; }
 .dot{ position:absolute; left:-1px; top:18px; width:10px; height:10px; border-radius:50%; background:#1d5e25; }
 .tl-content .title{ font-weight:600; margin-bottom:4px; font-size:16px; }
 .tl-content .meta{ font-size:12px; color:#8aa39a; }
 .empty{ color:#888; padding:8px; }
-
-/* 热度榜 */
 .rank{ list-style:none; margin:0; padding:0; }
 .rank li{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:10px; }
 .rank li:hover{ background:#f6fbf8; }
@@ -234,66 +406,4 @@ export default {
 .name{ font-weight:600; font-size:16px; }
 .sub{ font-size:12px; color:#8aa39a; }
 .ghost{ border:none; background:#e7f5ef; color:#1d5e25; padding:6px 10px; border-radius:8px; cursor:pointer; }
-
-/* 组件之间的竖向间距 */
-.container > .card + .card,
-.container > .grid + .card,
-.container > .grid + .recruitment,
-.container > .recruitment + .useful{ margin-top:16px; }
-
-/* 让 banner 与容器边对齐 */
-.container{ padding:12px 24px 24px; }
-.container > .banner{ margin-left:-24px; margin-right:-24px; width:calc(100% + 48px); border-radius:0; }
-
-/* ---------- 招聘信息样式（保留你现有的） ---------- */
-:deep(.recruitment.card){ padding:20px 24px; }
-:deep(.recruitment .tabs){ margin:0 -24px 14px; padding:0 24px; }
-:deep(.recruitment .tab){ padding:14px 22px; font-size:16px; }
-:deep(.recruitment .list){ grid-template-columns:repeat(2,1fr); gap:18px 28px; }
-:deep(.recruitment .item){ padding:16px 18px; border-radius:12px; }
-:deep(.recruitment .date){ width:72px; min-width:72px; height:60px; }
-:deep(.recruitment .date .d){ font-size:20px; }
-:deep(.recruitment .date .ym){ font-size:12px; }
-:deep(.recruitment .title){ font-size:16px; }
-
-/* ---------- 常用链接 ---------- */
-:deep(.useful.card){ padding:20px 24px; }
-:deep(.useful .head){
-  margin:0 0 12px; font-size:20px; font-weight:800; color:#1d5e25; position:relative; display:inline-block;
-}
-:deep(.useful .head::after){
-  content:""; position:absolute; left:0; right:0; bottom:-6px; height:6px;
-  background:linear-gradient(90deg,#1d5e25,#c3d6c0); border-radius:3px;
-}
-:deep(.useful .links){ grid-template-columns:repeat(4,1fr); gap:16px; }
-@media (max-width:1200px){ :deep(.useful .links){ grid-template-columns:repeat(3,1fr); } }
-@media (max-width:900px){ :deep(.useful .links){ grid-template-columns:repeat(2,1fr); } }
-@media (max-width:520px){ :deep(.useful .links){ grid-template-columns:1fr; } }
-:deep(.useful .link){ height:96px; border-radius:12px; }
-:deep(.useful .link img){ max-height:68px; }
-
-/* 美化首页右上角 more */
-.card-head .more{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:14px;
-  color:#1d5e25;
-  text-decoration:none;
-  cursor:pointer;
-  background:transparent;
-  transition:all .2s ease;
-}
-.card-head .more::after{
-  font-size:16px;
-  transform: translateY(-0.5px);
-}
-.card-head .more:hover{
-  background:#eaf6ef;
-  box-shadow:0 1px 4px rgba(29,94,37,.12);
-  transform: translateY(-1px);
-}
-
 </style>

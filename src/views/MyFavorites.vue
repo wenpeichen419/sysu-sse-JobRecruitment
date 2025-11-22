@@ -10,7 +10,7 @@
     <!-- 岗位列表 -->
     <div class="job-list">
       <div 
-        v-for="job in favoriteJobs" 
+        v-for="job in displayedJobs" 
         :key="job.id"
         class="job-item"
         @click="goToJobDetail(job.id)"
@@ -51,13 +51,8 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="favoriteJobs.length === 0 && !loading" class="empty-state">
+      <div v-if="displayedJobs.length === 0" class="empty-state">
         <p>暂无收藏的岗位</p>
-      </div>
-      
-      <!-- 加载状态 -->
-      <div v-if="loading" class="empty-state">
-        <p>加载中...</p>
       </div>
     </div>
 
@@ -100,28 +95,194 @@
 
 <script>
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
-import { getFavoriteJobs, unfavoriteJob } from '@/api/job'
 
 export default {
   name: 'MyFavorites',
   data() {
     return {
-      // 收藏的岗位列表
-      favoriteJobs: [],
+      // 收藏的岗位ID列表
+      favoriteJobIds: [],
       
       // 分页
       currentPage: 1,
-      pageSize: 10,
-      totalJobs: 0,
+      pageSize: 5,
       
-      // 加载状态
-      loading: false
+      // 所有岗位数据（从JobCenter复用）
+      allJobs: [
+        {
+          id: 1,
+          title: '推荐算法工程师',
+          company: '百度在线网络技术（北京）有限公司',
+          category: '算法',
+          department: 'xx部门',
+          salary: '7000-8000',
+          province: '广东省',
+          city: '深圳',
+          location: '广东省深圳市南山区',
+          type: '校招',
+          education: '本科',
+          recruitCount: 5,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 2,
+          title: '产品经理',
+          company: '华为技术有限公司',
+          category: '产品',
+          department: '产品部',
+          salary: '7000-8000',
+          province: '广东省',
+          city: '深圳',
+          location: '广东省深圳市南山区',
+          type: '实习',
+          education: '本科',
+          recruitCount: 3,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 3,
+          title: '产品设计',
+          company: '支付宝（中国）网络技术有限公司',
+          category: '设计',
+          department: '设计部',
+          salary: '7000-8000',
+          province: '广东省',
+          city: '广州',
+          location: '广东省广州市天河区',
+          type: '校招',
+          education: '本科',
+          recruitCount: 5,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 4,
+          title: '前端开发工程师',
+          company: '腾讯科技（深圳）有限公司',
+          category: '研发',
+          department: '技术部',
+          salary: '8000-10000',
+          province: '广东省',
+          city: '深圳',
+          location: '广东省深圳市南山区',
+          type: '校招',
+          education: '硕士',
+          recruitCount: 10,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 5,
+          title: '算法工程师',
+          company: '北京字节跳动科技有限公司',
+          category: '算法',
+          department: 'AI部门',
+          salary: '15000-20000',
+          province: '北京市',
+          city: '海淀区',
+          location: '北京市海淀区',
+          type: '校招',
+          education: '硕士',
+          recruitCount: 8,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 6,
+          title: 'Java后端开发',
+          company: '阿里巴巴（中国）网络技术有限公司',
+          category: '研发',
+          department: '技术部',
+          salary: '10000-15000',
+          province: '浙江省',
+          city: '杭州',
+          location: '浙江省杭州市余杭区',
+          type: '校招',
+          education: '本科',
+          recruitCount: 15,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 7,
+          title: 'UI设计师',
+          company: '美团网（北京）科技有限公司',
+          category: '设计',
+          department: '设计部',
+          salary: '8000-12000',
+          province: '北京市',
+          city: '朝阳区',
+          location: '北京市朝阳区',
+          type: '校招',
+          education: '本科',
+          recruitCount: 4,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 8,
+          title: '数据分析师',
+          company: '京东集团股份有限公司',
+          category: '算法',
+          department: '数据部',
+          salary: '9000-13000',
+          province: '北京市',
+          city: '朝阳区',
+          location: '北京市朝阳区',
+          type: '实习',
+          education: '硕士',
+          recruitCount: 6,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 9,
+          title: '运营专员',
+          company: '小红书科技有限公司',
+          category: '运营',
+          department: '运营部',
+          salary: '7000-9000',
+          province: '上海市',
+          city: '浦东新区',
+          location: '上海市浦东新区',
+          type: '实习',
+          education: '本科',
+          recruitCount: 5,
+          logo: require('@/assets/BDance_logo.png')
+        },
+        {
+          id: 10,
+          title: 'Python工程师',
+          company: '网易（杭州）网络有限公司',
+          category: '研发',
+          department: '技术部',
+          salary: '10000-14000',
+          province: '浙江省',
+          city: '杭州',
+          location: '浙江省杭州市滨江区',
+          type: '校招',
+          education: '本科',
+          recruitCount: 7,
+          logo: require('@/assets/BDance_logo.png')
+        }
+      ]
     }
   },
   computed: {
+    // 只显示收藏的岗位
+    favoriteJobs() {
+      return this.allJobs.filter(job => this.favoriteJobIds.includes(job.id))
+    },
+    
+    // 总岗位数
+    totalJobs() {
+      return this.favoriteJobs.length
+    },
+    
     // 总页数
     totalPages() {
       return Math.ceil(this.totalJobs / this.pageSize)
+    },
+    
+    // 当前页显示的岗位
+    displayedJobs() {
+      const start = (this.currentPage - 1) * this.pageSize
+      const end = start + this.pageSize
+      return this.favoriteJobs.slice(start, end)
     },
 
     // 中间的页码
@@ -144,47 +305,13 @@ export default {
     }
   },
   mounted() {
-    // 加载收藏列表
-    this.loadFavorites()
+    // 从本地存储读取收藏列表
+    const saved = localStorage.getItem('favoriteJobs')
+    if (saved) {
+      this.favoriteJobIds = JSON.parse(saved)
+    }
   },
   methods: {
-    // 加载收藏列表
-    async loadFavorites() {
-      try {
-        this.loading = true
-        const response = await getFavoriteJobs({
-          page: this.currentPage,
-          size: this.pageSize
-        })
-        
-        // 根据接口文档，数据结构为 response.data.jobs
-        const jobs = response.jobs || []
-        
-        // 映射接口字段到页面需要的字段
-        this.favoriteJobs = jobs.map(job => ({
-          id: job.job_id,
-          title: job.title,
-          company: job.company_name,
-          salary: job.salary_range,
-          location: job.location,
-          type: job.work_nature,
-          education: job.required_degree || '',  // 接口文档没有明确education字段，使用required_degree
-          department: job.department,
-          recruitCount: job.headcount,
-          logo: job.logo_url || require('@/assets/BDance_logo.png'),
-          isFavorited: job.is_favorited
-        }))
-        
-        this.totalJobs = response.total || 0
-        
-        console.log('【加载收藏列表成功】', this.favoriteJobs)
-      } catch (error) {
-        console.error('【加载收藏列表失败】', error)
-      } finally {
-        this.loading = false
-      }
-    },
-    
     // 返回
     goBack() {
       this.$router.push({ name: 'StudentCenter' })
@@ -194,20 +321,16 @@ export default {
     formatSalaryRangeToK,
     
     // 取消收藏
-    async toggleFavorite(jobId) {
-      try {
-        await unfavoriteJob(jobId)
-        
-        // 成功后重新加载列表
-        await this.loadFavorites()
+    toggleFavorite(jobId) {
+      const index = this.favoriteJobIds.indexOf(jobId)
+      if (index > -1) {
+        this.favoriteJobIds.splice(index, 1)
+        localStorage.setItem('favoriteJobs', JSON.stringify(this.favoriteJobIds))
         
         // 如果当前页没有数据了，回到上一页
-        if (this.favoriteJobs.length === 0 && this.currentPage > 1) {
+        if (this.displayedJobs.length === 0 && this.currentPage > 1) {
           this.currentPage--
-          await this.loadFavorites()
         }
-      } catch (error) {
-        console.error('【取消收藏失败】', error)
       }
     },
     
@@ -220,7 +343,6 @@ export default {
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
-        this.loadFavorites()
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
