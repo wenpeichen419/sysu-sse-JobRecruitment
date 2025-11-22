@@ -88,12 +88,8 @@
         <!-- 工作地址 -->
         <div class="section-card">
           <h2 class="section-title">工作地址</h2>
-          <div class="address-container-inline">
-            <div class="address-text-inline">{{ jobInfo.address }}</div>
-            <button class="btn-view-map-inline" @click="openInAMap">
-              <span class="map-icon">📍</span>
-              在高德地图中查看
-            </button>
+          <div class="section-content">
+            <p>{{ jobInfo.address }}</p>
           </div>
         </div>
       </div>
@@ -106,12 +102,7 @@
           
           <!-- 公司Logo -->
           <div class="company-logo-section">
-            <img 
-              :src="companyInfo.logo" 
-              :alt="companyInfo.name" 
-              class="company-logo"
-              @error="handleImageError"
-            />
+            <img :src="companyInfo.logo" :alt="companyInfo.name" class="company-logo" />
             <div class="company-name">{{ companyInfo.name }}</div>
           </div>
           
@@ -145,12 +136,17 @@
           </a>
         </div>
 
-        <!-- 查看企业其他职位 -->
-        <div class="info-card view-more-jobs-card" @click="goToCompanyInfo">
-          <div class="view-more-content">
-            <div class="view-more-icon">🏢</div>
-            <div class="view-more-text">点击查看该企业其他在招岗位</div>
-            <div class="view-more-arrow">→</div>
+        <!-- 其他职位 -->
+        <div class="info-card">
+          <h3 class="info-title">其他职位</h3>
+          <div 
+            class="other-job-item" 
+            v-for="job in otherJobs" 
+            :key="job.id"
+            @click="goToCompanyInfo"
+          >
+            <div class="other-job-title">{{ job.title }}</div>
+            <div class="other-job-arrow">›</div>
           </div>
         </div>
       </div>
@@ -195,7 +191,6 @@
 
 <script>
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
-import { getJobDetail, favoriteJob, unfavoriteJob, getResumeFilesForApply, applyJob } from '@/api/job'
 
 export default {
   name: 'JobDetail',
@@ -205,119 +200,87 @@ export default {
       isFavorited: false,
       showResumeDialog: false,
       selectedResumeId: null,
-      loading: false,
       
-      // 岗位信息
+      // 岗位信息 (模拟数据)
       jobInfo: {
-        title: '',
-        salary: '',
-        location: '',
-        type: '',
-        education: '',
-        publishDate: '',
-        viewCount: 0,
-        category: '',
-        skills: [],
-        recruitCount: 0,
-        startDate: '',
-        description: [],
-        requirements: [],
-        bonusPoints: [],
-        address: '',
-        longitude: null,  // 经度（如果后端提供）
-        latitude: null    // 纬度（如果后端提供）
+        title: '算法设计师',
+        salary: '15000及以上',
+        location: '北京市朝阳区',
+        type: '校招',
+        education: '本科',
+        publishDate: '2025-10-09',
+        viewCount: 9,
+        category: '算法',
+        skills: ['AI', '算法', '机器学习', 'Python'],
+        recruitCount: 6,
+        startDate: '2025-11-11',
+        description: [
+          '作为推荐算法方向的研究工程师，你可以:',
+          '1、负责推荐系统中具体推荐业务的召回、排序等模型算法的设计与优化;',
+          '2、深入理解业务场景，通过对数据的敏锐洞察聚焦产品潜在在价值和需求，针对现有业务场景特点优化推荐策略和模型，不断提升用户体验和业务指标;',
+          '3、基于超大规模深度神经网络模型和机器学习系统，探索业界前沿推荐技术的研发工作，通过技术创新推动产品成长，包含但不限于推荐多模态大模型、图神经网络、多任务学习、超长序列建模、强化学习等技术方向。'
+        ],
+        requirements: [
+          '1、本科及以上学历，计算机、数学、人工智能等相关专业;',
+          '2、扎实的编程能力和算法功底，熟练掌握Python/C++/Java等至少一种编程语言;',
+          '3、扎实的机器学习/深度学习理论基础，熟练掌握Tensorflow/Pytorch等至少一种主流深度学习框架，了解Hadoop/Spark/Flink等大数据平台工具的使用;',
+          '4、优秀的逻辑思维能力，优秀的分析问题与解决问题的能力，对解决具有挑战性问题充满激情;',
+          '5、善于沟通，工作积极主动，责任心强，自驱力强，能持续学习，具备良好的团队协作能力。'
+        ],
+        bonusPoints: [
+          '1、xxx',
+          '2、xxx'
+        ],
+        address: ''
       },
       
       // 公司信息
       companyInfo: {
-        id: null,
-        name: '',
+        name: '浙商银行股份有限公司',
         logo: require('@/assets/BDance_logo.png'),
-        nature: '',
-        industry: '',
-        scale: '',
-        contact: '',
-        phone: '',
+        nature: '民营企业',
+        industry: '金融业',
+        scale: '10000人以上',
+        contact: '郑老师',
+        phone: '0571-88265996',
         website: '#'
       },
       
-      // 简历列表
-      resumeList: []
+      // 其他职位
+      otherJobs: [
+        { id: 101, title: '产品经理' },
+        { id: 102, title: 'UI设计师' },
+        { id: 103, title: 'Java工程师' }
+      ],
+      
+      // 简历列表 (模拟数据)
+      resumeList: [
+        {
+          id: 1,
+          name: '周意简历-前端.pdf',
+          size: '66.5KB',
+          updateTime: '2025.10.22 22:54'
+        },
+        {
+          id: 2,
+          name: '周意简历-后端.pdf',
+          size: '99.5KB',
+          updateTime: '2025.10.22 23:00'
+        }
+      ]
     }
   },
   mounted() {
     // 获取路由参数中的岗位ID
     this.jobId = this.$route.params.id
     
-    // 加载岗位详情
-    this.loadJobDetail()
+    // 检查是否已收藏
+    this.checkFavoriteStatus()
+    
+    // 模拟增加浏览次数
+    this.jobInfo.viewCount++
   },
   methods: {
-    // 加载岗位详情
-    async loadJobDetail() {
-      try {
-        this.loading = true
-        const response = await getJobDetail(this.jobId)
-        
-        // 映射接口数据到页面
-        this.jobInfo = {
-          title: response.title || '',
-          salary: response.salary_range || '',
-          location: response.address || '',
-          type: response.work_nature || '',
-          education: response.required_degree || '',
-          publishDate: response.posted_at || '',
-          viewCount: response.times || 0,
-          category: response.type || '',
-          skills: response.required_skills || [],
-          recruitCount: response.headcount || 0,
-          startDate: response.required_start_date || '',
-          description: this.parseMultilineText(response.position_description),
-          requirements: this.parseMultilineText(response.position_requirements),
-          bonusPoints: response.bonus_points || [],
-          address: response.address_detail || response.address || '',
-          longitude: response.longitude || null,  // 经度（如果后端提供）
-          latitude: response.latitude || null     // 纬度（如果后端提供）
-        }
-        
-        // 公司信息
-        if (response.company_info) {
-          this.companyInfo = {
-            id: response.company_info.company_id,
-            name: response.company_info.company_name || '',
-            logo: response.company_info.logo_url || require('@/assets/BDance_logo.png'),
-            nature: response.company_info.company_nature || '',
-            industry: response.company_info.company_industry || '',
-            scale: response.company_info.company_scale || '',
-            contact: response.company_info.contact_person_name || '',
-            phone: response.company_info.contact_person_phone || '',
-            website: response.company_info.company_website_url || '#'
-          }
-        }
-        
-        // 收藏状态
-        this.isFavorited = response.is_favorited || false
-        
-        console.log('【加载岗位详情成功】', this.jobInfo)
-      } catch (error) {
-        console.error('【加载岗位详情失败】', error)
-      } finally {
-        this.loading = false
-      }
-    },
-    
-    // 解析多行文本（如果接口返回的是字符串，需要分割成数组）
-    parseMultilineText(text) {
-      if (Array.isArray(text)) {
-        return text
-      }
-      if (typeof text === 'string') {
-        // 按换行符或数字序号分割
-        return text.split(/\n|；|;/).filter(line => line.trim())
-      }
-      return []
-    },
-    
     // 返回列表页
     goBack() {
       this.$router.push({ name: 'JobCenter' })
@@ -326,125 +289,54 @@ export default {
     // 格式化薪资显示
     formatSalaryRangeToK,
     
+    // 检查收藏状态
+    checkFavoriteStatus() {
+      const saved = localStorage.getItem('favoriteJobs')
+      if (saved) {
+        const favoriteIds = JSON.parse(saved)
+        this.isFavorited = favoriteIds.includes(parseInt(this.jobId))
+      }
+    },
+    
     // 切换收藏
-    async toggleFavorite() {
-      try {
-        if (this.isFavorited) {
-          await unfavoriteJob(this.jobId)
-          this.isFavorited = false
-        } else {
-          await favoriteJob(this.jobId)
-          this.isFavorited = true
-        }
-      } catch (error) {
-        console.error('【收藏操作失败】', error)
+    toggleFavorite() {
+      const saved = localStorage.getItem('favoriteJobs')
+      let favoriteIds = saved ? JSON.parse(saved) : []
+      const jobIdNum = parseInt(this.jobId)
+      
+      const index = favoriteIds.indexOf(jobIdNum)
+      if (index > -1) {
+        favoriteIds.splice(index, 1)
+        this.isFavorited = false
+      } else {
+        favoriteIds.push(jobIdNum)
+        this.isFavorited = true
       }
-    },
-    
-    // 加载简历列表
-    async loadResumeList() {
-      try {
-        const response = await getResumeFilesForApply()
-        
-        // 映射接口数据到页面
-        this.resumeList = response.map(resume => ({
-          id: resume.id,
-          name: resume.file_name,
-          size: this.formatFileSize(resume.file_size),
-          updateTime: this.formatDateTime(resume.uploaded_at)
-        }))
-        
-        console.log('【加载简历列表成功】', this.resumeList)
-      } catch (error) {
-        console.error('【加载简历列表失败】', error)
-      }
-    },
-    
-    // 格式化文件大小
-    formatFileSize(bytes) {
-      if (bytes < 1024) return bytes + 'B'
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB'
-      return (bytes / (1024 * 1024)).toFixed(1) + 'MB'
-    },
-    
-    // 格式化日期时间
-    formatDateTime(dateStr) {
-      if (!dateStr) return ''
-      const date = new Date(dateStr)
-      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+      
+      localStorage.setItem('favoriteJobs', JSON.stringify(favoriteIds))
     },
     
     // 提交简历
-    async submitResume() {
+    submitResume() {
       if (!this.selectedResumeId) {
         alert('请选择要投递的简历')
         return
       }
       
-      try {
-        await applyJob({
-          job_id: parseInt(this.jobId),
-          resume_id: String(this.selectedResumeId)
-        })
-        
-        alert('简历投递成功！')
-        this.showResumeDialog = false
-        this.selectedResumeId = null
-      } catch (error) {
-        console.error('【投递简历失败】', error)
-      }
+      // 这里应该调用API提交简历
+      alert('简历投递成功！')
+      this.showResumeDialog = false
+      this.selectedResumeId = null
     },
     
     // 跳转到企业信息页
     goToCompanyInfo() {
-      console.log('【点击跳转企业信息】companyInfo.id:', this.companyInfo.id)
-      
-      if (!this.companyInfo.id) {
-        alert('企业信息加载中，请稍后再试')
-        console.error('【跳转失败】企业ID不存在')
-        return
-      }
-      
       this.$router.push({ 
         name: 'CompanyInfo', 
         params: { 
-          id: this.companyInfo.id 
+          id: 'company-' + this.jobId 
         } 
       })
-    },
-    
-    // 在高德地图中打开
-    openInAMap() {
-      if (!this.jobInfo.address) {
-        alert('地址信息不完整')
-        return
-      }
-      
-      // 如果有经纬度，使用精确定位（优先）
-      if (this.jobInfo.longitude && this.jobInfo.latitude) {
-        // 使用经纬度打开地图（最精确）
-        const name = encodeURIComponent(this.companyInfo.name || '工作地点')
-        const url = `https://uri.amap.com/marker?position=${this.jobInfo.longitude},${this.jobInfo.latitude}&name=${name}&coordinate=gaode&callnative=1`
-        window.open(url, '_blank')
-      } else {
-        // 使用地址搜索（备选方案）
-        const query = encodeURIComponent(this.jobInfo.address)
-        const url = `https://www.amap.com/search?query=${query}`
-        window.open(url, '_blank')
-      }
-    },
-    
-    // ✅ 图片加载失败时显示默认图片
-    handleImageError(event) {
-      event.target.src = require('@/assets/BDance_logo.png')
-    }
-  },
-  watch: {
-    // 监听弹窗状态，打开时加载简历列表
-    showResumeDialog(newVal) {
-      if (newVal) {
-        this.loadResumeList()
-      }
     }
   }
 }
@@ -688,57 +580,6 @@ export default {
   margin-bottom: 0;
 }
 
-/* 工作地址相关样式 */
-.address-container-inline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  background: #f8f9fa;
-  padding: 20px 25px;
-  border-radius: 8px;
-}
-
-.address-text-inline {
-  flex: 1;
-  font-size: 18px;
-  font-weight: 500;
-  color: #333;
-  line-height: 1.6;
-}
-
-.btn-view-map-inline {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(50, 94, 33, 0.3);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-view-map-inline:hover {
-  background: linear-gradient(135deg, #4a7c35 0%, #325e21 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(50, 94, 33, 0.4);
-}
-
-.btn-view-map-inline:active {
-  transform: translateY(0);
-}
-
-.map-icon {
-  font-size: 20px;
-}
-
 /* 侧边栏信息卡片 */
 .info-card {
   background: white;
@@ -820,63 +661,33 @@ export default {
   text-decoration: underline;
 }
 
-/* 查看企业更多职位卡片 */
-.view-more-jobs-card {
-  cursor: pointer !important;
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #f8fdf8 0%, #eef7ee 100%);
-  border: 2px solid #e8f5e8;
-  position: relative;
-  z-index: 1;
-}
-
-.view-more-jobs-card:hover {
-  background: linear-gradient(135deg, #eef7ee 0%, #e0f2e0 100%);
-  border-color: #325e21;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(50, 94, 33, 0.15);
-}
-
-.view-more-jobs-card:active {
-  transform: translateY(0px);
-  box-shadow: 0 2px 8px rgba(50, 94, 33, 0.1);
-}
-
-.view-more-content {
+/* 其他职位 */
+.other-job-item {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 15px;
-  padding: 10px;
-  pointer-events: none;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 18px;
 }
 
-.view-more-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-  pointer-events: none;
+.other-job-item:last-child {
+  border-bottom: none;
 }
 
-.view-more-text {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 600;
-  color: #325e21;
-  text-align: center;
-  pointer-events: none;
+.other-job-item:hover {
+  color: #2a5e23;
 }
 
-.view-more-arrow {
-  font-size: 24px;
-  font-weight: bold;
-  color: #325e21;
-  flex-shrink: 0;
-  transition: transform 0.3s ease;
-  pointer-events: none;
+.other-job-title {
+  font-size: 14px;
 }
 
-.view-more-jobs-card:hover .view-more-arrow {
-  transform: translateX(5px);
+.other-job-arrow {
+  font-size: 18px;
+  color: #999;
 }
 
 /* 简历投递弹窗 */

@@ -211,8 +211,7 @@
 </template>
 
 <script>
-// ✅ 导入API方法
-import { getStudentInfo, changePassword } from '@/api'
+import mockStudent from '@/data/mockStudentData'
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 
 export default {
@@ -220,61 +219,23 @@ export default {
   data() {
     return {
       showPasswordDialog: false,
-      // ✅ 学生信息(从API获取,初始为空对象)
-      studentInfo: {
-        avatar: '',
-        name: '',
-        school: '',
-        major: '',
-        phone: '',
-        email: '',
-        lastLogin: '',
-        tags: [],
-        gender: '',
-        birthday: '',
-        degree: '',
-        desiredPosition: '',
-        expectedSalary: '',
-        admissionDate: '',
-        graduationDate: '',
-        ranking: ''
-      },
+      // 学生信息（使用模拟数据）
+      studentInfo: mockStudent,
       // 密码表单
       passwordForm: {
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
-      },
-      // ✅ 加载状态
-      loading: false
+      }
     }
   },
   computed: {
     // 最多显示4个标签
     displayTags() {
-      return this.studentInfo.tags ? this.studentInfo.tags.slice(0, 4) : []
+      return this.studentInfo.tags.slice(0, 4)
     }
   },
-  mounted() {
-    // ✅ 页面加载时获取学生信息
-    this.loadStudentInfo()
-  },
   methods: {
-    // ✅ 新增:加载学生信息
-    async loadStudentInfo() {
-      try {
-        this.loading = true
-        const data = await getStudentInfo()
-        this.studentInfo = data
-        console.log('【加载学生信息成功】', this.studentInfo)
-      } catch (error) {
-        console.error('【加载学生信息失败】', error)
-        // 如果API调用失败,可以提示用户
-      } finally {
-        this.loading = false
-      }
-    },
-    
     // 计算年龄
     calculateAge(birthday) {
       if (!birthday) return '--'
@@ -326,8 +287,8 @@ export default {
       }
     },
     
-    // ✅ 提交密码修改(调用API)
-    async submitPasswordChange() {
+    // 提交密码修改
+    submitPasswordChange() {
       // 验证
       if (!this.passwordForm.oldPassword) {
         alert('请输入原密码')
@@ -346,18 +307,9 @@ export default {
         return
       }
       
-      try {
-        // ✅ 调用API修改密码
-        await changePassword({
-          oldPassword: this.passwordForm.oldPassword,
-          newPassword: this.passwordForm.newPassword
-        })
-        alert('密码修改成功!')
-        this.cancelPasswordChange()
-      } catch (error) {
-        console.error('【修改密码失败】', error)
-        // 错误信息已经在axios拦截器中显示了
-      }
+      // 这里应该调用API修改密码
+      alert('密码修改成功！')
+      this.cancelPasswordChange()
     }
   }
 }
