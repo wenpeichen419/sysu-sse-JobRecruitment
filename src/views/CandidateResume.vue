@@ -62,12 +62,16 @@
 
             <!-- 候选人状态：2个按钮 -->
             <template v-else-if="currentCandidate.resume_status === '候选人'">
+               <button class="btn-cancel" @click="updateStatus('已投递')">
+                <span class="btn-icon">⭐ 取消候选</span>
+              </button>
               <button class="btn-interview" @click="updateStatus('面试邀请')">
                 <span class="btn-icon">📧 发送面试通知</span>
               </button>
               <button class="btn-reject" @click="updateStatus('拒绝')">
                 <span class="btn-icon">❌ 拒绝</span>
               </button>
+             
             </template>
 
             <!-- 面试邀请状态：2个按钮 -->
@@ -319,7 +323,8 @@ async updateStatus(newStatus) {
         '面试邀请': '发送面试通知',
         '拒绝': '拒绝',
         '候选人': '列为候选人',
-        '通过': '通过'
+        '通过': '通过',
+        '已投递': '取消候选'
       }
       return statusMap[status] || status
     }
@@ -538,6 +543,17 @@ async updateStatus(newStatus) {
 }
 
 .btn-reserve:hover {
+  background: #b87c46;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(204, 142, 88, 0.4);
+}
+
+.btn-cancel {
+  background: #cc8e58;
+  color: white;
+}
+
+.btn-cancel:hover {
   background: #b87c46;
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(204, 142, 88, 0.4);

@@ -387,12 +387,17 @@ export default {
   height: 120px;
   overflow: hidden;
   flex-shrink: 0;
+  background: white; /* 添加白色背景 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: white;
 }
 
 .enterprise-details {

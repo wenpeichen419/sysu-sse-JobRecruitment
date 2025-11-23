@@ -545,7 +545,7 @@ handleAvatarSuccess(res, file) {
 
   try {
     this.submitting = true;
-    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM1MTE2NzYsImV4cCI6MTc2MzU5ODA3Nn0.iAh2YxsqvmL3dhyNn8W0HxM2Q78H_RPJTbmjhgJFYas'
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
     
     const submitData = {
       description: this.enterpriseInfo.description,
@@ -782,10 +782,10 @@ handleAvatarSuccess(res, file) {
 .current-avatar .avatar-container img {
   width: 150px;
   height: 150px;
-  object-fit: contain;
+  object-fit: contain; /* 确保也是 contain */
   border-radius: 8px;
   border: 2px solid #e9ecef;
-  background-color: #f8f9fa;
+  background-color: #f8f9fa; /* 确保有背景色 */
 }
 
 .upload-avatar {
