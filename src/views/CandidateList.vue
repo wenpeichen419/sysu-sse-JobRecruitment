@@ -7,6 +7,23 @@
       @candidate-selected="onCandidateSelected"
     />
     
+    <!-- 成功提示 -->
+    <div v-if="showSuccessAlert" class="success-alert">
+      <div class="alert-content">
+        <span class="alert-icon">✅</span>
+        <span class="alert-message">{{ successMessage }}</span>
+        <button class="alert-close" @click="closeSuccessAlert">×</button>
+      </div>
+    </div>
+
+    <!-- 候选人简介弹窗 -->
+    <CandidateProfileModal
+      :visible="showProfileModal"
+      :candidateName="selectedCandidateName"
+      :userId="selectedUserId"
+      @close="closeProfileModal"
+    />
+
     <!-- 主内容区域 -->
     <div class="main-content">
       <!-- 面包屑导航 -->
@@ -64,9 +81,25 @@
             >
               <div class="table-col candidate-info-col">
                 <div class="candidate-avatar">
-                  <img src="@/assets/campus.png" alt="头像">
+                  <img 
+                    v-if="getAvatarUrl(candidate)" 
+                    :src="getAvatarUrl(candidate)" 
+                    :alt="candidate.candidate_name + '的头像'"
+                    @error="handleAvatarError($event, candidate)"
+                  >
+                  <div v-else class="avatar-placeholder">
+                    {{ getCandidateInitial(candidate.candidate_name) }}
+                  </div>
                 </div>
-                <span class="candidate-name">{{ candidate.candidate_name }}</span>
+                <div class="candidate-info-wrapper">
+                  <span class="candidate-name">{{ candidate.candidate_name }}</span>
+                  <span 
+                    class="view-profile-link" 
+                    @click.stop="viewCandidateProfile(candidate)"
+                  >
+                    >>点击查看候选人简介
+                  </span>
+                </div>
               </div>
               <div class="table-col grade-col">{{ candidate.grade }}</div>
               <div class="table-col degree-col">{{ getDegreeText(candidate.degree) }}</div>
@@ -80,45 +113,41 @@
         </div>
 
         <!-- 分页 -->
-<div class="pagination" v-if="totalItems > 0">
-  <span class="page-info">共 {{ totalItems }} 条数据</span>
-  
-  <div class="page-controls">
-    <!-- 只有当总页数大于1时才显示第一页按钮 -->
-    <button 
-      v-if="totalPages > 1"
-      class="page-btn" 
-      :class="{ active: currentPage === 1 }"
-      @click="changePage(1)"
-    >1</button>
-    
-    <button 
-      v-for="page in middlePages" 
-      :key="page"
-      class="page-btn"
-      :class="{ active: currentPage === page }"
-      @click="changePage(page)"
-    >{{ page }}</button>
+        <div class="pagination" v-if="totalItems > 0">
+          <span class="page-info">共 {{ totalItems }} 条数据</span>
+          <div class="page-controls">
+            <button 
+              v-if="totalPages > 1"
+              class="page-btn" 
+              :class="{ active: currentPage === 1 }"
+              @click="changePage(1)"
+            >1</button>
+            
+            <button 
+              v-for="page in middlePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: currentPage === page }"
+              @click="changePage(page)"
+            >{{ page }}</button>
 
-    <span v-if="showEllipsis" class="ellipsis">...</span>
-    
-    <!-- 只有当总页数大于1时才显示最后一页按钮 -->
-    <button 
-      v-if="totalPages > 1"
-      class="page-btn"
-      :class="{ active: currentPage === totalPages }"
-      @click="changePage(totalPages)"
-    >{{ totalPages }}</button>
+            <span v-if="showEllipsis" class="ellipsis">...</span>
+            
+            <button 
+              v-if="totalPages > 1"
+              class="page-btn"
+              :class="{ active: currentPage === totalPages }"
+              @click="changePage(totalPages)"
+            >{{ totalPages }}</button>
 
-    <!-- 只有当总页数大于1时才显示下一页按钮 -->
-    <button 
-      v-if="totalPages > 1"
-      class="page-next" 
-      :disabled="currentPage >= totalPages"
-      @click="changePage(currentPage + 1)"
-    >›</button>
-  </div>
-</div>
+            <button 
+              v-if="totalPages > 1"
+              class="page-next" 
+              :disabled="currentPage >= totalPages"
+              @click="changePage(currentPage + 1)"
+            >›</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -126,11 +155,13 @@
 
 <script>
 import CandidateSidebar from '../components/CandidateSiderBar.vue'
+import CandidateProfileModal from '../components/CandidateProfileModal.vue'
 
 export default {
   name: 'CandidateList',
   components: {
-    CandidateSidebar
+    CandidateSidebar,
+    CandidateProfileModal
   },
   props: {
     positionId: {
@@ -148,16 +179,20 @@ export default {
       allCandidates: [],
       sortedCandidates: [],
       activeCandidateId: '',
-      // 分页相关
+      candidateAvatars: {},
       currentPage: 1,
       pageSize: 10,
       totalItems: 0,
       totalPages: 0,
-      loading: false
+      loading: false,
+      successMessage: '',
+      showSuccessAlert: false,
+      showProfileModal: false,
+      selectedCandidateName: '',
+      selectedUserId: null
     }
   },
   computed: {
-    // 侧边栏候选人数据 - 状态为"候选人"的
     sidebarCandidates() {
       return this.allCandidates
         .filter(candidate => candidate.resume_status === '候选人')
@@ -165,42 +200,131 @@ export default {
           id: candidate.application_id,
           name: candidate.candidate_name,
           status: candidate.resume_status,
-          avatar: ''
+          avatar: candidate.avatar_url || ''
         }))
     },
 
-    // 中间的页码
     middlePages() {
-  // 如果总页数小于等于3，不显示中间页码
-  if (this.totalPages <= 3) {
-    return []
-  }
-  
-  const pages = []
-  const start = Math.max(2, this.currentPage - 1)
-  const end = Math.min(this.totalPages - 1, this.currentPage + 1)
-  
-  for (let i = start; i <= end; i++) {
-    if (i !== 1 && i !== this.totalPages) {
-      pages.push(i)
-    }
-  }
-  return pages
-},
+      if (this.totalPages <= 3) {
+        return []
+      }
+      
+      const pages = []
+      const start = Math.max(2, this.currentPage - 1)
+      const end = Math.min(this.totalPages - 1, this.currentPage + 1)
+      
+      for (let i = start; i <= end; i++) {
+        if (i !== 1 && i !== this.totalPages) {
+          pages.push(i)
+        }
+      }
+      return pages
+    },
 
-    // 是否显示省略号
     showEllipsis() {
-  return this.totalPages > 5 && this.currentPage < this.totalPages - 2
-}
+      return this.totalPages > 5 && this.currentPage < this.totalPages - 2
+    }
   },
   mounted() {
     this.loadPositionData()
     this.loadCandidates()
+    this.checkSuccessMessage()
   },
   methods: {
+    viewCandidateProfile(candidate) {
+      this.selectedCandidateName = candidate.candidate_name
+      this.selectedUserId = candidate.user_id
+      this.showProfileModal = true
+    },
+
+    closeProfileModal() {
+      this.showProfileModal = false
+      this.selectedCandidateName = ''
+      this.selectedUserId = null
+    },
+
+    checkSuccessMessage() {
+      const success = this.$route.query.success
+      const message = this.$route.query.message
+      
+      if (success === 'true' && message) {
+        this.successMessage = message
+        this.showSuccessAlert = true
+        
+        setTimeout(() => {
+          this.showSuccessAlert = false
+          this.$router.replace({ 
+            name: 'CandidateList', 
+            params: { positionId: this.positionId } 
+          })
+        }, 3000)
+      }
+    },
+    
+    closeSuccessAlert() {
+      this.showSuccessAlert = false
+      this.$router.replace({ 
+        name: 'CandidateList', 
+        params: { positionId: this.positionId } 
+      })
+    },
+
+    getCandidateInitial(name) {
+      if (!name) return '?'
+      return name.charAt(0)
+    },
+
+    async fetchCandidateAvatar(candidate) {
+      if (!candidate.avatar_url) return null
+      
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        
+        let avatarUrl = candidate.avatar_url
+        if (avatarUrl.startsWith('/')) {
+          avatarUrl = `http://localhost:8080${avatarUrl}`
+        }
+        
+        const response = await fetch(avatarUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const avatarBlobUrl = URL.createObjectURL(blob)
+          this.candidateAvatars[candidate.application_id] = avatarBlobUrl
+          this.$forceUpdate()
+        } else {
+          console.error('获取头像失败，状态码:', response.status)
+        }
+      } catch (error) {
+        console.error('获取候选人头像失败:', error)
+      }
+    },
+
+    getAvatarUrl(candidate) {
+      if (this.candidateAvatars[candidate.application_id]) {
+        return this.candidateAvatars[candidate.application_id]
+      }
+      
+      if (candidate.avatar_url) {
+        return null
+      }
+      
+      return null
+    },
+
+    handleAvatarError(event) {
+      console.log('头像加载失败，显示姓氏占位符')
+      event.target.style.display = 'none'
+    },
+
     async loadPositionData() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.positionId}`, {
           method: 'GET',
@@ -215,7 +339,7 @@ export default {
         }
         
         const data = await response.json()
-        console.log('岗位详情接口返回数据:', data);
+        console.log('岗位详情接口返回数据:', data)
         
         if (data.code === 200 && data.data) {
           this.currentPosition = data.data.job_details || { title: '未知岗位' }
@@ -229,24 +353,22 @@ export default {
     },
 
     async loadCandidates() {
-      if (this.loading) return;
+      if (this.loading) return
       
-      this.loading = true;
+      this.loading = true
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
-        // 构建查询参数
         const params = new URLSearchParams({
           page: this.currentPage,
           page_size: this.pageSize
-        });
+        })
 
-        // 添加搜索条件
         if (this.filters.candidateName) {
-          params.append('name_keyword', this.filters.candidateName);
+          params.append('name_keyword', this.filters.candidateName)
         }
         if (this.filters.resumeStatus) {
-          params.append('status', this.filters.resumeStatus);
+          params.append('status', this.filters.resumeStatus)
         }
 
         const response = await fetch(`http://localhost:8080/api/hr/talentpool/job/list/${this.positionId}?${params}`, {
@@ -262,7 +384,7 @@ export default {
         }
         
         const data = await response.json()
-        console.log('候选人列表接口返回数据:', data);
+        console.log('候选人列表接口返回数据:', data)
         
         if (data.code === 200 && data.data) {
           this.allCandidates = data.data.candidate_list || []
@@ -270,6 +392,12 @@ export default {
           this.totalItems = data.data.pagination?.total_items || 0
           this.totalPages = data.data.pagination?.total_pages || 0
           this.currentPage = data.data.pagination?.current_page || 1
+          
+          this.allCandidates.forEach(candidate => {
+            if (candidate.avatar_url) {
+              this.fetchCandidateAvatar(candidate)
+            }
+          })
         } else {
           console.error('接口返回错误:', data.message)
           this.useMockData()
@@ -278,65 +406,53 @@ export default {
         console.error('获取候选人列表失败:', error)
         this.useMockData()
       } finally {
-        this.loading = false;
+        this.loading = false
       }
+      this.checkSuccessMessage()
     },
 
-    // 排序候选人，将"已投递"状态的放在最前面
     sortCandidates() {
       this.sortedCandidates = [...this.allCandidates].sort((a, b) => {
         if (a.resume_status === '已投递' && b.resume_status !== '已投递') {
-          return -1;
+          return -1
         } else if (a.resume_status !== '已投递' && b.resume_status === '已投递') {
-          return 1;
+          return 1
         } else {
-          return 0;
+          return 0
         }
-      });
+      })
     },
 
     useMockData() {
-      // 模拟数据，当接口不可用时使用
       this.allCandidates = [
         {
           application_id: 1,
           candidate_name: '陈雯珮',
           grade: '2023级',
           degree: 'bachelor',
-          resume_status: '候选人'
+          resume_status: '候选人',
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
+          user_id: 3
         },
         {
           application_id: 2,
           candidate_name: '大眼眼',
           grade: '2022级',
           degree: 'bachelor',
-          resume_status: '已投递'
-        },
-        {
-          application_id: 3,
-          candidate_name: '大韩寒',
-          grade: '2023级',
-          degree: 'master',
-          resume_status: '邀请面试'
-        },
-        {
-          application_id: 4,
-          candidate_name: '无名氏',
-          grade: '2023级',
-          degree: 'bachelor',
-          resume_status: '通过'
-        },
-        {
-          application_id: 5,
-          candidate_name: '测试用户',
-          grade: '2021级',
-          degree: 'doctor',
-          resume_status: '拒绝'
+          resume_status: '已投递',
+          avatar_url: null,
+          user_id: 4
         }
       ]
       this.sortCandidates()
       this.totalItems = this.allCandidates.length
       this.totalPages = 1
+      
+      this.allCandidates.forEach(candidate => {
+        if (candidate.avatar_url) {
+          this.fetchCandidateAvatar(candidate)
+        }
+      })
     },
 
     getDegreeText(degree) {
@@ -360,7 +476,7 @@ export default {
     },
 
     handleSearch() {
-      console.log('开始搜索，候选人名字:', this.filters.candidateName, '简历状态:', this.filters.resumeStatus);
+      console.log('开始搜索，候选人名字:', this.filters.candidateName, '简历状态:', this.filters.resumeStatus)
       this.currentPage = 1
       this.loadCandidates()
     },
@@ -368,7 +484,6 @@ export default {
     onCandidateSelected(candidate) {
       this.activeCandidateId = candidate.application_id || candidate.id
       
-      // 跳转到简历页面 - 修复路由参数问题
       this.$router.push({
         name: 'CandidateResume',
         params: { 
@@ -378,18 +493,17 @@ export default {
       })
     },
 
-    // 切换页码
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
         this.loadCandidates()
-        // 滚动到顶部
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
   }
 }
 </script>
+
 
 <style scoped>
 .candidate-layout {
@@ -402,6 +516,57 @@ export default {
   flex: 1;
   background: #f5f5f5;
   min-height: calc(100vh - 105px);
+}
+
+/* 成功提示样式 */
+.success-alert {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f0f9f0;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  min-width: 400px;
+  max-width: 600px;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-icon {
+  font-size: 18px;
+}
+
+.alert-message {
+  flex: 1;
+  color: #2e7d32;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-close:hover {
+  color: #333;
 }
 
 /* 面包屑导航 */
@@ -471,7 +636,7 @@ export default {
   align-items: center;
   gap: 120px;
   flex-wrap: wrap;
-  margin-left: 200px;
+  margin-left: 350px;
 }
 
 .filter-item {
@@ -575,6 +740,33 @@ export default {
   padding-left: 40px;
 }
 
+.candidate-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.candidate-name {
+  font-weight: 500;
+  font-size: 24px;
+  white-space: nowrap;
+}
+
+.view-profile-link {
+  color: #325e21;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.view-profile-link:hover {
+  color: #2a4e1b;
+  text-decoration: underline;
+}
+
 .grade-col, .degree-col, .status-col {
   display: flex;
   align-items: center;
@@ -587,17 +779,26 @@ export default {
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
+  position: relative;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #325e21, #4a7c2f);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 50%;
 }
 
 .candidate-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.candidate-name {
-  font-weight: 500;
-  font-size: 24px;
 }
 
 .status-tag {
@@ -642,7 +843,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
 }
 
 .page-info {
@@ -744,6 +944,12 @@ export default {
   .candidate-info-col {
     justify-content: center;
     padding-left: 20px;
+  }
+
+  .candidate-info-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
   }
 
   .pagination {

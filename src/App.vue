@@ -77,7 +77,7 @@ export default {
     // 获取公司信息 - 使用 fetch 并添加鉴权
     async fetchCompanyProfile() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         const response = await fetch('http://localhost:8080/hr/company/profile', {
           method: 'GET',

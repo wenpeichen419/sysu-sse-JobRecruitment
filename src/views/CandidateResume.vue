@@ -26,9 +26,6 @@
           </div>
         </div>
 
-        
-      
-        
         <div class="resume-content">
           <!-- 简历查看器 -->
           <div class="resume-viewer">
@@ -48,17 +45,43 @@
             </div>
           </div>
           
-          <!-- 操作按钮 - 固定位置 -->
-          <div class="resume-actions">
-            <button class="btn-interview" @click="sendInterview">
-              <span class="btn-icon">📧 发送面试通知</span>
-            </button>
-            <button class="btn-reject" @click="rejectCandidate">
-              <span class="btn-icon">❌ 拒绝</span>
-            </button>
-            <button class="btn-reserve" @click="reserveCandidate">
-              <span class="btn-icon">⭐ 列为候选人</span>
-            </button>
+          <!-- 操作按钮 - 根据状态动态显示 -->
+          <div class="resume-actions" v-if="showActionButtons">
+            <!-- 已投递状态：3个按钮 -->
+            <template v-if="currentCandidate.resume_status === '已投递'">
+              <button class="btn-interview" @click="updateStatus('面试邀请')">
+                <span class="btn-icon">📧 发送面试通知</span>
+              </button>
+              <button class="btn-reject" @click="updateStatus('拒绝')">
+                <span class="btn-icon">❌ 拒绝</span>
+              </button>
+              <button class="btn-reserve" @click="updateStatus('候选人')">
+                <span class="btn-icon">⭐ 列为候选人</span>
+              </button>
+            </template>
+
+            <!-- 候选人状态：2个按钮 -->
+            <template v-else-if="currentCandidate.resume_status === '候选人'">
+              <button class="btn-interview" @click="updateStatus('面试邀请')">
+                <span class="btn-icon">📧 发送面试通知</span>
+              </button>
+              <button class="btn-reject" @click="updateStatus('拒绝')">
+                <span class="btn-icon">❌ 拒绝</span>
+              </button>
+            </template>
+
+            <!-- 面试邀请状态：2个按钮 -->
+            <template v-else-if="currentCandidate.resume_status === '面试邀请'">
+              <button class="btn-pass" @click="updateStatus('通过')">
+                <span class="btn-icon">✅ 通过</span>
+              </button>
+              <button class="btn-reject" @click="updateStatus('拒绝')">
+                <span class="btn-icon">❌ 拒绝</span>
+              </button>
+            </template>
+
+            <!-- 拒绝状态：无按钮 -->
+            <!-- 通过状态：无按钮 -->
           </div>
         </div>
       </div>
@@ -79,7 +102,8 @@ export default {
       currentCandidate: {
         candidate_name: '',
         grade: '',
-        degree: ''
+        degree: '',
+        resume_status: ''
       },
       currentPosition: { title: '加载中...' },
       resumeUrl: '',
@@ -92,6 +116,11 @@ export default {
     },
     candidateId() {
       return this.$route.params.candidateId
+    },
+    // 计算是否显示操作按钮
+    showActionButtons() {
+      const status = this.currentCandidate.resume_status
+      return status === '已投递' || status === '候选人' || status === '面试邀请'
     }
   },
   mounted() {
@@ -109,7 +138,7 @@ export default {
   methods: {
     async loadCandidateData() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         // 获取候选人详细信息
         const response = await fetch(`http://localhost:8080/api/hr/talentpool/job/list/${this.positionId}?page=1&page_size=100`, {
@@ -138,7 +167,7 @@ export default {
 
     async loadSidebarCandidates() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         const response = await fetch(`http://localhost:8080/api/hr/talentpool/job/list/${this.positionId}?page=1&page_size=100`, {
           method: 'GET',
@@ -157,7 +186,7 @@ export default {
                 id: candidate.application_id,
                 name: candidate.candidate_name,
                 status: candidate.resume_status,
-                avatar: ''
+                avatar: candidate.avatar_url || '' // 这里要传递头像URL
               }))
           }
         }
@@ -168,7 +197,7 @@ export default {
 
     async loadResumeUrl() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         const response = await fetch(`http://localhost:8080/api/hr/applications/${this.candidateId}`, {
           method: 'GET',
@@ -191,7 +220,7 @@ export default {
 
     async loadPositionData() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM2MDIyNDgsImV4cCI6MTc2MzY4ODY0OH0.A0KF0nyu6oTjNhYfkjTMiwqnGl9-lEOBmnRSJJxk7eg'
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.positionId}`, {
           method: 'GET',
@@ -239,30 +268,78 @@ export default {
       })
     },
 
-    sendInterview() {
-      this.updateCandidateStatus('已发送面试通知')
-      alert('已发送面试通知')
-    },
+    // 更新候选人状态
+    // 更新候选人状态
+async updateStatus(newStatus) {
+  try {
+    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+    
+    const response = await fetch(`http://localhost:8080/api/hr/applications/${this.candidateId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: newStatus
+      })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.code === 200) {
+        // 跳转回候选人列表页面，并传递成功消息
+        this.$router.push({
+          name: 'CandidateList',
+          params: { 
+            positionId: this.positionId
+          },
+          query: {
+            success: 'true',
+            message: `已成功${this.getStatusText(newStatus)}：${this.currentCandidate.candidate_name}`,
+            candidateName: this.currentCandidate.candidate_name,
+            newStatus: newStatus
+          }
+        })
+      } else {
+        alert('操作失败：' + (data.message || '未知错误'))
+      }
+    } else {
+      alert('操作失败：网络请求错误')
+    }
+  } catch (error) {
+    console.error('更新状态失败:', error)
+    alert('操作失败：网络错误')
+  }
+},
 
-    rejectCandidate() {
-      this.updateCandidateStatus('已拒绝')
-      alert('已拒绝该候选人')
-    },
-
-    reserveCandidate() {
-      this.updateCandidateStatus('已候选')
-      alert('已列为候选人')
-    },
-
-    updateCandidateStatus(newStatus) {
-      // 这里应该调用API更新状态
-      console.log(`更新候选人 ${this.currentCandidate.candidate_name} 状态为: ${newStatus}`)
+    // 获取状态对应的中文文本
+    getStatusText(status) {
+      const statusMap = {
+        '面试邀请': '发送面试通知',
+        '拒绝': '拒绝',
+        '候选人': '列为候选人',
+        '通过': '通过'
+      }
+      return statusMap[status] || status
     }
   }
 }
 </script>
 
+
 <style scoped>
+.btn-pass {
+  background: #5b9862;
+  color: white;
+}
+
+.btn-pass:hover {
+  background: #4a7c2f;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(91, 152, 98, 0.4);
+}
+
 .candidate-layout {
   display: flex;
   min-height: calc(100vh - 105px);
@@ -407,10 +484,10 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width: 200px;
+  width: 250px;
   flex-shrink: 0;
   margin-right: -220px;
-  margin-top: 130px;
+  margin-top: 300px;
 }
 
 .resume-actions button {

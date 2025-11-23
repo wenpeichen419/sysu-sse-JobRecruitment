@@ -13,7 +13,12 @@
         :class="{ active: activeCandidateId === candidate.id }"
       >
         <div class="sidebar-avatar">
-          <img v-if="candidate.avatar" :src="candidate.avatar" alt="头像">
+          <img 
+            v-if="getSidebarAvatar(candidate)" 
+            :src="getSidebarAvatar(candidate)" 
+            :alt="candidate.name + '的头像'"
+            @error="handleAvatarError($event, candidate)"
+          >
           <div v-else class="sidebar-avatar-placeholder">
             {{ candidate.name.charAt(0) }}
           </div>
@@ -40,9 +45,88 @@ export default {
       default: ''
     }
   },
+  data() {
+    return {
+      sidebarAvatars: {} // 存储侧边栏头像
+    }
+  },
+  watch: {
+    candidates: {
+      immediate: true,
+      handler(newCandidates) {
+        // 当候选人列表变化时，加载头像
+        newCandidates.forEach(candidate => {
+          if (candidate.avatar) {
+            this.fetchSidebarAvatar(candidate);
+          }
+        });
+      }
+    }
+  },
   methods: {
     viewCandidateResume(candidate) {
       this.$emit('candidate-selected', candidate)
+    },
+    
+    // 获取侧边栏候选人头像
+    async fetchSidebarAvatar(candidate) {
+      if (!candidate.avatar) return;
+      
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        
+        let avatarUrl = candidate.avatar;
+        if (avatarUrl.startsWith('/')) {
+          avatarUrl = `http://localhost:8080${avatarUrl}`;
+        }
+        
+        // 强制使用8080端口
+        avatarUrl = avatarUrl.replace('localhost:5306', 'localhost:8080');
+        avatarUrl = avatarUrl.replace(':5306/', ':8080/');
+        
+        console.log('侧边栏请求头像URL:', avatarUrl);
+        
+        const response = await fetch(avatarUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        
+        console.log('侧边栏头像响应状态:', response.status);
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const avatarBlobUrl = URL.createObjectURL(blob);
+          this.sidebarAvatars[candidate.id] = avatarBlobUrl;
+          // 强制更新视图
+          this.$forceUpdate();
+        } else {
+          console.error('获取侧边栏头像失败，状态码:', response.status);
+        }
+      } catch (error) {
+        console.error('获取侧边栏头像失败:', error);
+      }
+    },
+
+    // 获取侧边栏头像URL
+    getSidebarAvatar(candidate) {
+      if (this.sidebarAvatars[candidate.id]) {
+        return this.sidebarAvatars[candidate.id];
+      }
+      
+      // 如果有头像URL但还没加载，返回null让占位符显示
+      if (candidate.avatar) {
+        return null;
+      }
+      
+      return null; // 返回null显示占位符
+    },
+
+    // 头像加载失败处理
+    handleAvatarError(event) {
+      console.log('侧边栏头像加载失败，显示占位符');
+      event.target.style.display = 'none';
     }
   }
 }
