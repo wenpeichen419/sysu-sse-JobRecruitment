@@ -54,18 +54,6 @@
               </div>
             </div>
           </div>
-
-          <!-- 个人标签 -->
-          <div class="resume-section" v-if="resumeData.personal_tags && resumeData.personal_tags.length > 0">
-            <h4 class="resume-section-title">个人标签</h4>
-            <div class="resume-tags">
-              <span 
-                v-for="(tag, index) in resumeData.personal_tags" 
-                :key="index" 
-                class="resume-tag"
-              >{{ tag }}</span>
-            </div>
-          </div>
         </div>
         
         <div class="resume-right">
@@ -88,8 +76,20 @@
             <div v-else class="no-data">暂无教育经历信息</div>
           </div>
 
+          <!-- 个人标签 -->
+          <div class="resume-section" v-if="hasPersonalTags">
+            <h4 class="resume-section-title">个人标签</h4>
+            <div class="resume-tags">
+              <span 
+                v-for="tag in personalTags" 
+                :key="tag.tag_id" 
+                class="resume-tag"
+              >{{ tag.name }}</span>
+            </div>
+          </div>
+
           <!-- 技能标签 -->
-          <div class="resume-section" v-if="resumeData.skills && resumeData.skills.length > 0">
+          <div class="resume-section" v-if="hasSkills">
             <h4 class="resume-section-title">技能标签</h4>
             <div class="resume-tags">
               <span 
@@ -135,6 +135,20 @@ export default {
       error: null,
       avatarUrl: null,
       avatarLoaded: false
+    }
+  },
+  computed: {
+    // 计算是否有个人标签
+    hasPersonalTags() {
+      return this.resumeData?.personal_tags && this.resumeData.personal_tags.length > 0
+    },
+    // 获取个人标签数组
+    personalTags() {
+      return this.resumeData?.personal_tags || []
+    },
+    // 计算是否有技能标签
+    hasSkills() {
+      return this.resumeData?.skills && this.resumeData.skills.length > 0
     }
   },
   watch: {
