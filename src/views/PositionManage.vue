@@ -147,7 +147,7 @@ export default {
       
       this.loading = true;
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         // 构建查询参数 - 使用正确的参数名
         const params = new URLSearchParams({

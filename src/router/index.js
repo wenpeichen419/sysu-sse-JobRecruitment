@@ -6,6 +6,26 @@ import AppliedList from '@/views/AppliedList.vue'
 import AppliedDetail from '@/views/AppliedDetail.vue'
 
 const routes = [
+  // 登录相关路由（无导航栏）
+  {
+    path: '/login-page',
+    name: 'LoginPage',
+    component: () => import('../views/LoginPage.vue'),
+    meta: { layout: 'none' }
+  },
+  {
+    path: '/register-page',
+    name: 'RegisterPage',
+    component: () => import('../views/RegisterPage.vue'),
+    meta: { layout: 'none' }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue'),
+    meta: { layout: 'none' }
+  },
+  
   // 学生端路由
   {
     path: '/',

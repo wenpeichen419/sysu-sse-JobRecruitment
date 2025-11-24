@@ -278,7 +278,7 @@ export default {
       if (!candidate.avatar_url) return null
       
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         let avatarUrl = candidate.avatar_url
         if (avatarUrl.startsWith('/')) {
@@ -324,7 +324,7 @@ export default {
 
     async loadPositionData() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.positionId}`, {
           method: 'GET',
@@ -357,7 +357,7 @@ export default {
       
       this.loading = true
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const params = new URLSearchParams({
           page: this.currentPage,

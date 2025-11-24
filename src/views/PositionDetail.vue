@@ -226,7 +226,7 @@ export default {
   methods: {
     async fetchPositionDetail() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
           method: 'GET',
@@ -257,7 +257,7 @@ export default {
 
     async fetchLocations() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch('http://localhost:8080/api/locations', {
           method: 'GET',
@@ -403,7 +403,7 @@ export default {
           type: 'warning'
         })
 
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
           method: 'PUT',
@@ -442,7 +442,7 @@ export default {
           type: 'warning'
         })
 
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch(`http://localhost:8080/api/hr/jobs/${this.id}`, {
           method: 'DELETE',

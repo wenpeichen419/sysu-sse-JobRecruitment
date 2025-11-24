@@ -4,7 +4,7 @@
     <StudentNavbar v-if="layout === 'student'" />
 
     <!-- 企业端导航（默认） -->
-    <nav v-else class="navbar">
+    <nav v-else-if="layout === 'enterprise'" class="navbar">
       <!-- 左侧logo和院名 -->
       <div class="logo-section">
         <img
@@ -32,6 +32,21 @@
         <router-link to="/enterprise-info" class="user-link">
           {{ companyName }}
         </router-link>
+        <button class="logout-btn" @click="handleLogout" title="退出登录">
+          <img src="@/assets/退出登录.png" alt="退出登录" class="logout-icon" />
+        </button>
+      </div>
+    </nav>
+
+    <!-- 无导航栏布局（用于登录页面） -->
+    <nav v-else-if="layout === 'none'" class="navbar simple-navbar">
+      <div class="logo-section">
+        <img
+          src="@/assets/campus_logo.png"
+          alt="中山大学软件工程学院"
+          class="logo-image"
+        />
+        <span class="system-name"> | 求职招聘系统</span>
       </div>
     </nav>
 
@@ -69,7 +84,7 @@ export default {
     },
     // 不同导航高度下，主内容需要的顶部外边距
     contentTop() {
-      // 学生端 StudentNavbar企业端 105px
+      if (this.layout === 'none') return '0px'
       return this.layout === 'student' ? '105px' : '105px'
     }
   },
@@ -77,7 +92,11 @@ export default {
     // 获取公司信息 - 使用 fetch 并添加鉴权
     async fetchCompanyProfile() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
+        if (!token) {
+          console.log('未找到token，跳过获取公司信息')
+          return
+        }
         
         const response = await fetch('http://localhost:8080/hr/company/profile', {
           method: 'GET',
@@ -100,13 +119,23 @@ export default {
       } catch (error) {
         console.error('获取公司信息失败:', error)
       }
+    },
+    
+    // 退出登录
+    handleLogout() {
+      // 清除本地存储的token和用户信息
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      
+      // 跳转到登录页面
+      this.$router.push('/login-page')
     }
   },
   mounted() {
     console.log('App mounted, 当前路由:', this.$route.path)
     console.log('当前布局:', this.layout)
-    // 如果是企业端布局，才调用接口
-    if (this.layout === 'enterprise') {
+    // 如果是企业端布局且有token，才调用接口
+    if (this.layout === 'enterprise' && localStorage.getItem('token')) {
       console.log('mounted中调用fetchCompanyProfile')
       this.fetchCompanyProfile()
     }
@@ -117,7 +146,7 @@ export default {
       console.log('路由变化到:', to.path)
       const toLayout = to.meta && to.meta.layout ? to.meta.layout : 'enterprise'
       console.log('新路由布局:', toLayout)
-      if (toLayout === 'enterprise') {
+      if (toLayout === 'enterprise' && localStorage.getItem('token')) {
         console.log('路由监听中调用fetchCompanyProfile')
         this.fetchCompanyProfile()
       }
@@ -156,6 +185,16 @@ body {
   left: 0;
   right: 0;
   z-index: 1000;
+}
+
+.simple-navbar {
+  justify-content: flex-start;
+}
+
+.system-name {
+  color: white;
+  font-size: 36px;
+  margin-left: 10px;
 }
 
 .logo-section {
@@ -201,12 +240,12 @@ body {
 .user-section {
   display: flex;
   align-items: center;
+  gap: 15px;
 }
 
 .user-greeting {
   color: white;
   font-size: 20px;
-  margin-right: 0px;
 }
 
 .user-link {
@@ -223,6 +262,25 @@ body {
 .user-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #ecdcda;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logout-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 /* 主内容区域：顶部外边距由 contentTop 计算提供 */

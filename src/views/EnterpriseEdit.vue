@@ -283,7 +283,7 @@ export default {
     async fetchCompanyProfile() {
   try {
     this.loading = true
-    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+    const token = localStorage.getItem('token')
     
     const response = await fetch('http://localhost:8080/hr/company/profile', {
       method: 'GET',
@@ -322,7 +322,7 @@ export default {
     // 添加获取企业logo的方法
 async fetchCompanyLogo(logoUrl) {
   try {
-    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+    const token = localStorage.getItem('token')
     
     let fullLogoUrl = logoUrl
     if (logoUrl.startsWith('/')) {
@@ -355,7 +355,7 @@ async fetchCompanyLogo(logoUrl) {
 
     async fetchOptions() {
       try {
-        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+        const token = localStorage.getItem('token')
         
         const response = await fetch('http://localhost:8080/hr/company/options', {
           method: 'GET',
@@ -545,7 +545,7 @@ handleAvatarSuccess(res, file) {
 
   try {
     this.submitting = true;
-    const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ'
+    const token = localStorage.getItem('token')
     
     const submitData = {
       description: this.enterpriseInfo.description,
