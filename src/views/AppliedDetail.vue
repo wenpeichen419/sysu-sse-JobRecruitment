@@ -10,9 +10,18 @@
     <!-- 头部信息栏 -->
     <div class="meta-card" v-if="job">
       <div class="row">
-        <div>投递时间：<b>{{ job.submitted_at }}</b></div>
-        <div>状态更新时间：<b>{{ job.updated_at }}</b></div>
-        <div class="right">投递岗位：<b>{{ job.job.title }}</b></div>
+        <div class="meta-item">
+          <span class="label">投递时间：</span>
+          <b>{{ submittedAtText }}</b>
+        </div>
+        <div class="meta-item">
+          <span class="label">状态更新时间：</span>
+          <b>{{ updatedAtText }}</b>
+        </div>
+        <div class="meta-item right">
+          <span class="label">投递岗位：</span>
+          <b>{{ job.job.title }}</b>
+        </div>
       </div>
 
       <!-- 状态横幅 -->
@@ -101,7 +110,7 @@ export default {
       if (s === '拒绝') return 1
       return 1
     },
-    // 状态标题：这里直接使用后端的 status
+    // 状态标题
     stateTitle() {
       return this.job ? this.job.status : ''
     },
@@ -124,7 +133,7 @@ export default {
       }
       return ''
     },
-    // 横幅颜色 class 映射到你原来 CSS 里的 submitted/interview/passed/stopped
+    // 横幅颜色 class 映射到 submitted/interview/passed/stopped
     bannerClass() {
       if (!this.job) return ''
       const s = this.job.status
@@ -133,6 +142,15 @@ export default {
       if (s === 'Offer') return 'passed'
       if (s === '拒绝') return 'stopped'
       return ''
+    },
+    // 格式化后的时间（去掉 T，长度控制到秒）
+    submittedAtText() {
+      if (!this.job || !this.job.submitted_at) return ''
+      return this.formatDateTime(this.job.submitted_at)
+    },
+    updatedAtText() {
+      if (!this.job || !this.job.updated_at) return ''
+      return this.formatDateTime(this.job.updated_at)
     }
   },
   methods: {
@@ -156,6 +174,11 @@ export default {
       } catch (error) {
         console.error('获取岗位详情失败', error)
       }
+    },
+    // 简单的时间格式化：2025-11-20T17:14:30 => 2025-11-20 17:14:30
+    formatDateTime(str) {
+      if (!str) return ''
+      return str.replace('T', ' ').slice(0, 19)
     }
   }
 }
@@ -199,18 +222,35 @@ export default {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* 头部信息：自动换行，不会太挤 */
 .row {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 8px 32px;
   align-items: center;
   color: #555;
   margin-bottom: 16px;
 }
 
-.row .right {
+.meta-item {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.meta-item .label {
+  color: #666;
+}
+
+.meta-item b {
+  font-weight: 600;
+}
+
+.meta-item.right {
   margin-left: auto;
 }
 
+/* 状态横幅 */
 .state-banner {
   display: flex;
   align-items: center;
@@ -221,7 +261,6 @@ export default {
   border: 1px solid #dbeed8;
 }
 
-/* 根据 bannerClass 映射的几种状态背景色 */
 .state-banner.submitted {
   background: #eaf7e7;
 }
@@ -260,6 +299,7 @@ export default {
   opacity: 0.85;
 }
 
+/* 进度条 */
 .step-card {
   background: #fff;
   border-radius: 10px;

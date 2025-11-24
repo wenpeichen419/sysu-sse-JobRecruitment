@@ -36,7 +36,13 @@
         <div class="job-left-info">
           <div class="job-title">
             <span class="link">{{ item.title }}</span>
-            <span class="status-chip" :class="item.status">{{ statusText(item.status) }}</span>
+            <span
+  class="status-chip"
+  :class="statusClass(item.status)"
+>
+  {{ statusText(item.status) }}
+</span>
+
           </div>
           <div class="job-details">
             <span class="salary">{{ item.salary_range }}</span>
@@ -87,10 +93,10 @@ export default {
   name: 'AppliedList',
   data() {
     return {
-      raw: [],  // 原始数据（职位列表）
-      q: { title: '', company: '' },  // 搜索条件
-      page: 1,  // 当前页
-      size: 5,  // 每页数据条数
+      raw: [], // 原始数据（职位列表）
+      q: { title: '', company: '' }, // 搜索条件
+      page: 1, // 当前页
+      size: 5 // 每页数据条数
     };
   },
   created() {
@@ -100,14 +106,18 @@ export default {
     // 根据标题和公司名称进行过滤
     filtered() {
       let arr = this.raw.slice();
+
       if (this.q.title.trim()) {
         const k = this.q.title.trim().toLowerCase();
-        arr = arr.filter(x => x.title.toLowerCase().includes(k));
+        arr = arr.filter(x => (x.title || '').toLowerCase().includes(k));
       }
+
       if (this.q.company.trim()) {
         const k = this.q.company.trim().toLowerCase();
-        arr = arr.filter(x => x.company.toLowerCase().includes(k));
+        // 注意这里用 company_name，和模板里保持一致
+        arr = arr.filter(x => (x.company_name || '').toLowerCase().includes(k));
       }
+
       return arr;
     },
     // 计算分页总页数
@@ -130,7 +140,7 @@ export default {
     // 是否需要显示省略号
     showEllipsis() {
       return this.totalPages > 5 && this.page < this.totalPages - 2;
-    },
+    }
   },
   methods: {
     // 获取职位列表数据
@@ -138,36 +148,62 @@ export default {
       try {
         const token = localStorage.getItem('token'); // 从 localStorage 获取 token
         if (!token) {
-          console.error("Token 不存在，请先登录"); // Token 为空，打印提示
+          console.error('Token 不存在，请先登录'); // Token 为空，打印提示
           return;
         }
 
-        const response = await axios.get('http://localhost:8080/position-center/delivery/list', {
-          headers: { Authorization: `Bearer ${token}` }, // 在请求头中添加 token
-        });
+        const response = await axios.get(
+          'http://localhost:8080/position-center/delivery/list',
+          {
+            headers: { Authorization: `Bearer ${token}` } // 在请求头中添加 token
+          }
+        );
 
         this.raw = response.data.data.jobs; // 处理数据
+        console.log('列表 jobs:', this.raw);
       } catch (error) {
-        console.error("获取职位列表失败", error);
+        console.error('获取职位列表失败', error);
       }
     },
-    // 根据投递状态返回不同的文本
+
+    // 根据投递状态返回不同的文本（兼容数字码 + 中文）
     statusText(status) {
-      switch (status) {
-        case 10:
-          return '已投递';
-        case 20:
-          return '设置为候选人';
-        case 30:
-          return '已发面试';
-        case 40:
-          return '通过';
-        case 50:
-          return '拒绝';
-        default:
-          return '未知状态';
+      // 如果后端直接给中文（已投递/候选人/面试邀请/Offer/拒绝），直接用
+      if (typeof status === 'string' && isNaN(Number(status))) {
+        return status;
       }
+
+      // 兼容数字 10 / 20 / 30 / 40 / 50
+      const map = {
+        10: '已投递',
+        20: '候选人',
+        30: '面试邀请',
+        40: '通过',
+        50: '拒绝'
+      };
+
+      const s = Number(status);
+      return map[s] || '未知状态';
     },
+
+    // 状态对应的小标签 class，和 CSS 里的 submitted/interview/... 对上
+    statusClass(status) {
+      // 先按中文判断
+      if (status === '已投递') return 'submitted';
+      if (status === '候选人' || status === '面试邀请') return 'interview';
+      if (status === 'Offer' || status === '通过') return 'passed';
+      if (status === '拒绝') return 'stopped';
+
+      // 再兼容数字编码
+      const s = Number(status);
+      if (s === 10) return 'submitted';
+      if (s === 20 || s === 30) return 'interview';
+      if (s === 40) return 'passed';
+      if (s === 50) return 'stopped';
+
+      return '';
+    },
+
     // 搜索操作，重置页码为1
     handleSearch() {
       this.page = 1;
@@ -182,10 +218,11 @@ export default {
     // 查看职位详情
     toDetail(id) {
       this.$router.push({ name: 'AppliedDetail', params: { id } });
-    },
-  },
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 .job-center-page{min-height:100vh;background:#f0f0f0;padding:20px 40px}

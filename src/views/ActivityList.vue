@@ -100,6 +100,7 @@ export default {
       try {
         // 你现在的接口是 /events/upcoming，就继续用它
         const res = await axios.get('/events/upcoming')
+        console.log('events 接口返回：', res.data)
         const events = res.data?.data?.events || []
 
         this.data = events.map(e => ({
