@@ -292,15 +292,66 @@ export default {
       window.open(url, '_blank')
     },
 
-    confirmPasswordChange() {
-      console.log('修改密码:', this.passwordForm)
-      this.showPasswordDialog = false
-      this.passwordForm = {
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }
+      async confirmPasswordChange() {
+    // 验证输入
+    if (!this.passwordForm.oldPassword || !this.passwordForm.newPassword || !this.passwordForm.confirmPassword) {
+      alert('请填写所有密码字段')
+      return
     }
+
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+      alert('新密码和确认密码不一致')
+      return
+    }
+
+    if (this.passwordForm.newPassword.length < 6) {
+      alert('新密码长度不能少于6位')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch('http://localhost:8080/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          old_password: this.passwordForm.oldPassword,
+          new_password: this.passwordForm.newPassword
+        })
+      })
+
+      const data = await response.json()
+      
+      if (response.ok && data.code === 200) {
+        alert('密码修改成功，请重新登录')
+        
+        // 清除本地存储的token
+        localStorage.removeItem('token')
+        
+        // 关闭弹窗
+        this.showPasswordDialog = false
+        
+        // 重置表单
+        this.passwordForm = {
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }
+        
+        // 跳转到登录页
+        this.$router.push('/login-page')
+      } else {
+        alert('密码修改失败：' + (data.message || '未知错误'))
+      }
+    } catch (error) {
+      console.error('修改密码失败:', error)
+      alert('修改密码失败，请检查网络连接')
+    }
+  }
   },
   mounted() {
     this.fetchCompanyProfile()
