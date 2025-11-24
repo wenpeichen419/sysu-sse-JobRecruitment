@@ -44,7 +44,7 @@ export default {
       studentName: mockStudent.name,
       // 与企业端一致的 Tab 布局，但路径为学生端页面
       navLinks: [
-        { path: '/', text: '首页', exact: true },
+        { path: '/student-home', text: '首页', exact: true },
         { path: '/job-center',          text: '求职中心' },
         { path: '/resume-manage',       text: '简历管理' },
         { path: '/applied',     text: '投递情况' }

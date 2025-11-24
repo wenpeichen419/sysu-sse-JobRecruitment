@@ -8,6 +8,12 @@ import ActivityList from '@/views/ActivityList.vue'
 import ActivityDetail from '@/views/ActivityDetail.vue'
 
 const routes = [
+  // 默认路由重定向到登录页
+  {
+    path: '/',
+    redirect: '/login-page'
+  },
+  
   // 登录相关路由（无导航栏）
   {
     path: '/login-page',
@@ -30,7 +36,7 @@ const routes = [
   
     // 学生端路由
   {
-    path: '/',
+    path: '/student-home',
     name: 'StudentHome',
     component: StudentHome,
     meta: { layout: 'student' }

@@ -94,7 +94,7 @@ export default {
           
           // 根据用户角色跳转到不同页面
           if (data.data.user_info.role === 'student') {
-            this.$router.push('/')
+            this.$router.push('/student-home')
           } else {
             this.$router.push('/enterprise-home')
           }
