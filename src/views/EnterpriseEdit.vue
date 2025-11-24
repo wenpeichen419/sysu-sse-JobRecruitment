@@ -262,7 +262,7 @@ export default {
       },
       newAvatar: null,
       uploadHeaders: {
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaHIiLCJpZCI6Miwic3ViIjoiY2hlbndwMjhAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjM4OTE1MjUsImV4cCI6MTc2Mzk3NzkyNX0.gHZ5sW6CFoq_VxuqxvKEcEDvtLTpi8F02Qpz950AsaQ`
+        'Authorization': ''
       },
       locationResults: [],
       phoneError: '',
@@ -278,8 +278,16 @@ export default {
     await this.fetchCompanyProfile()
     await this.fetchOptions()
     this.setupScrollSpy()
+    this.setUploadHeaders()
   },
   methods: {
+    setUploadHeaders() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.uploadHeaders.Authorization = `Bearer ${token}`;
+    }
+  },
+
     async fetchCompanyProfile() {
   try {
     this.loading = true
