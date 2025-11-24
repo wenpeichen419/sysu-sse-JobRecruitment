@@ -4,6 +4,8 @@ import CandidateList from '../views/CandidateList.vue'
 import StudentHome from '@/views/StudentHome.vue'
 import AppliedList from '@/views/AppliedList.vue'
 import AppliedDetail from '@/views/AppliedDetail.vue'
+import ActivityList from '@/views/ActivityList.vue'
+import ActivityDetail from '@/views/ActivityDetail.vue'
 
 const routes = [
   // 登录相关路由（无导航栏）
@@ -26,7 +28,7 @@ const routes = [
     meta: { layout: 'none' }
   },
   
-  // 学生端路由
+    // 学生端路由
   {
     path: '/',
     name: 'StudentHome',
@@ -88,6 +90,17 @@ const routes = [
     path: '/my-favorites',
     name: 'MyFavorites',
     component: () => import('../views/MyFavorites.vue'),
+    meta: { layout: 'student' }
+  },
+  { path: '/activities', 
+    name: 'ActivityList', 
+    component: ActivityList ,
+    meta: { layout: 'student' }
+  },
+  { path: '/activities/:id', 
+    name: 'ActivityDetail', 
+    component: ActivityDetail, 
+    props: true ,
     meta: { layout: 'student' }
   },
   
