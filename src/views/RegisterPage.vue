@@ -22,6 +22,17 @@
         </div>
 
         <form @submit.prevent="handleRegister" class="register-form">
+          <!-- 新增：姓名/公司名称输入框 -->
+          <div class="form-group">
+            <input
+              v-model="form.name"
+              type="text"
+              :placeholder="userRole === 'student' ? '学生姓名' : '公司名称'"
+              required
+              class="form-input"
+            >
+          </div>
+
           <div class="form-group">
             <div class="email-input-wrapper">
               <input
@@ -99,6 +110,7 @@ export default {
     return {
       userRole: 'student', // student or hr
       form: {
+        name: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -154,6 +166,12 @@ export default {
     async handleRegister() {
       console.log('handleRegister called') // 调试日志
       
+      // 验证姓名/公司名称
+      if (!this.form.name.trim()) {
+        this.$message.error(this.userRole === 'student' ? '请输入学生姓名' : '请输入公司名称')
+        return
+      }
+
       // 先验证邮箱
       this.validateEmail()
       if (this.emailError) {
@@ -189,6 +207,7 @@ export default {
             email: email,
             password: this.form.password,
             verification_code: this.form.verificationCode,
+            name: this.form.name,
             role: this.userRole
           })
         })
@@ -210,7 +229,13 @@ export default {
     },
 
     sendVerificationCode() {
-      // 先验证邮箱格式
+      // 先验证姓名/公司名称
+      if (!this.form.name.trim()) {
+        this.$message.error(this.userRole === 'student' ? '请输入学生姓名' : '请输入公司名称')
+        return
+      }
+
+      // 验证邮箱格式
       this.validateEmail()
       if (this.emailError) {
         this.$message.error(this.emailError)
