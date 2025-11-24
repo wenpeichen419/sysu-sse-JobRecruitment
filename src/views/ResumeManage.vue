@@ -691,15 +691,18 @@ export default {
 
     async uploadPdfFile(file, usage = 'PDF_EXPORT') {
   try {
+    // 后端如果既支持 query 里的 usage，也支持 formData 里的 usage，这样都能兼容
     const url = `${API_UPLOAD_PDF}?usage=${usage}`
 
-    const arrayBuffer = await file.arrayBuffer()
-    const binary = new Uint8Array(arrayBuffer)
+    const form = new FormData()
+    // 这个字段名很重要，默认先用 file，若后端用的是 pdf_file 之类的，就改成后端的名字
+    form.append('file', file)
+    form.append('usage', usage)
 
-    const res = await axios.post(url, binary, {
+    const res = await axios.post(url, form, {
       headers: {
         ...getAuthHeaders(),
-        'Content-Type': 'application/pdf'
+        'Content-Type': 'multipart/form-data'
       }
     })
 
@@ -709,6 +712,7 @@ export default {
     throw err
   }
 }
+
 ,
 
 

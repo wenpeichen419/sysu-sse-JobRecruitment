@@ -1,6 +1,7 @@
 <template>
   <div class="student-page">
     <div class="container">
+      <!-- 顶部轮播 -->
       <div class="banner">
         <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
           <div class="slide">
@@ -37,7 +38,6 @@
             <h3>求职日历</h3>
             <span class="muted">{{ selectedDate }}</span>
           </div>
-          <!-- 关键：v-model 绑定 selectedDate，:events-map 用我们算好的 map -->
           <StudentCalendar v-model="selectedDate" :events-map="eventsMap" />
         </div>
 
@@ -69,6 +69,8 @@
         <div class="card">
           <div class="card-head">
             <h3>岗位热度排行榜</h3>
+            <!-- more，跳到 /job-center -->
+            <span class="more" @click="goJobCenter">more ></span>
           </div>
 
           <ol class="rank">
@@ -84,11 +86,12 @@
         </div>
       </div>
 
-      <!-- 招聘信息（三类） -->
+      <!-- 底部：招聘信息（四类） -->
       <RecruitmentPanel
         :enterprise="recruitEnterprise"
         :institution="recruitInstitution"
         :internship="recruitInternship"
+        :campus="recruitCampus"
         @more="goRecruitMore"
       />
 
@@ -126,48 +129,48 @@ export default {
     RecruitmentPanel,
     UsefulLinks
   },
-  data() {
+  data () {
     return {
       currentSlide: 0,
       totalSlides: 2,
       timer: null,
+
       // 日历当前选中的日期（默认：今天）
       selectedDate: new Date().toISOString().slice(0, 10),
 
-      // 所有 upcoming 的宣讲会 / 活动（标准化后）
+      // 所有 upcoming 活动
       allEvents: [],
-
-      // 求职日历用：{ 'YYYY-MM-DD': [ { title,time,place,... }, ... ] }
+      // 求职日历数据：{ 'YYYY-MM-DD': [ { title,time,place,id,date }, ... ] }
       eventsMap: {},
-
-      // 中间「近期求职活动」当前展示的数据
+      // 中间「近期求职活动」展示的数据
       upcomingEvents: [],
 
-      // 右侧岗位热度 / 下方招聘信息
+      // 右侧岗位热度
       hotPositions: [],
+
+      // 底部四类招聘
       recruitEnterprise: [],
       recruitInstitution: [],
-      recruitInternship: []
+      recruitInternship: [],
+      recruitCampus: []
     }
   },
 
-  mounted() {
+  mounted () {
     this.timer = setInterval(this.nextSlide, 4000)
 
-    // 只用 /events/upcoming 构建日历 + 近期活动
     this.fetchUpcomingEvents()
     this.fetchRankedJobs()
     this.fetchRecentJobs()
   },
 
-  beforeUnmount() {
+  beforeUnmount () {
     clearInterval(this.timer)
   },
 
   watch: {
-    // 当日历选中的日期变化时（点击 / 悬浮触发 v-model）
-    selectedDate(newVal) {
-
+    // 当日历选中的日期变化时，展示这一日的活动
+    selectedDate (newVal) {
       if (newVal) {
         this.showEventsOfDate(newVal)
       }
@@ -175,22 +178,21 @@ export default {
   },
 
   methods: {
-    nextSlide() {
+    nextSlide () {
       this.currentSlide = (this.currentSlide + 1) % this.totalSlides
     },
-    prevSlide() {
+    prevSlide () {
       this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides
     },
 
     /* ---------------- 接口调用 ---------------- */
 
-    // 1. 统一从 /events/upcoming 拿活动，兼顾日历 + 列表
-    async fetchUpcomingEvents() {
+    // 1. 近期活动 + 日历
+    async fetchUpcomingEvents () {
       try {
         const res = await api.get('/events/upcoming')
         const raw = res.data?.data?.events || []
 
-        // 标准化字段名：兼容 event_title / event_start_time / event_location
         const list = raw.map((item) => {
           const title = item.title || item.event_title || ''
           const start = item.date || item.event_start_time || ''
@@ -206,24 +208,22 @@ export default {
 
         this.allEvents = list
 
-        // 1）构建日历用的 eventsMap
+        // 构建日历数据
         const map = {}
         list.forEach((e) => {
           if (!e.date) return
           if (!map[e.date]) map[e.date] = []
-          // StudentCalendar 只用 title / time / place，这里 time 先留空
           map[e.date].push({
             title: e.title,
             time: '',
             place: e.place,
-            // 额外再带上 id / date，后面中间列表要用
             id: e.id,
             date: e.date
           })
         })
         this.eventsMap = map
 
-        // 2）默认显示：从今天开始后 5 天内的所有活动
+        // 默认：今天起后 5 天
         this.buildUpcomingForNextDays()
       } catch (err) {
         console.error('近期求职活动获取失败', err)
@@ -231,7 +231,7 @@ export default {
     },
 
     // 2. 岗位热度排行榜
-    async fetchRankedJobs() {
+    async fetchRankedJobs () {
       try {
         const res = await api.get('/jobs/ranked')
         const list = res.data?.data?.ranked_jobs || []
@@ -247,33 +247,36 @@ export default {
       }
     },
 
-    // 3. 招聘信息（最新岗位）
-    async fetchRecentJobs() {
+    // 3. 底部四类招聘信息
+    async fetchRecentJobs () {
       try {
-        const res = await api.get('/jobs/recent')
-        const list = res.data?.data?.job_postings || []
+        // 按 job_type_filter 分 4 次请求
+        const [entRes, instRes, internRes, campusRes] = await Promise.all([
+          api.get('/jobs/recent', {
+            params: { job_type_filter: '企业招聘', limit: 10 }
+          }),
+          api.get('/jobs/recent', {
+            params: { job_type_filter: '事业单位招聘', limit: 10 }
+          }),
+          api.get('/jobs/recent', {
+            params: { job_type_filter: '实习招聘', limit: 10 }
+          }),
+          api.get('/jobs/recent', {
+            params: { job_type_filter: '校园招聘', limit: 10 }
+          })
+        ])
 
-        const ent = []
-        const inst = []
-        const intern = []
-
-        list.forEach((item) => {
-          const vm = {
+        const mapList = (res) =>
+          (res.data?.data?.job_postings || []).map((item) => ({
             id: item.job_id,
             title: item.job_title,
-            date: item.posted_at ? String(item.posted_at).slice(0, 10) : '',
-            place: item.location || ''
-          }
+            date: item.posted_at ? String(item.posted_at).slice(0, 10) : ''
+          }))
 
-          const c = item.category || 'enterprise'
-          if (c === 'institution') inst.push(vm)
-          else if (c === 'internship') intern.push(vm)
-          else ent.push(vm)
-        })
-
-        this.recruitEnterprise = ent
-        this.recruitInstitution = inst
-        this.recruitInternship = intern
+        this.recruitEnterprise = mapList(entRes)
+        this.recruitInstitution = mapList(instRes)
+        this.recruitInternship = mapList(internRes)
+        this.recruitCampus = mapList(campusRes)
       } catch (err) {
         console.error('近期招聘信息获取失败', err)
       }
@@ -282,7 +285,7 @@ export default {
     /* ---------------- 近期活动展示逻辑 ---------------- */
 
     // 默认：从今天开始往后 5 天内的所有活动
-    buildUpcomingForNextDays() {
+    buildUpcomingForNextDays () {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
@@ -304,11 +307,10 @@ export default {
       this.upcomingEvents = result
     },
 
-    // 当用户在日历上选中 / 悬浮某一天时，展示这一天的活动
-    showEventsOfDate(dateStr) {
+    // 当用户在日历上选中某一天时，展示这一天的活动
+    showEventsOfDate (dateStr) {
       const arr = this.eventsMap[dateStr] || []
       if (arr.length === 0) {
-        // 这一天没有活动，就退回「从今天起后 5 天」
         this.buildUpcomingForNextDays()
         return
       }
@@ -322,20 +324,24 @@ export default {
 
     /* ---------------- 路由跳转 ---------------- */
 
-    goActivities() {
+    goActivities () {
       this.$router.push({ name: 'ActivityList', query: { tab: 'all' } })
     },
 
-    goActivity(id) {
+    goJobCenter () {
+      this.$router.push({ name: 'JobCenter' })
+    },
+
+    goActivity (id) {
       if (!id) return
       this.$router.push({ name: 'ActivityDetail', params: { id } })
     },
 
-    goRecruitMore() {
+    goRecruitMore () {
       this.$router.push({ name: 'ActivityList', query: { tab: 'recruit' } })
     },
 
-    viewPosition(p) {
+    viewPosition (p) {
       if (!p) return
       this.$router.push({ name: 'JobDetail', params: { id: p.id } })
     }
@@ -344,7 +350,6 @@ export default {
 </script>
 
 <style scoped>
-/* 原样式（不变动） */
 .student-page{
   background:#f0f0f0;
   min-height:100vh;
@@ -387,6 +392,15 @@ export default {
 .card{ background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); padding:16px; }
 .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .card-head h3{ margin:0; color:#325e21; font-size:22px; }
+.more{
+  font-size:14px;
+  color:#8aa39a;
+  cursor:pointer;
+}
+.more:hover{
+  color:#2a5e23;
+  text-decoration:underline;
+}
 .muted{ color:#8aa39a; font-size:14px; }
 .timeline{ list-style:none; padding:0 0 0 18px; margin:0; position:relative; }
 .timeline::before{ content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:#e6f1ea; }

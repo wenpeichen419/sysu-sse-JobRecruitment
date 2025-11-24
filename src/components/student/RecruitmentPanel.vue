@@ -38,9 +38,11 @@ import { splitYMD } from '@/data/activities.mock'
 export default {
   name: 'RecruitmentPanel',
   props: {
-    enterprise:  { type: Array, default: () => [] }, // 期望元素里带 id/date/title
+    // 期望元素里带 id/date/title
+    enterprise:  { type: Array, default: () => [] },
     institution: { type: Array, default: () => [] },
-    internship:  { type: Array, default: () => [] }
+    internship:  { type: Array, default: () => [] },
+    campus:      { type: Array, default: () => [] }   // 新增：校园招聘
   },
   data() {
     return {
@@ -48,7 +50,8 @@ export default {
       tabs: [
         { key: 'enterprise',  label: '企业招聘' },
         { key: 'institution', label: '事业单位招聘' },
-        { key: 'internship',  label: '实习招聘' }
+        { key: 'internship',  label: '实习招聘' },
+        { key: 'campus',      label: '校园招聘' }      // 新增 tab
       ]
     }
   },
@@ -57,6 +60,7 @@ export default {
       switch (this.activeTab) {
         case 'institution': return this.institution || []
         case 'internship':  return this.internship || []
+        case 'campus':      return this.campus || []      // 新增分支
         default:            return this.enterprise || []
       }
     }
@@ -64,12 +68,17 @@ export default {
   methods: {
     split: splitYMD,
     linkTo(item) {
-      return item?.id ? { name: 'ActivityDetail', params: { id: item.id } } : { name: 'ActivityList' }
+      return item?.id
+        ? { name: 'ActivityDetail', params: { id: item.id } }
+        : { name: 'ActivityList' }
     },
     onClick(item) {
-      // 有 id 走详情；没 id 跳列表
-      if (item?.id) this.$router.push({ name: 'ActivityDetail', params: { id: item.id } })
-      else this.$router.push({ name: 'ActivityList', query: { tab: this.activeTab } })
+      // 有 id 走详情；没 id 跳列表（带当前 tab）
+      if (item?.id) {
+        this.$router.push({ name: 'ActivityDetail', params: { id: item.id } })
+      } else {
+        this.$router.push({ name: 'ActivityList', query: { tab: this.activeTab } })
+      }
     }
   }
 }

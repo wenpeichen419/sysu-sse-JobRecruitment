@@ -7,37 +7,8 @@
       <span class="current">活动列表</span>
     </div>
 
-    <!-- 顶部筛选 -->
+    <!-- 顶部：只保留搜索 -->
     <div class="toolbar">
-      <div class="tab-area">
-        <!-- 大类：全部 / 企业宣讲 / 招聘活动 -->
-        <div class="tabs">
-          <button
-            v-for="t in mainTabs"
-            :key="t.key"
-            class="tab"
-            :class="{ active: activeMain === t.key }"
-            @click="switchMain(t.key)"
-          >
-            {{ t.label }}
-          </button>
-        </div>
-
-        <!-- 招聘活动子类：企业 / 事业单位 / 实习 -->
-        <div class="sub-tabs" v-if="activeMain === 'recruit'">
-          <button
-            v-for="t in recruitTabs"
-            :key="t.key"
-            class="tab sub-tab"
-            :class="{ active: activeSub === t.key }"
-            @click="switchSub(t.key)"
-          >
-            {{ t.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 搜索 -->
       <div class="search">
         <input v-model="keyword" placeholder="搜索标题/地点..." />
         <button @click="doSearch">搜索</button>
@@ -60,8 +31,8 @@
         </div>
         <div class="body">
           <div class="title">
-            <span v-if="a.kind === 'job'" class="tag-job">岗位</span>
-            <span v-else class="tag-event">活动</span>
+            <!-- 现在只有活动，可保留这个 tag 样式 -->
+            <span class="tag-event">活动</span>
             {{ a.title }}
           </div>
           <div class="meta">{{ a.place }}</div>
@@ -92,61 +63,17 @@ function splitYMD(str) {
 export default {
   name: 'ActivityList',
   data() {
-    const initTab = this.$route.query.tab || 'all'
-
-    let activeMain = 'all'          // all / talk / recruit
-    let activeSub = 'allRecruit'    // allRecruit / enterprise / institution / internship
-
-    if (initTab === 'talk') {
-      activeMain = 'talk'
-    } else if (initTab === 'recruit') {
-      activeMain = 'recruit'
-      activeSub = 'allRecruit'
-    } else if (['enterprise', 'institution', 'internship'].includes(initTab)) {
-      activeMain = 'recruit'
-      activeSub = initTab
-    }
-
     return {
-      mainTabs: [
-        { key: 'all',     label: '全部活动' },
-        { key: 'talk',    label: '企业宣讲' },
-        { key: 'recruit', label: '招聘活动' }
-      ],
-      recruitTabs: [
-        { key: 'allRecruit', label: '全部招聘' },
-        { key: 'enterprise', label: '企业招聘' },
-        { key: 'institution', label: '事业单位招聘' },
-        { key: 'internship', label: '实习招聘' }
-      ],
-
-      activeMain,
-      activeSub,
       keyword: this.$route.query.q || '',
-
-      // 真正显示用的数据（events + jobs 合在一起）
+      // 只存活动（events）
       data: []
     }
   },
   computed: {
     filtered() {
-      let list = this.data
+      let list = this.data || []
 
-      // 按大类过滤
-      if (this.activeMain === 'talk') {
-        // 企业宣讲
-        list = list.filter(a => a.category === 'talk')
-      } else if (this.activeMain === 'recruit') {
-        const recruitCats = ['enterprise', 'institution', 'internship']
-        list = list.filter(a => recruitCats.includes(a.category))
-
-        if (this.activeSub !== 'allRecruit') {
-          list = list.filter(a => a.category === this.activeSub)
-        }
-      }
-      // activeMain === 'all' 时不过滤类型
-
-      // 关键字搜索
+      // 关键字搜索（标题 / 地点）
       if (this.keyword.trim()) {
         const kw = this.keyword.toLowerCase()
         list = list.filter(a =>
@@ -155,7 +82,7 @@ export default {
         )
       }
 
-      // 按日期倒序（最近的在前面）
+      // 按日期倒序（最近的在前）
       return list.slice().sort((a, b) => new Date(b.date) - new Date(a.date))
     },
     shown() {
@@ -163,7 +90,7 @@ export default {
     }
   },
   created() {
-    // 页面加载时一起拉数据
+    // 页面加载时拉全部活动
     this.fetchAll()
   },
   methods: {
@@ -171,107 +98,39 @@ export default {
 
     async fetchAll() {
       try {
-        const [eventsRes, jobsRes] = await Promise.all([
-          axios.get('/events/upcoming'),
-          axios.get('/jobs/recent')
-        ])
+        // 你现在的接口是 /events/upcoming，就继续用它
+        const res = await axios.get('/events/upcoming')
+        const events = res.data?.data?.events || []
 
-        // 1) events 表 → 活动
-        const eventsData = eventsRes.data?.data || {}
-        const events = (eventsData.events || []).map(e => {
-          // 根据 event_type 映射到 category
-          let category = 'enterprise'
-          if (e.event_type === 'lecture') category = 'talk'
-          else if (e.event_type === 'internship') category = 'internship'
-          else if (e.event_type === 'enterprise') category = 'enterprise'
-          // 如果以后有事业单位招聘，可以在后端加一个类型，然后这里映射为 institution
-
-          return {
-            key: `event-${e.id}`,
-            id: e.id,
-            kind: 'event',
-            category,                                // talk / enterprise / internship ...
-            title: e.event_title,
-            date: e.event_start_time,                // datetime，前端只取年月日
-            place: e.event_location,
-            summary: e.event_description || ''
-          }
-        })
-
-        // 2) jobs 表 → 岗位
-        const jobsData = jobsRes.data?.data || {}
-        const jobs = (jobsData.job_postings || []).map(j => {
-          const category = j.category || 'enterprise'  // 暂时默认企业招聘
-          return {
-            key: `job-${j.job_id}`,
-            id: j.job_id,
-            kind: 'job',
-            category,                                   // enterprise / institution / internship
-            title: j.job_title,
-            date: j.posted_at,                          // "2025-11-20T20:36:17Z"
-            place: j.location || '',
-            summary: j.summary || ''
-          }
-        })
-
-        this.data = [...events, ...jobs]
+        this.data = events.map(e => ({
+          key: `event-${e.event_id}`,
+          id: e.event_id,
+          kind: 'event',
+          title: e.event_title,
+          date: e.event_start_time,
+          place: e.event_location,
+          // 后端目前没返回描述，就兜底一下
+          summary: e.event_description || ''
+        }))
       } catch (err) {
         console.error('获取活动列表失败', err)
       }
     },
 
-    // 统一同步路由 query（tab + q）
-    syncRoute() {
-      let tab = 'all'
-      if (this.activeMain === 'talk') {
-        tab = 'talk'
-      } else if (this.activeMain === 'recruit') {
-        tab = this.activeSub === 'allRecruit' ? 'recruit' : this.activeSub
-      }
-
-      this.$router.replace({
-        name: 'ActivityList',
-        query: {
-          tab,
-          q: this.keyword || undefined
-        }
-      })
-    },
-
-    switchMain(key) {
-      this.activeMain = key
-      if (key !== 'recruit') {
-        this.activeSub = 'allRecruit'
-      }
-      this.syncRoute()
-    },
-
-    switchSub(key) {
-      this.activeMain = 'recruit'
-      this.activeSub = key
-      this.syncRoute()
-    },
-
+    // 搜索按钮现在只是“触发一下”，实际筛选依赖 v-model 绑定的 keyword
     doSearch() {
-      this.syncRoute()
+      // 不需要额外逻辑，keyword 改变会自动触发 computed.filtered
     },
 
-    // 根据类型跳不同详情页
+    // 活动详情
     goDetail(a) {
-      if (a.kind === 'job') {
-        // 岗位 → JobDetail
-        this.$router.push({ name: 'JobDetail', params: { id: a.id } })
-      } else {
-        // 活动 → ActivityDetail
-        this.$router.push({ name: 'ActivityDetail', params: { id: a.id } })
-      }
+      this.$router.push({ name: 'ActivityDetail', params: { id: a.id } })
     }
   }
 }
 </script>
 
 <style scoped>
-/* 你的原样式保持不变，只加了两个小 tag */
 .page {
   padding: 20px 24px;
   background: #f5f6f7;
@@ -302,46 +161,9 @@ export default {
   border-radius: 10px;
   padding: 16px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: flex-end;
+  align-items: center;
   margin-bottom: 16px;
-}
-
-.tab-area {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tabs {
-  display: flex;
-  gap: 6px;
-}
-
-.sub-tabs {
-  display: flex;
-  gap: 6px;
-}
-
-.tab {
-  border: none;
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #666;
-  font-size: 14px;
-}
-
-.sub-tab {
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.tab.active {
-  color: #1b8f59;
-  background: #eaf6ef;
 }
 
 .search {
@@ -433,19 +255,12 @@ export default {
   padding: 48px 0;
 }
 
-/* 小标签：岗位 / 活动 */
-.tag-job,
+/* 小标签：活动 */
 .tag-event {
   display: inline-block;
   padding: 2px 6px;
   border-radius: 999px;
   font-size: 12px;
-}
-.tag-job {
-  background: #fff3cd;
-  color: #856404;
-}
-.tag-event {
   background: #eaf6ef;
   color: #1b8f59;
 }
