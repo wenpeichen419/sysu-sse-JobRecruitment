@@ -365,22 +365,23 @@ async updateStatus(newStatus) {
   left: 320px;
   right: 0;
   background: #f4f4f4;
-  padding: 20px 30px;
+  padding: 20px 30px; /* 这个padding需要调整 */
   z-index: 1000;
   height: 115px;
+  box-sizing: border-box;
 }
 
 .breadcrumb {
   background: white;
   padding: 20px 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
   font-size: 20px;
   box-sizing: border-box;
-  width: calc(100% - 60px);
+  /* 关键修改：计算正确的宽度 */
+  width: calc(100vw - 320px - 80px); /* 视口宽度 - 侧边栏宽度 - 左右padding */
   position: fixed;
   top: 130px;
-  left: 350px;
+  left: 350px; /* 320px侧边栏 + 30px padding */
 }
 
 .breadcrumb-link {
