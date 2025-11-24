@@ -5,7 +5,7 @@
       <div class="breadcrumb">
         <router-link to="/student-home" class="breadcrumb-link">主页</router-link>
         <span class="breadcrumb-separator">></span>
-        <span class="breadcrumb-current">简历管理</span>
+        <span class="breadcrumb-current">简历编辑器</span>
 
         <div class="edit-actions">
           <button class="btn ghost" @click="clearAll">清空</button>
@@ -35,162 +35,204 @@
           {{ s.name }}
         </div>
       </aside>
+<!-- 中间内容 -->
+<main class="center-content">
+  <!-- 个人信息 -->
+  <section id="profile" ref="profile" class="card">
+    <h3 class="section-title">个人信息</h3>
+    <div class="grid-3">
+      <div class="field">
+        <label>姓名</label>
+        <input v-model="form.profile.name"
+               :disabled="isLocked('profile.name') || !editing" />
+      </div>
 
-      <!-- 中间内容 -->
-      <main class="center-content">
-        <!-- 个人信息 -->
-        <section id="profile" ref="profile" class="card">
-          <h3 class="section-title">个人信息</h3>
-          <div class="grid-3">
-            <div class="field"><label>姓名</label><input v-model="form.profile.name" :disabled="!editing" /></div>
-            <div class="field"><label>出生年月</label><input v-model="form.profile.birthday" :disabled="!editing" placeholder="YYYY-MM" /></div>
-            <div class="field"><label>邮箱</label><input v-model="form.profile.email" :disabled="!editing" /></div>
-            <div class="field">
-              <label>性别</label>
-              <select v-model="form.profile.gender" :disabled="!editing">
-                <option value="">请选择</option><option>男</option><option>女</option><option>其他</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>求职状态</label>
-              <select v-model="form.profile.status" :disabled="!editing">
-                <option>实习</option><option>校招</option><option>社招</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>电话</label>
-              <input v-model="form.profile.phone" :disabled="!editing" @blur="validatePhone" />
-              <span v-if="phoneError" class="error-text">{{ phoneError }}</span>
-            </div>
-          </div>
-        </section>
+      <div class="field">
+        <label>出生年月</label>
+        <input v-model="form.profile.birthday"
+               :disabled="isLocked('profile.birthday') || !editing"
+               placeholder="YYYY-MM" />
+      </div>
 
-        <!-- 技能 -->
-        <section id="skills" ref="skills" class="card">
-          <h3 class="section-title">技能掌握</h3>
-          <textarea v-model="form.skills" :disabled="!editing" class="textarea" placeholder="编辑个人优势、熟练技术栈等..."></textarea>
-        </section>
+      <div class="field">
+        <label>邮箱</label>
+        <input v-model="form.profile.email"
+               :disabled="isLocked('profile.email') || !editing" />
+      </div>
 
-        <!-- 工作经历 -->
-        <section id="work" ref="work" class="card">
-          <div class="card-head">
-            <h3 class="section-title">工作经历</h3>
-            <button v-if="editing" class="link-add" @click="addWork">+ 添加</button>
-          </div>
-          <div v-for="(w,i) in form.work" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>公司名称</label><input v-model="w.company" :disabled="!editing"/></div>
-              <div class="field"><label>职位名称</label><input v-model="w.title" :disabled="!editing"/></div>
-              <div class="field">
-                <label>在职时间</label>
-                <div class="inline">
-                  <input v-model="w.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="w.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8">
-              <label>工作内容</label>
-              <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.work.splice(i,1)">删除该经历</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>性别</label>
+        <select v-model="form.profile.gender"
+                :disabled="isLocked('profile.gender') || !editing">
+          <option value="">请选择</option>
+          <option>男</option><option>女</option><option>其他</option>
+        </select>
+      </div>
 
-        <!-- 项目经历 -->
-        <section id="projects" ref="projects" class="card">
-          <div class="card-head">
-            <h3 class="section-title">项目经历</h3>
-            <button v-if="editing" class="link-add" @click="addProject">+ 添加</button>
-          </div>
-          <div v-for="(p,i) in form.projects" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>项目名称</label><input v-model="p.name" :disabled="!editing"/></div>
-              <div class="field"><label>项目角色</label><input v-model="p.role" :disabled="!editing"/></div>
-              <div class="field">
-                <label>项目时间</label>
-                <div class="inline">
-                  <input v-model="p.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="p.end" :disabled="!editing" placeholder="YYYY.MM"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8"><label>项目描述</label>
-              <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.projects.splice(i,1)">删除该项目</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>求职状态</label>
+        <select v-model="form.profile.status"
+                :disabled="isLocked('profile.status') || !editing">
+          <option>实习</option><option>校招</option><option>社招</option>
+        </select>
+      </div>
 
-        <!-- 教育经历 -->
-        <section id="edu" ref="edu" class="card">
-          <div class="card-head">
-            <h3 class="section-title">教育经历</h3>
-            <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button>
-          </div>
-          <div v-for="(e,i) in form.education" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>学校名称</label><input v-model="e.school" :disabled="!editing"/></div>
-              <div class="field"><label>专业</label><input v-model="e.major" :disabled="!editing"/></div>
-              <div class="field"><label>专业排名</label><input v-model="e.rank" :disabled="!editing" placeholder="可选"/></div>
-            </div>
-            <div class="field mt8">
-              <label>时间段</label>
-              <div class="inline">
-                <input v-model="e.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                <span class="to">至</span>
-                <input v-model="e.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-              </div>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.education.splice(i,1)">删除该教育</button>
-          </div>
-        </section>
+      <div class="field">
+        <label>电话</label>
+        <input v-model="form.profile.phone"
+               :disabled="isLocked('profile.phone') || !editing"
+               @blur="validatePhone" />
+        <span v-if="phoneError" class="error-text">{{ phoneError }}</span>
+      </div>
+    </div>
+  </section>
 
-        <!-- 社团/组织 -->
-        <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
-          <div class="card-head">
-            <h3 class="section-title">社团 / 组织经历</h3>
-            <button v-if="editing" class="link-add" @click="addOrg">+ 添加</button>
-          </div>
-          <div v-for="(o,i) in form.orgs" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>社团/组织名称</label><input v-model="o.name" :disabled="!editing"/></div>
-              <div class="field"><label>担任角色</label><input v-model="o.role" :disabled="!editing"/></div>
-              <div class="field">
-                <label>时间段</label>
-                <div class="inline">
-                  <input v-model="o.start" :disabled="!editing" placeholder="YYYY.MM"/>
-                  <span class="to">至</span>
-                  <input v-model="o.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
-                </div>
-              </div>
-            </div>
-            <div class="field mt8"><label>经历描述</label>
-              <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
-            </div>
-            <button v-if="editing" class="link-del" @click="form.orgs.splice(i,1)">删除该经历</button>
-          </div>
-        </section>
+  <!-- 技能 -->
+  <section id="skills" ref="skills" class="card">
+    <h3 class="section-title">技能掌握</h3>
+    <textarea v-model="form.skills" :disabled="!editing"
+              class="textarea" placeholder="编辑个人优势、熟练技术栈等..."></textarea>
+  </section>
 
-        <!-- 竞赛 -->
-        <section id="competitions" ref="competitions" class="card" v-if="form.competitions?.length || editing">
-          <div class="card-head">
-            <h3 class="section-title">竞赛经历</h3>
-            <button v-if="editing" class="link-add" @click="addCompetition">+ 添加</button>
+  <!-- 工作经历 -->
+  <section id="work" ref="work" class="card">
+    <div class="card-head">
+      <h3 class="section-title">工作经历</h3>
+      <button v-if="editing" class="link-add" @click="addWork">+ 添加</button>
+    </div>
+    <div v-for="(w,i) in form.work" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>公司名称</label><input v-model="w.company" :disabled="!editing"/></div>
+        <div class="field"><label>职位名称</label><input v-model="w.title" :disabled="!editing"/></div>
+        <div class="field">
+          <label>在职时间</label>
+          <div class="inline">
+            <input v-model="w.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="w.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
           </div>
-          <div v-for="(c,i) in form.competitions" :key="i" class="block">
-            <div class="grid-3">
-              <div class="field"><label>竞赛名称</label><input v-model="c.name" :disabled="!editing"/></div>
-              <div class="field"><label>担任角色</label><input v-model="c.role" :disabled="!editing"/></div>
-              <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
-            </div>
-            <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
-            <button v-if="editing" class="link-del" @click="form.competitions.splice(i,1)">删除该竞赛</button>
+        </div>
+      </div>
+      <div class="field mt8">
+        <label>工作内容</label>
+        <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.work.splice(i,1)">删除该经历</button>
+    </div>
+  </section>
+
+  <!-- 项目经历 -->
+  <section id="projects" ref="projects" class="card">
+    <div class="card-head">
+      <h3 class="section-title">项目经历</h3>
+      <button v-if="editing" class="link-add" @click="addProject">+ 添加</button>
+    </div>
+    <div v-for="(p,i) in form.projects" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>项目名称</label><input v-model="p.name" :disabled="!editing"/></div>
+        <div class="field"><label>项目角色</label><input v-model="p.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>项目时间</label>
+          <div class="inline">
+            <input v-model="p.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="p.end" :disabled="!editing" placeholder="YYYY.MM"/>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
+      <div class="field mt8"><label>项目描述</label>
+        <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.projects.splice(i,1)">删除该项目</button>
+    </div>
+  </section>
+
+  <!-- 教育经历（仅第 1 条锁定） -->
+  <section id="edu" ref="edu" class="card">
+    <div class="card-head">
+      <h3 class="section-title">教育经历</h3>
+      <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button>
+    </div>
+    <div v-for="(e,i) in form.education" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field">
+          <label>学校名称</label>
+          <input v-model="e.school"
+                 :disabled="(i===0 && isLocked('edu.school')) || !editing" />
+        </div>
+        <div class="field">
+          <label>专业</label>
+          <input v-model="e.major"
+                 :disabled="(i===0 && isLocked('edu.major')) || !editing" />
+        </div>
+        <div class="field">
+          <label>专业排名</label>
+          <input v-model="e.rank"
+                 :disabled="(i===0 && isLocked('edu.rank')) || !editing"
+                 placeholder="可选" />
+        </div>
+      </div>
+      <div class="field mt8">
+        <label>时间段</label>
+        <div class="inline">
+          <input v-model="e.start"
+                 :disabled="(i===0 && isLocked('edu.start')) || !editing"
+                 placeholder="YYYY.MM"/>
+          <span class="to">至</span>
+          <input v-model="e.end"
+                 :disabled="(i===0 && isLocked('edu.end')) || !editing"
+                 placeholder="YYYY.MM/今"/>
+        </div>
+      </div>
+      <!-- 第 1 条（同步来的）不允许删除 -->
+      <button v-if="editing && i>0" class="link-del" @click="form.education.splice(i,1)">删除该教育</button>
+    </div>
+  </section>
+
+  <!-- 社团/组织 -->
+  <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
+    <div class="card-head">
+      <h3 class="section-title">社团 / 组织经历</h3>
+      <button v-if="editing" class="link-add" @click="addOrg">+ 添加</button>
+    </div>
+    <div v-for="(o,i) in form.orgs" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>社团/组织名称</label><input v-model="o.name" :disabled="!editing"/></div>
+        <div class="field"><label>担任角色</label><input v-model="o.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>时间段</label>
+          <div class="inline">
+            <input v-model="o.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <span class="to">至</span>
+            <input v-model="o.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
+          </div>
+        </div>
+      </div>
+      <div class="field mt8"><label>经历描述</label>
+        <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
+      </div>
+      <button v-if="editing" class="link-del" @click="form.orgs.splice(i,1)">删除该经历</button>
+    </div>
+  </section>
+
+  <!-- 竞赛 -->
+  <section id="competitions" ref="competitions" class="card" v-if="form.competitions?.length || editing">
+    <div class="card-head">
+      <h3 class="section-title">竞赛经历</h3>
+      <button v-if="editing" class="link-add" @click="addCompetition">+ 添加</button>
+    </div>
+    <div v-for="(c,i) in form.competitions" :key="i" class="block">
+      <div class="grid-3">
+        <div class="field"><label>竞赛名称</label><input v-model="c.name" :disabled="!editing"/></div>
+        <div class="field"><label>担任角色</label><input v-model="c.role" :disabled="!editing"/></div>
+        <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
+      </div>
+      <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
+      <button v-if="editing" class="link-del" @click="form.competitions.splice(i,1)">删除该竞赛</button>
+    </div>
+  </section>
+</main>
+
 
       <!-- 右侧：设置 + 列表 -->
       <aside class="right-sidebar fixed-sidebar">
@@ -208,7 +250,7 @@
 
         <div class="card small-card">
           <div class="list-head">
-            <h3 class="section-title">简历列表</h3>
+            <h3 class="section-title">我的简历</h3>
             <button class="icon-btn" @click="triggerUpload" title="上传本地 PDF 到列表">＋</button>
             <input ref="fileInput" type="file" accept="application/pdf" class="hidden-input" @change="importFromLocal" />
           </div>
@@ -257,16 +299,68 @@
 </template>
 
 <script>
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { listMeta, getPDF, deletePDF, savePDF, saveMeta } from '@/utils/idb'
 import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
 
 const STORAGE_KEY = 'resume_data_v1'
 
+// ================= 接口前缀 & 路径 =================
+const API_PREFIX = 'http://localhost:8080'
+
+// 简历草稿
+const API_GET_DRAFT = `${API_PREFIX}/resume-center/resume_draft`
+
+// skills
+const API_SKILLS = `${API_PREFIX}/resume-center/resume_draft/skills`
+
+// 工作经历
+const API_WORK_ADD = `${API_PREFIX}/resume-center/resume_draft/work_experiences`
+const API_WORK_EDIT = id =>
+  `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
+const API_WORK_DEL = id =>
+  `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
+
+// 项目经历
+const API_PROJ_ADD = `${API_PREFIX}/resume-center/resume_draft/projects`
+const API_PROJ_EDIT = id =>
+  `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
+const API_PROJ_DEL = id =>
+  `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
+
+// 组织经历
+const API_ORG_ADD = `${API_PREFIX}/resume-center/resume_draft/organizations`
+const API_ORG_EDIT = id =>
+  `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
+const API_ORG_DEL = id =>
+  `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
+
+// 竞赛经历
+const API_COMP_ADD = `${API_PREFIX}/resume-center/resume_draft/competitions`
+const API_COMP_EDIT = id =>
+  `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
+const API_COMP_DEL = id =>
+  `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
+
+// 模板设置
+const API_TEMPLATE = `${API_PREFIX}/resume-center/resume_draft/template`
+
+// 简历文件
+const API_GET_FILES = `${API_PREFIX}/resume-center/resume_files`
+const API_UPLOAD_PDF = `${API_PREFIX}/resume-center/resume_files/upload`
+const API_DELETE_PDF = id =>
+  `${API_PREFIX}/resume-center/resume_files/${id}`
+
+// 统一取 token
+function getAuthHeaders () {
+  const token = localStorage.getItem('token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 export default {
   name: 'ResumeManage',
-  data() {
+  data () {
     return {
       editing: false,
       phoneError: '',
@@ -290,7 +384,8 @@ export default {
       campusLogo
     }
   },
-  async mounted() {
+  async mounted () {
+    // 本地兜底
     const cached = localStorage.getItem(STORAGE_KEY)
     if (cached) {
       try {
@@ -300,121 +395,576 @@ export default {
         localStorage.removeItem(STORAGE_KEY)
       }
     }
-    // 固定为学校模版
+
     this.form.template = 'school'
-    this.fileList = await listMeta()
+
+    // 1. 后端加载简历草稿
+    await this.fetchResumeDraft()
+
+    // 2. 后端加载我的简历文件列表
+    this.fileList = await this.fetchResumeFiles()
+
+    // 3. 滚动高亮
     this.setupScrollSpy()
   },
   methods: {
-    getDefaultForm() {
+    getDefaultForm () {
       return {
-        profile: { name: '', birthday: '', email: '', gender: '', status: '校招', phone: '', degree: '本科', avatar: '' },
-        skills: '',
-        work: [], projects: [], education: [], orgs: [], competitions: [],
+        profile: {
+          name: '',          // full_name
+          birthday: '',      // date_of_birth
+          email: '',         // email
+          gender: '',        // gender
+          status: '校招',    // job_seeking_status
+          phone: '',         // phone_number
+          degree: '本科',    // 可由 degree_level 映射
+          avatar: ''         // avatar_url
+        },
+        skills: '',          // skills_summary
+        work: [],            // work_experiences
+        projects: [],        // project_experiences
+        education: [],       // education_experiences（只展示，不在这里保存）
+        orgs: [],            // organization_experiences
+        competitions: [],    // competition_experiences
         template: 'school'
       }
     },
 
-    /* ========== 右侧列表：上传/下载/删除 ========== */
-    triggerUpload() { this.$refs.fileInput?.click() },
-    async importFromLocal(e) {
+    // 哪些字段被锁定（不能在这个页面改）
+    isLocked (path) {
+      const locked = new Set([
+        'profile.name',
+        'profile.birthday',
+        'profile.gender',
+        'profile.status',
+        'profile.email',
+        'profile.phone',
+        'profile.degree',
+        'edu.school',
+        'edu.major',
+        'edu.rank',
+        'edu.start',
+        'edu.end'
+      ])
+      return locked.has(path)
+    },
+
+    /* ========== 加载简历草稿 ========== */
+    async fetchResumeDraft () {
       try {
-        const file = e.target.files?.[0]
-        e.target.value = ''
-        if (!file) return
-        if (file.type !== 'application/pdf') { ElMessage.warning('仅支持上传 PDF 文件'); return }
-        const arrayBuffer = await file.arrayBuffer()
-        const blob = new Blob([arrayBuffer], { type: 'application/pdf' })
-        const id = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-        await savePDF(id, blob)
-        await saveMeta({ id, fileName: file.name, size: blob.size, createdAt: Date.now(), template: 'upload' })
-        this.fileList = await listMeta()
-        ElMessage.success('已加入简历列表')
-      } catch (err) { console.error(err); ElMessage.error('上传失败，请重试') }
+        const res = await axios.get(API_GET_DRAFT, {
+          headers: getAuthHeaders()
+        })
+        if (!res.data || res.data.code !== 200 || !res.data.data) return
+
+        const d = res.data.data
+        const f = this.getDefaultForm()
+
+        // profile
+        const p = d.profile || {}
+        f.profile.name = p.full_name || ''
+        f.profile.birthday = p.date_of_birth || ''
+        f.profile.email = p.email || ''
+        f.profile.gender = p.gender || ''
+        f.profile.status = p.job_seeking_status || f.profile.status
+        f.profile.phone = p.phone_number || ''
+        f.profile.avatar = p.avatar_url || ''
+
+        // skills
+        f.skills = d.skills_summary || ''
+
+        // education（接口里是一个 education 对象）
+        const edu = d.education || {}
+        if (Object.keys(edu).length) {
+          f.education = [{
+            id: edu.id || null,
+            school: edu.school_name || '',
+            major: edu.major || '',
+            rank: edu.major_rank || '',
+            start: edu.start_date || '',
+            end: edu.end_date || ''
+          }]
+        }
+
+        // work_experiences
+        f.work = (d.work_experiences || []).map(w => ({
+          id: w.id || null,
+          company: w.company_name || '',
+          title: w.position_title || '',
+          start: w.start_date || '',
+          end: w.end_date || '',
+          content: w.description || ''
+        }))
+
+        // projects
+        f.projects = (d.projects || []).map(pj => ({
+          id: pj.id || null,
+          name: pj.project_name || '',
+          role: pj.role || '',
+          start: pj.start_date || '',
+          end: pj.end_date || '',
+          desc: pj.description || '',
+          link: pj.project_link || ''
+        }))
+
+        // organizations
+        f.orgs = (d.organizations || []).map(o => ({
+          id: o.id || null,
+          name: o.organization_name || '',
+          role: o.role || '',
+          start: o.start_date || '',
+          end: o.end_date || '',
+          desc: o.description || ''
+        }))
+
+        // competitions
+        f.competitions = (d.competitions || []).map(c => ({
+          id: c.id || null,
+          name: c.competition_name || '',
+          role: c.role || '',
+          award: c.award || '',
+          time: c.date || ''
+        }))
+
+        this.form = f
+        this.persist()
+      } catch (e) {
+        console.error('加载简历草稿失败：', e)
+      }
     },
-    async downloadFromList(item) {
-      const blob = await getPDF(item.id)
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = item.fileName
-      a.click()
-      URL.revokeObjectURL(a.href)
+
+    /* ========== 保存简历（按接口逐个调） ========== */
+    async saveResume () {
+      this.validatePhone()
+      if (this.phoneError) return
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+
+        // 1. skills_summary
+        await axios.put(
+          API_SKILLS,
+          { skills_summary: this.form.skills || '' },
+          { headers }
+        )
+
+        // 2. 工作经历：有 id -> PUT；无 id -> POST
+        for (const w of this.form.work) {
+          const payload = {
+            company_name: w.company,
+            position_title: w.title,
+            start_date: w.start,
+            end_date: w.end,
+            description: w.content
+          }
+          if (w.id) {
+            await axios.put(API_WORK_EDIT(w.id), payload, { headers })
+          } else {
+            const res = await axios.post(API_WORK_ADD, payload, { headers })
+            if (res.data && res.data.data && res.data.data.id) {
+              w.id = res.data.data.id
+            }
+          }
+        }
+
+        // 3. 项目经历
+        for (const p of this.form.projects) {
+          const payload = {
+            project_name: p.name,
+            role: p.role,
+            project_link: p.link || null,
+            start_date: p.start,
+            end_date: p.end,
+            description: p.desc
+          }
+          if (p.id) {
+            await axios.put(API_PROJ_EDIT(p.id), payload, { headers })
+          } else {
+            const res = await axios.post(API_PROJ_ADD, payload, { headers })
+            if (res.data && res.data.data && res.data.data.id) {
+              p.id = res.data.data.id
+            }
+          }
+        }
+
+        // 4. 组织经历
+        for (const o of this.form.orgs) {
+          const payload = {
+            organization_name: o.name,
+            role: o.role,
+            start_date: o.start,
+            end_date: o.end,
+            description: o.desc
+          }
+          if (o.id) {
+            await axios.put(API_ORG_EDIT(o.id), payload, { headers })
+          } else {
+            const res = await axios.post(API_ORG_ADD, payload, { headers })
+            if (res.data && res.data.data && res.data.data.id) {
+              o.id = res.data.data.id
+            }
+          }
+        }
+
+        // 5. 竞赛经历
+        for (const c of this.form.competitions) {
+          const payload = {
+            competition_name: c.name,
+            role: c.role,
+            award: c.award,
+            date: c.time
+          }
+          if (c.id) {
+            await axios.put(API_COMP_EDIT(c.id), payload, { headers })
+          } else {
+            const res = await axios.post(API_COMP_ADD, payload, { headers })
+            if (res.data && res.data.data && res.data.data.id) {
+              c.id = res.data.data.id
+            }
+          }
+        }
+
+        // 6. 设置简历模板（现在只有 school，也同步给后端）
+        await axios.patch(
+          API_TEMPLATE,
+          { template: this.form.template }, // 这里如果你后端要 template_id 就改成 template_id
+          { headers }
+        )
+
+        this.persist()
+        this.editing = false
+        ElMessage.success('简历已保存')
+      } catch (e) {
+        console.error('保存简历失败：', e)
+        ElMessage.error('保存失败，请稍后重试')
+      }
     },
-    async removeFromList(item) {
+
+    /* ========== 简历文件列表 ========== */
+    async fetchResumeFiles () {
+      try {
+        const res = await axios.get(API_GET_FILES, {
+          headers: getAuthHeaders()
+        })
+        if (!res.data || res.data.code !== 200 || !Array.isArray(res.data.data)) {
+          return []
+        }
+        return res.data.data.map(item => ({
+          id: item.id,
+          fileName: item.file_name,
+          size: item.file_size,
+          createdAt: item.uploaded_at,
+          fileUrl: item.file_url,
+          usage: item.usage,        // usage_type
+          templateId: item.template_id
+        }))
+      } catch (e) {
+        console.error('获取简历列表失败：', e)
+        return []
+      }
+    },
+
+    triggerUpload () {
+      this.$refs.fileInput?.click()
+    },
+
+    async importFromLocal (e) {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
+      if (file.type !== 'application/pdf') {
+        ElMessage.warning('仅支持上传 PDF 文件')
+        return
+      }
+      try {
+        await this.uploadPdfFile(file, 'USER_UPLOAD')
+        ElMessage.success('PDF 已上传')
+        this.fileList = await this.fetchResumeFiles()
+      } catch (err) {
+        console.error(err)
+        ElMessage.error('上传失败，请重试')
+      }
+    },
+
+    async uploadPdfFile(file, usage = 'PDF_EXPORT') {
+  try {
+    // 后端如果既支持 query 里的 usage，也支持 formData 里的 usage，这样都能兼容
+    const url = `${API_UPLOAD_PDF}?usage=${usage}`
+
+    const form = new FormData()
+    // 这个字段名很重要，默认先用 file，若后端用的是 pdf_file 之类的，就改成后端的名字
+    form.append('file', file)
+    form.append('usage', usage)
+
+    const res = await axios.post(url, form, {
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    return res.data
+  } catch (err) {
+    console.error('上传 PDF 接口出错：', err.response || err)
+    throw err
+  }
+}
+
+,
+
+
+    async downloadFromList (item) {
+      if (!item.fileUrl) {
+        ElMessage.warning('文件地址为空')
+        return
+      }
+      window.open(item.fileUrl, '_blank')
+    },
+
+    async removeFromList (item) {
       if (!confirm('删除这份简历文件？')) return
-      await deletePDF(item.id)
-      this.fileList = await listMeta()
+      try {
+        await axios.delete(API_DELETE_PDF(item.id), {
+          headers: getAuthHeaders()
+        })
+        ElMessage.success('已删除')
+        this.fileList = await this.fetchResumeFiles()
+      } catch (e) {
+        console.error('删除简历失败：', e)
+        ElMessage.error('删除失败，请稍后重试')
+      }
     },
-    formatSize(bytes) {
+
+    formatSize (bytes) {
       if (bytes === undefined || bytes === null) return '-'
       const kb = bytes / 1024
       return kb < 1024 ? `${kb.toFixed(1)}KB` : `${(kb / 1024).toFixed(2)}MB`
     },
-    formatTime(ts) { try { return new Date(ts).toLocaleString() } catch { return '-' } },
+    formatTime (ts) {
+      try {
+        return new Date(ts).toLocaleString()
+      } catch {
+        return '-'
+      }
+    },
 
-    /* ========== 表单与状态 ========== */
-    persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.form)) },
-    startEdit() { this.backup = JSON.parse(JSON.stringify(this.form)); this.editing = true },
-    cancelEdit() {
+    /* ========== 表单状态 ========== */
+    persist () {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.form))
+    },
+    startEdit () {
+      this.backup = JSON.parse(JSON.stringify(this.form))
+      this.editing = true
+    },
+    cancelEdit () {
       if (!this.editing) return
       if (confirm('确定取消本次修改吗？')) {
         this.form = JSON.parse(JSON.stringify(this.backup))
-        this.editing = false; this.phoneError = ''
+        this.editing = false
+        this.phoneError = ''
       }
     },
-    saveResume() {
-      this.validatePhone(); if (this.phoneError) return
-      this.persist(); this.editing = false; ElMessage.success('已保存，下次打开仍保留')
-    },
-    clearAll() {
+    clearAll () {
       if (!confirm('清空当前所有填写内容？此操作不可撤销。')) return
-      this.form = this.getDefaultForm(); this.persist(); ElMessage.success('已清空')
+      this.form = this.getDefaultForm()
+      this.persist()
+      ElMessage.success('已清空')
     },
-    validatePhone() {
-      if (!this.form.profile.phone) { this.phoneError = ''; return }
-      this.phoneError = /^1[3-9]\d{9}$/.test(this.form.profile.phone) ? '' : '请输入正确的手机号码'
+    validatePhone () {
+      if (!this.form.profile.phone) {
+        this.phoneError = ''
+        return
+      }
+      this.phoneError =
+        /^1[3-9]\d{9}$/.test(this.form.profile.phone) ? '' : '请输入正确的手机号码'
     },
-    addWork() { this.form.work.push({ company:'', title:'', start:'', end:'', content:'' }) },
-    addProject() { this.form.projects.push({ name:'', role:'', start:'', end:'', desc:'' }) },
-    addEdu() { this.form.education.push({ school:'', major:'', rank:'', start:'', end:'' }) },
-    addOrg() { this.form.orgs.push({ name:'', role:'', start:'', end:'', desc:'' }) },
-    addCompetition() { this.form.competitions.push({ name:'', role:'', award:'', time:'' }) },
 
-    scrollTo(id) { this.$refs[id]?.scrollIntoView({ behavior:'smooth', block:'start' }) },
-    setupScrollSpy() {
-      const io = new IntersectionObserver(entries=>{
-        entries.forEach(e=>{ if(e.isIntersecting) this.activeSection = e.target.id })
-      }, { threshold: 0.5 })
-      ;['profile','skills','work','projects','edu','orgs','competitions'].forEach(k=>{
-        const el = this.$refs[k]; if (el) io.observe(el)
+    // 新增 / 删除各类经历
+    addWork () {
+      this.form.work.push({
+        id: null,
+        company: '',
+        title: '',
+        start: '',
+        end: '',
+        content: ''
       })
     },
+    async removeWork (index, w) {
+      if (w.id) {
+        try {
+          await axios.delete(API_WORK_DEL(w.id), {
+            headers: getAuthHeaders()
+          })
+        } catch (e) {
+          console.error('删除工作经历失败：', e)
+          ElMessage.error('删除失败，请稍后重试')
+          return
+        }
+      }
+      this.form.work.splice(index, 1)
+    },
 
+    addProject () {
+      this.form.projects.push({
+        id: null,
+        name: '',
+        role: '',
+        start: '',
+        end: '',
+        desc: '',
+        link: ''
+      })
+    },
+    async removeProject (index, p) {
+      if (p.id) {
+        try {
+          await axios.delete(API_PROJ_DEL(p.id), {
+            headers: getAuthHeaders()
+          })
+        } catch (e) {
+          console.error('删除项目经历失败：', e)
+          ElMessage.error('删除失败，请稍后重试')
+          return
+        }
+      }
+      this.form.projects.splice(index, 1)
+    },
+
+    addEdu () {
+      this.form.education.push({
+        id: null,
+        school: '',
+        major: '',
+        rank: '',
+        start: '',
+        end: ''
+      })
+    },
+    // 教育没有后端接口，这里只删前端
+    removeEdu (index) {
+      this.form.education.splice(index, 1)
+    },
+
+    addOrg () {
+      this.form.orgs.push({
+        id: null,
+        name: '',
+        role: '',
+        start: '',
+        end: '',
+        desc: ''
+      })
+    },
+    async removeOrg (index, o) {
+      if (o.id) {
+        try {
+          await axios.delete(API_ORG_DEL(o.id), {
+            headers: getAuthHeaders()
+          })
+        } catch (e) {
+          console.error('删除组织经历失败：', e)
+          ElMessage.error('删除失败，请稍后重试')
+          return
+        }
+      }
+      this.form.orgs.splice(index, 1)
+    },
+
+    addCompetition () {
+      this.form.competitions.push({
+        id: null,
+        name: '',
+        role: '',
+        award: '',
+        time: ''
+      })
+    },
+    async removeCompetition (index, c) {
+      if (c.id) {
+        try {
+          await axios.delete(API_COMP_DEL(c.id), {
+            headers: getAuthHeaders()
+          })
+        } catch (e) {
+          console.error('删除竞赛经历失败：', e)
+          ElMessage.error('删除失败，请稍后重试')
+          return
+        }
+      }
+      this.form.competitions.splice(index, 1)
+    },
+
+    scrollTo (id) {
+      this.$refs[id]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    },
+    setupScrollSpy () {
+      const io = new IntersectionObserver(
+        entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) this.activeSection = e.target.id
+          })
+        },
+        { threshold: 0.5 }
+      )
+      ;['profile', 'skills', 'work', 'projects', 'edu', 'orgs', 'competitions'].forEach(
+        k => {
+          const el = this.$refs[k]
+          if (el) io.observe(el)
+        }
+      )
+    },
+
+    /* ========== 预览/导出 ========== */
     /* ========== 预览/导出（学校模版-纯文本） ========== */
-    openPreview() { this.previewVisible = true; this.$nextTick(()=> this.renderPlain('plain-preview')) },
+    openPreview () {
+      this.previewVisible = true
+      this.$nextTick(() => this.renderPlain('plain-preview'))
+    },
 
-    renderPlain(targetId = 'plain-preview') {
+    renderPlain (targetId = 'plain-preview') {
       const el = document.getElementById(targetId)
-      if (!el) { ElMessage.error('渲染容器缺失'); return }
+      if (!el) {
+        ElMessage.error('渲染容器缺失')
+        return
+      }
       el.innerHTML = ''
 
       const f = this.form || {}
-      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))
-      const range = (a,b) => (a && b) ? `${a} - ${b}` : (a || b || '-')
+      const esc = (s) =>
+        String(s ?? '').replace(/[&<>"']/g, m => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[m]))
+      const range = (a, b) => (a && b) ? `${a} - ${b}` : (a || b || '-')
 
       const skillsText = (f.skills || '').trim()
       const hasSkills = !!skillsText
       const hasWork = Array.isArray(f.work) && f.work.length > 0
       const hasProj = Array.isArray(f.projects) && f.projects.length > 0
-      const hasEdu  = Array.isArray(f.education) && f.education.length > 0
-      const hasOrg  = Array.isArray(f.orgs) && f.orgs.length > 0
+      const hasEdu = Array.isArray(f.education) && f.education.length > 0
+      const hasOrg = Array.isArray(f.orgs) && f.orgs.length > 0
       const hasComp = Array.isArray(f.competitions) && f.competitions.length > 0
 
       const infoItems = [
-        ['姓 名', f.profile?.name], ['出生年月', f.profile?.birthday],
-        ['邮 箱', f.profile?.email], ['电 话', f.profile?.phone],
-        ['求职状态', f.profile?.status], ['层 次', f.profile?.degree],
-      ].map(([k,v]) => `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`).join('')
+        ['姓 名', f.profile?.name],
+        ['出生年月', f.profile?.birthday],
+        ['邮 箱', f.profile?.email],
+        ['电 话', f.profile?.phone],
+        ['求职状态', f.profile?.status],
+        ['层 次', f.profile?.degree]
+      ].map(([k, v]) =>
+        `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`
+      ).join('')
 
       const avatar = f.profile?.avatar || f.profile?.photo || ''
       const infoHtml = `
@@ -429,55 +979,65 @@ export default {
           <div class="p-sec-body">${html}</div>
         </div>`
 
-      const workHtml = hasWork ? f.work.map(w => `
-        <div class="p-card">
-          <div class="meta">
-            <div><span class="label">公司名称</span>${esc(w.company)}</div>
-            <div><span class="label">职位名称</span>${esc(w.title)}</div>
-            <div class="right"><span class="label">在职时间</span>${esc(range(w.start,w.end))}</div>
-          </div>
-          ${w.content ? `<div class="p-pre">${esc(w.content)}</div>` : ''}
-        </div>`).join('') : ''
+      const workHtml = hasWork
+        ? f.work.map(w => `
+          <div class="p-card">
+            <div class="meta">
+              <div><span class="label">公司名称</span>${esc(w.company)}</div>
+              <div><span class="label">职位名称</span>${esc(w.title)}</div>
+              <div class="right"><span class="label">在职时间</span>${esc(range(w.start, w.end))}</div>
+            </div>
+            ${w.content ? `<div class="p-pre">${esc(w.content)}</div>` : ''}
+          </div>`).join('')
+        : ''
 
-      const projHtml = hasProj ? f.projects.map(p => `
-        <div class="p-card">
-          <div class="meta">
-            <div><span class="label">项目名称</span>${esc(p.name)}</div>
-            <div><span class="label">项目角色</span>${esc(p.role)}</div>
-            <div class="right"><span class="label">项目时间</span>${esc(range(p.start,p.end))}</div>
-          </div>
-          ${p.desc ? `<div class="p-pre">${esc(p.desc)}</div>` : ''}
-        </div>`).join('') : ''
+      const projHtml = hasProj
+        ? f.projects.map(p => `
+          <div class="p-card">
+            <div class="meta">
+              <div><span class="label">项目名称</span>${esc(p.name)}</div>
+              <div><span class="label">项目角色</span>${esc(p.role)}</div>
+              <div class="right"><span class="label">项目时间</span>${esc(range(p.start, p.end))}</div>
+            </div>
+            ${p.desc ? `<div class="p-pre">${esc(p.desc)}</div>` : ''}
+          </div>`).join('')
+        : ''
 
-      const eduHtml = hasEdu ? f.education.map(e => `
-        <div class="p-card">
-          <div class="meta">
-            <div><span class="label">学校名称</span>${esc(e.school)}</div>
-            <div><span class="label">专业</span>${esc(e.major)}</div>
-            <div class="right"><span class="label">时间段</span>${esc(range(e.start,e.end))}</div>
-          </div>
-          ${e.rank ? `<div class="p-pre"><span class="label">专业排名</span>${esc(e.rank)}</div>` : ''}
-        </div>`).join('') : ''
+      const eduHtml = hasEdu
+        ? f.education.map(e => `
+          <div class="p-card">
+            <div class="meta">
+              <div><span class="label">学校名称</span>${esc(e.school)}</div>
+              <div><span class="label">专业</span>${esc(e.major)}</div>
+              <div class="right"><span class="label">时间段</span>${esc(range(e.start, e.end))}</div>
+            </div>
+            ${e.rank ? `<div class="p-pre"><span class="label">专业排名</span>${esc(e.rank)}</div>` : ''}
+          </div>`).join('')
+        : ''
 
-      const orgHtml = hasOrg ? f.orgs.map(o => `
-        <div class="p-card">
-          <div class="meta">
-            <div><span class="label">组织名称</span>${esc(o.name)}</div>
-            <div><span class="label">担任角色</span>${esc(o.role)}</div>
-            <div class="right"><span class="label">时间段</span>${esc(range(o.start,o.end))}</div>
-          </div>
-          ${o.desc ? `<div class="p-pre">${esc(o.desc)}</div>` : ''}
-        </div>`).join('') : ''
+      const orgHtml = hasOrg
+        ? f.orgs.map(o => `
+          <div class="p-card">
+            <div class="meta">
+              <div><span class="label">组织名称</span>${esc(o.name)}</div>
+              <div><span class="label">担任角色</span>${esc(o.role)}</div>
+              <div class="right"><span class="label">时间段</span>${esc(range(o.start, o.end))}</div>
+            </div>
+            ${o.desc ? `<div class="p-pre">${esc(o.desc)}</div>` : ''}
+          </div>`).join('')
+        : ''
 
-      const compHtml = hasComp ? f.competitions.map(c => `
-        <div class="p-card">
-          <div class="meta">
-            <div><span class="label">竞赛名称</span>${esc(c.name)}</div>
-            <div><span class="label">担任角色</span>${esc(c.role)}</div>
-            <div class="right"><span class="label">获奖时间</span>${esc(c.time || '-')}</div>
-          </div>
-          ${c.award ? `<div class="p-pre"><span class="label">获得奖项</span>${esc(c.award)}</div>` : ''}
-        </div>`).join('') : ''
+      const compHtml = hasComp
+        ? f.competitions.map(c => `
+          <div class="p-card">
+            <div class="meta">
+              <div><span class="label">竞赛名称</span>${esc(c.name)}</div>
+              <div><span class="label">担任角色</span>${esc(c.role)}</div>
+              <div class="right"><span class="label">获奖时间</span>${esc(c.time || '-')}</div>
+            </div>
+            ${c.award ? `<div class="p-pre"><span class="label">获得奖项</span>${esc(c.award)}</div>` : ''}
+          </div>`).join('')
+        : ''
 
       el.innerHTML = `
         <div class="plain-a4">
@@ -492,7 +1052,7 @@ export default {
         </div>
       `
 
-      // 注入一次样式
+      // 样式只注入一次
       if (!document.getElementById('plain-style')) {
         const style = document.createElement('style')
         style.id = 'plain-style'
@@ -523,34 +1083,60 @@ export default {
           .plain-a4, .plain-a4 *{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .preview-paper{ margin:0 auto; background:#fff; box-shadow:0 2px 18px rgba(0,0,0,.08); }
         `
-        document.getElementById('export-root')?.appendChild(style)
+        document.body.appendChild(style)
       }
     },
 
     async exportPlainPDF () {
-      this.renderPlain('plain-print')
-      try {
-        this.exporting = true
-        await this.$nextTick()
-        const root = document.getElementById('plain-print')
-        const fileName = `简历_${this.form?.profile?.name || '未命名'}.pdf`
-        const blob = await exportElementToPDF(root, fileName)
+  // 先渲染到隐藏容器
+  this.renderPlain('plain-print')
 
-        const id = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-        await savePDF(id, blob)
-        await saveMeta({ id, fileName, size: blob.size, createdAt: Date.now(), template: 'school', name: this.form?.profile?.name || '' })
-        this.fileList = await listMeta()
+  let blob
+  try {
+    this.exporting = true
+    await this.$nextTick()
+    const root = document.getElementById('plain-print')
+    const fileName = `简历_${this.form?.profile?.name || '未命名'}.pdf`
 
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
-        URL.revokeObjectURL(url)
-        ElMessage.success('PDF 已导出并写入右侧“简历列表”。')
-      } catch (e) { console.error(e); ElMessage.error('导出失败，请重试') }
-      finally { this.exporting = false }
-    }
+    // 生成 PDF blob
+    blob = await exportElementToPDF(root, fileName)
+
+    // 本地下载
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+
+    ElMessage.success('PDF 已导出')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('导出失败，请重试')
+    this.exporting = false
+    return
+  }
+
+  // 生成已经成功了，再单独尝试上传
+  try {
+    const fileName = `简历_${this.form?.profile?.name || '未命名'}.pdf`
+    const file = new File([blob], fileName, { type: 'application/pdf' })
+    await this.uploadPdfFile(file, 'PDF_EXPORT')
+    this.fileList = await this.fetchResumeFiles()
+    ElMessage.success('已同步到右侧“我的简历”')
+  } catch (e) {
+    console.error('上传 PDF 到服务器失败：', e)
+    ElMessage.error('PDF 已导出，但上传服务器失败，可稍后重试')
+  } finally {
+    this.exporting = false
+  }
+},
+
+
   }
 }
 </script>
+
 
 <style scoped>
 /* 页面/面包屑/按钮 */
@@ -643,7 +1229,7 @@ export default {
 .preview-toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:10px; }
 .preview-paper{ margin:0 auto; background:#fff; box-shadow:0 2px 18px rgba(0,0,0,.08); }
 
-/* 右侧：简历列表（简约风） */
+/* 右侧：我的简历（简约风） */
 .list-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .icon-btn{
   width:32px; height:32px; line-height:32px; text-align:center;
@@ -683,4 +1269,15 @@ export default {
   .left-sidebar.fixed-sidebar{ position:static; width:100%; height:auto; margin-bottom:20px; }
   .center-content{ margin-left:0; }
 }
+
+/* 只读视觉反馈（被禁用时的输入框更明显） */
+.field input:disabled,
+.field select:disabled,
+.textarea:disabled{
+  background: #f7f7f7;
+  color: #777;
+  cursor: not-allowed;
+}
+
+
 </style>
