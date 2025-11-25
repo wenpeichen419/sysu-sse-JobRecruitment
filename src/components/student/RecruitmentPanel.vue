@@ -15,19 +15,18 @@
 
     <!-- 列表（双列栅格） -->
     <div class="list">
-      <router-link
+      <div
         v-for="(item, i) in activeList"
         :key="i"
         class="item"
-        :to="linkTo(item)"
-        @click.prevent="onClick(item)"
+        @click="onClick(item)"
       >
         <div class="date">
           <div class="d">{{ split(item.date).day }}</div>
           <div class="ym">{{ split(item.date).year }}.{{ split(item.date).month }}</div>
         </div>
         <div class="title" :title="item.title">{{ item.title }}</div>
-      </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -38,11 +37,10 @@ import { splitYMD } from '@/data/activities.mock'
 export default {
   name: 'RecruitmentPanel',
   props: {
-    // 期望元素里带 id/date/title
     enterprise:  { type: Array, default: () => [] },
     institution: { type: Array, default: () => [] },
     internship:  { type: Array, default: () => [] },
-    campus:      { type: Array, default: () => [] }   // 新增：校园招聘
+    campus:      { type: Array, default: () => [] }
   },
   data() {
     return {
@@ -51,34 +49,29 @@ export default {
         { key: 'enterprise',  label: '企业招聘' },
         { key: 'institution', label: '事业单位招聘' },
         { key: 'internship',  label: '实习招聘' },
-        { key: 'campus',      label: '校园招聘' }      // 新增 tab
+        { key: 'campus',      label: '校园招聘' }
       ]
     }
   },
   computed: {
     activeList() {
       switch (this.activeTab) {
-        case 'institution': return this.institution || []
-        case 'internship':  return this.internship || []
-        case 'campus':      return this.campus || []      // 新增分支
-        default:            return this.enterprise || []
+        case 'institution': return this.institution
+        case 'internship':  return this.internship
+        case 'campus':      return this.campus
+        default:            return this.enterprise
       }
     }
   },
   methods: {
     split: splitYMD,
-    linkTo(item) {
-      return item?.id
-        ? { name: 'ActivityDetail', params: { id: item.id } }
-        : { name: 'ActivityList' }
-    },
+
+    /** ★ 所有招聘岗位跳转岗位详情页 */
     onClick(item) {
-      // 有 id 走详情；没 id 跳列表（带当前 tab）
-      if (item?.id) {
-        this.$router.push({ name: 'ActivityDetail', params: { id: item.id } })
-      } else {
-        this.$router.push({ name: 'ActivityList', query: { tab: this.activeTab } })
-      }
+      if (!item || !item.id) return
+
+      // 直接跳转你要求的网址
+      window.location.href = `http://localhost:5306/job-detail/${item.id}`
     }
   }
 }
@@ -91,10 +84,10 @@ export default {
 .tab.active{ color:#1b8f59; border-bottom:2px solid #1b8f59; }
 .list{ display:grid; grid-template-columns: repeat(2, 1fr); gap:14px 24px; }
 @media (max-width: 900px){ .list{ grid-template-columns: 1fr; } }
-.item{ display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; text-decoration:none; color:#333; transition: box-shadow .15s ease, transform .05s ease; }
+.item{ display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; cursor:pointer; transition: box-shadow .15s ease, transform .05s ease; }
 .item:hover{ box-shadow:0 6px 16px rgba(0,0,0,.06); transform: translateY(-1px); }
 .date{ width:64px; min-width:64px; height:54px; border-right:1px solid #eaeaea; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#666; }
-.date .d{ font-size:20px; font-weight:800; line-height:1; }
+.date .d{ font-size:20px; font-weight:800; }
 .date .ym{ font-size:12px; opacity:.8; }
 .title{ flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
 </style>

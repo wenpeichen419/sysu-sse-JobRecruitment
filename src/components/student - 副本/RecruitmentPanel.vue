@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { splitYMD } from '@/data/activities.mock'
+//import { splitYMD } from '@/data/activities.mock'
 
 export default {
   name: 'RecruitmentPanel',

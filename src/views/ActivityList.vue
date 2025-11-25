@@ -7,10 +7,14 @@
       <span class="current">活动列表</span>
     </div>
 
-    <!-- 顶部：只保留搜索 -->
+    <!-- 顶部：搜索 -->
     <div class="toolbar">
       <div class="search">
-        <input v-model="keyword" placeholder="搜索标题/地点..." />
+        <input
+          v-model="keyword"
+          placeholder="搜索标题/地点..."
+          @keyup.enter="doSearch"
+        />
         <button @click="doSearch">搜索</button>
       </div>
     </div>
@@ -31,8 +35,6 @@
         </div>
         <div class="body">
           <div class="title">
-            <!-- 现在只有活动，可保留这个 tag 样式 -->
-            <span class="tag-event">活动</span>
             {{ a.title }}
           </div>
           <div class="meta">{{ a.place }}</div>
@@ -43,14 +45,57 @@
 
       <div v-if="shown.length === 0" class="empty">暂无相关活动</div>
     </div>
+
+    <!-- 分页 -->
+    <div
+      v-if="shown.length > 0 && totalPages > 1"
+      class="pagination"
+    >
+      <button
+        :disabled="page === 1"
+        @click="handlePrevPage"
+      >
+        上一页
+      </button>
+
+      <span class="info">
+        第 {{ page }} / {{ totalPages }} 页，
+        共 {{ total }} 条记录
+      </span>
+
+      <button
+        :disabled="page === totalPages"
+        @click="handleNextPage"
+      >
+        下一页
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
 
+// 单独建一个本文件内部用的 axios 实例，直接打到 8080
+const api = axios.create({
+  baseURL: 'http://localhost:8080',
+  timeout: 10000
+})
+
+// 在这里统一加上 token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (err) => Promise.reject(err)
+)
+
 // 把日期字符串拆成年 / 月 / 日
-function splitYMD(str) {
+function splitYMD (str) {
   if (!str) return { year: '', month: '', day: '' }
   const d = new Date(str)
   if (Number.isNaN(d.getTime())) return { year: '', month: '', day: '' }
@@ -62,69 +107,86 @@ function splitYMD(str) {
 
 export default {
   name: 'ActivityList',
-  data() {
+  data () {
     return {
       keyword: this.$route.query.q || '',
-      // 只存活动（events）
-      data: []
+      data: [],       // 当前页活动列表
+      total: 0,       // 总记录数
+      page: 1,        // 当前页码
+      pageSize: 10    // 每页数量
     }
   },
   computed: {
-    filtered() {
-      let list = this.data || []
-
-      // 关键字搜索（标题 / 地点）
-      if (this.keyword.trim()) {
-        const kw = this.keyword.toLowerCase()
-        list = list.filter(a =>
-          (a.title || '').toLowerCase().includes(kw) ||
-          (a.place || '').toLowerCase().includes(kw)
-        )
-      }
-
-      // 按日期倒序（最近的在前）
-      return list.slice().sort((a, b) => new Date(b.date) - new Date(a.date))
+    // 当前页显示的数据（后端已经分页，这里直接用）
+    shown () {
+      return this.data || []
     },
-    shown() {
-      return this.filtered
+    // 总页数
+    totalPages () {
+      if (!this.total || !this.pageSize) return 1
+      return Math.ceil(this.total / this.pageSize)
     }
   },
-  created() {
-    // 页面加载时拉全部活动
-    this.fetchAll()
+  created () {
+    // 页面加载时按分页接口拉取活动
+    this.fetchPagedEvents()
   },
   methods: {
     split: splitYMD,
 
-    async fetchAll() {
+    // 分页接口：/events/list?page=1&pageSize=10&keyword=xxx
+    async fetchPagedEvents () {
       try {
-        // 你现在的接口是 /events/upcoming，就继续用它
-        const res = await axios.get('/events/upcoming')
-        console.log('events 接口返回：', res.data)
-        const events = res.data?.data?.events || []
+        const res = await api.get('/events/list', {
+          params: {
+            page: this.page,
+            pageSize: this.pageSize,
+            keyword: this.keyword || ''
+          }
+        })
 
+        const data = res.data?.data || {}
+        const events = data.events || []
+
+        // 总数
+        this.total = data.total || 0
+
+        // 当前页数据
         this.data = events.map(e => ({
           key: `event-${e.event_id}`,
           id: e.event_id,
-          kind: 'event',
           title: e.event_title,
           date: e.event_start_time,
           place: e.event_location,
-          // 后端目前没返回描述，就兜底一下
-          summary: e.event_description || ''
+          summary: e.event_summary || ''
         }))
       } catch (err) {
         console.error('获取活动列表失败', err)
       }
     },
 
-    // 搜索按钮现在只是“触发一下”，实际筛选依赖 v-model 绑定的 keyword
-    doSearch() {
-      // 不需要额外逻辑，keyword 改变会自动触发 computed.filtered
+    // 搜索：重置到第一页再调接口
+    doSearch () {
+      this.page = 1
+      this.fetchPagedEvents()
+    },
+
+    handlePrevPage () {
+      if (this.page > 1) {
+        this.page--
+        this.fetchPagedEvents()
+      }
+    },
+
+    handleNextPage () {
+      if (this.page < this.totalPages) {
+        this.page++
+        this.fetchPagedEvents()
+      }
     },
 
     // 活动详情
-    goDetail(a) {
+    goDetail (a) {
       this.$router.push({ name: 'ActivityDetail', params: { id: a.id } })
     }
   }
@@ -136,6 +198,7 @@ export default {
   padding: 20px 24px;
   background: #f5f6f7;
   min-height: 100vh;
+  font-size: 20px; 
 }
 
 .breadcrumb {
@@ -176,14 +239,16 @@ export default {
   padding: 10px 12px;
   border: 1px solid #e2e2e2;
   border-radius: 6px;
+  font-size: 16px;
 }
 .search button {
-  padding: 10px 16px;
+  padding: 10px 20px;
   border: none;
   border-radius: 6px;
   background: #2a5e23;
   color: #fff;
   cursor: pointer;
+  font-size: 16px;
 }
 
 .list {
@@ -226,7 +291,7 @@ export default {
 }
 .title {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -256,13 +321,28 @@ export default {
   padding: 48px 0;
 }
 
-/* 小标签：活动 */
-.tag-event {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 999px;
-  font-size: 12px;
-  background: #eaf6ef;
-  color: #1b8f59;
+
+/* 分页样式 */
+.pagination {
+  margin-top: 20px;
+  padding: 10px;
+  text-align: center;
+}
+.pagination button {
+  padding: 8px 14px;
+  margin: 0 8px;
+  border-radius: 6px;
+  border: 1px solid #d3d3d3;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.pagination .info {
+  font-size: 14px;
+  color: #666;
 }
 </style>

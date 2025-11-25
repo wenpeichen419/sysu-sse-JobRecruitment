@@ -309,6 +309,9 @@ const STORAGE_KEY = 'resume_data_v1'
 // ================= 接口前缀 & 路径 =================
 const API_PREFIX = 'http://localhost:8080'
 
+// 学生中心档案（含头像）
+const API_STUDENT_PROFILE = `${API_PREFIX}/api/student/me/edit-profile`
+
 // 简历草稿
 const API_GET_DRAFT = `${API_PREFIX}/resume-center/resume_draft`
 
@@ -317,31 +320,23 @@ const API_SKILLS = `${API_PREFIX}/resume-center/resume_draft/skills`
 
 // 工作经历
 const API_WORK_ADD = `${API_PREFIX}/resume-center/resume_draft/work_experiences`
-const API_WORK_EDIT = id =>
-  `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
-const API_WORK_DEL = id =>
-  `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
+const API_WORK_EDIT = id => `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
+const API_WORK_DEL = id => `${API_PREFIX}/resume-center/resume_draft/work_experiences/${id}`
 
 // 项目经历
 const API_PROJ_ADD = `${API_PREFIX}/resume-center/resume_draft/projects`
-const API_PROJ_EDIT = id =>
-  `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
-const API_PROJ_DEL = id =>
-  `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
+const API_PROJ_EDIT = id => `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
+const API_PROJ_DEL = id => `${API_PREFIX}/resume-center/resume_draft/projects/${id}`
 
 // 组织经历
 const API_ORG_ADD = `${API_PREFIX}/resume-center/resume_draft/organizations`
-const API_ORG_EDIT = id =>
-  `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
-const API_ORG_DEL = id =>
-  `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
+const API_ORG_EDIT = id => `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
+const API_ORG_DEL = id => `${API_PREFIX}/resume-center/resume_draft/organizations/${id}`
 
 // 竞赛经历
 const API_COMP_ADD = `${API_PREFIX}/resume-center/resume_draft/competitions`
-const API_COMP_EDIT = id =>
-  `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
-const API_COMP_DEL = id =>
-  `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
+const API_COMP_EDIT = id => `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
+const API_COMP_DEL = id => `${API_PREFIX}/resume-center/resume_draft/competitions/${id}`
 
 // 模板设置
 const API_TEMPLATE = `${API_PREFIX}/resume-center/resume_draft/template`
@@ -349,8 +344,7 @@ const API_TEMPLATE = `${API_PREFIX}/resume-center/resume_draft/template`
 // 简历文件
 const API_GET_FILES = `${API_PREFIX}/resume-center/resume_files`
 const API_UPLOAD_PDF = `${API_PREFIX}/resume-center/resume_files/upload`
-const API_DELETE_PDF = id =>
-  `${API_PREFIX}/resume-center/resume_files/${id}`
+const API_DELETE_PDF = id => `${API_PREFIX}/resume-center/resume_files/${id}`
 
 // 统一取 token
 function getAuthHeaders () {
@@ -385,28 +379,32 @@ export default {
     }
   },
   async mounted () {
-    // 本地兜底
-    const cached = localStorage.getItem(STORAGE_KEY)
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached)
-        this.form = Object.assign(this.getDefaultForm(), parsed)
-      } catch {
-        localStorage.removeItem(STORAGE_KEY)
-      }
+  // 本地兜底
+  const cached = localStorage.getItem(STORAGE_KEY)
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached)
+      this.form = Object.assign(this.getDefaultForm(), parsed)
+    } catch {
+      localStorage.removeItem(STORAGE_KEY)
     }
+  }
 
-    this.form.template = 'school'
+  this.form.template = 'school'
 
-    // 1. 后端加载简历草稿
-    await this.fetchResumeDraft()
+  // 1. 加载简历草稿
+  await this.fetchResumeDraft()
 
-    // 2. 后端加载我的简历文件列表
-    this.fileList = await this.fetchResumeFiles()
+  // 2. 再从“学生中心档案”里取头像，覆盖掉 form.profile.avatar
+  await this.fetchStudentAvatar()
 
-    // 3. 滚动高亮
-    this.setupScrollSpy()
-  },
+  // 3. 简历文件列表
+  this.fileList = await this.fetchResumeFiles()
+
+  // 4. 滚动高亮
+  this.setupScrollSpy()
+},
+
   methods: {
     getDefaultForm () {
       return {
@@ -532,6 +530,35 @@ export default {
         console.error('加载简历草稿失败：', e)
       }
     },
+/* ========== 从学生中心同步头像 ========== */
+async fetchStudentAvatar () {
+  try {
+    const res = await axios.get(API_STUDENT_PROFILE, {
+      headers: getAuthHeaders()
+    })
+
+    // 根据你给的示例结构：{ code:200, data:{ avatar_url: '...' , basic_info:{...} } }
+    if (res.data && res.data.code === 200 && res.data.data) {
+      const raw = res.data.data.avatar_url
+      if (raw) {
+        // 如果是相对路径，就补上 http://localhost:8080
+        let full = raw
+        if (!/^https?:\/\//.test(raw)) {
+          // 确保只有一个斜杠
+          full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
+        }
+
+        // 覆盖简历里的头像字段（预览用的就是这个）
+        this.form.profile.avatar = full
+        this.persist() // 顺便存到 localStorage
+      }
+    }
+  } catch (e) {
+    console.error('获取学生中心头像失败：', e)
+    // 不弹错，没头像就继续用默认灰色圆圈
+  }
+},
+
 
     /* ========== 保存简历（按接口逐个调） ========== */
     async saveResume () {

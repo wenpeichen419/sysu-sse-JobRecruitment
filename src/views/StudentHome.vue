@@ -1,35 +1,36 @@
 <template>
   <div class="student-page">
-    <div class="container">
-      <!-- 顶部轮播 -->
-      <div class="banner">
-        <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-          <div class="slide">
-            <img src="@/assets/campus.png" alt="banner" class="banner-img" />
-          </div>
-          <div class="slide">
-            <div class="text-slide">
-              <h3>求职中心</h3>
-              <p>近期活动 / 岗位热度 / 日程记录</p>
-            </div>
-          </div>
+    <!-- 顶部轮播：全宽 -->
+    <div class="banner">
+      <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+        <div class="slide">
+          <img src="@/assets/campus.png" alt="banner" class="banner-img" />
         </div>
-
-        <div class="banner-controls">
-          <button class="control-btn" @click="prevSlide">‹</button>
-          <div class="indicators">
-            <span
-              v-for="i in totalSlides"
-              :key="i"
-              class="indicator"
-              :class="{ active: currentSlide === i - 1 }"
-              @click="currentSlide = i - 1"
-            ></span>
+        <div class="slide">
+          <div class="text-slide">
+            <h3>求职中心</h3>
+            <p>近期活动 / 岗位热度 / 日程记录</p>
           </div>
-          <button class="control-btn" @click="nextSlide">›</button>
         </div>
       </div>
 
+      <div class="banner-controls">
+        <button class="control-btn" @click="prevSlide">‹</button>
+        <div class="indicators">
+          <span
+            v-for="i in totalSlides"
+            :key="i"
+            class="indicator"
+            :class="{ active: currentSlide === i - 1 }"
+            @click="currentSlide = i - 1"
+          ></span>
+        </div>
+        <button class="control-btn" @click="nextSlide">›</button>
+      </div>
+    </div>
+
+    <!-- 页面主体内容（保留 container 的左右留白） -->
+    <div class="container">
       <!-- 三列主区 -->
       <div class="grid">
         <!-- 左：求职日历 -->
@@ -69,7 +70,6 @@
         <div class="card">
           <div class="card-head">
             <h3>岗位热度排行榜</h3>
-            <!-- more，跳到 /job-center -->
             <span class="more" @click="goJobCenter">more ></span>
           </div>
 
@@ -87,19 +87,24 @@
       </div>
 
       <!-- 底部：招聘信息（四类） -->
-      <RecruitmentPanel
-        :enterprise="recruitEnterprise"
-        :institution="recruitInstitution"
-        :internship="recruitInternship"
-        :campus="recruitCampus"
-        @more="goRecruitMore"
-      />
+      <div class="section-recruit">
+        <RecruitmentPanel
+          :enterprise="recruitEnterprise"
+          :institution="recruitInstitution"
+          :internship="recruitInternship"
+          :campus="recruitCampus"
+          @more="goRecruitMore"
+        />
+      </div>
 
       <!-- 常用链接 -->
-      <UsefulLinks />
+      <div class="section-links">
+        <UsefulLinks />
+      </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios'
@@ -199,7 +204,7 @@ export default {
           const dateStr = start ? String(start).slice(0, 10) : ''
           const place = item.location || item.event_location || ''
           return {
-            id: item.id,
+            id: item.event_id || item.id,
             title,
             date: dateStr,
             place
@@ -334,7 +339,7 @@ export default {
 
     goActivity (id) {
       if (!id) return
-      this.$router.push({ name: 'ActivityDetail', params: { id } })
+      window.location.href = `http://localhost:5306/activities/${id}`
     },
 
     goRecruitMore () {
@@ -350,17 +355,42 @@ export default {
 </script>
 
 <style scoped>
+.banner {
+  width: 100vw !important;      /* 让宽度占满整个可视区域 */
+  margin-left: calc(-50vw + 50%); /* 抵消外层居中容器造成的偏移 */
+  margin-right: calc(-50vw + 50%);
+  border-radius: 0 !important;  /* 去掉圆角 */
+}
+.banner-img {
+  width: 100%;
+  height: 100%;   /* 占满更高的 banner */
+  object-fit: cover;
+}
+
+.section-recruit {
+  margin-top: 16px;      /* 招聘区域离上面稍微远一点（可调） */
+  margin-bottom: 32px;   /* 招聘和常用链接之间的间距 */
+  min-height: 260px;
+}
+.section-recruit .card {
+  min-height: 260px;
+}
+
+.section-links {
+  /* 如果还想让常用链接离下面也不那么挤，可以加一点底部间距 */
+  margin-bottom: 16px;
+}
 .student-page{
   background:#f0f0f0;
   min-height:100vh;
   font-size:16px;
 }
-.container{ padding:12px 24px 24px; }
+.container{ padding:24px 24px 24px; }
 @media (min-width:1440px){
   .container{ padding-left:32px; padding-right:32px; }
 }
 .banner{
-  position:relative; height:420px; overflow:hidden; border-radius:0; margin:0; background:#fff;
+  position:relative; height:360px; overflow:hidden; border-radius:0; margin:0; background:#fff;
 }
 .slides{ display:flex; height:100%; transition:transform .5s ease-in-out; }
 .slide{ flex:0 0 100%; height:100%; display:flex; align-items:center; justify-content:center; }
@@ -386,10 +416,10 @@ export default {
 .indicator{ width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.6); cursor:pointer; }
 .indicator.active{ background:#fff; transform:scale(1.2); }
 .grid{
-  display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(0px,2.5vw,36px); padding-top:20px;
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(0px,2.5vw,36px); padding-top:20px;margin-bottom: 32px;  
 }
 @media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
-.card{ background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); padding:16px; }
+.card{ background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); padding: 30px; }
 .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .card-head h3{ margin:0; color:#325e21; font-size:22px; }
 .more{
@@ -401,11 +431,13 @@ export default {
   color:#2a5e23;
   text-decoration:underline;
 }
+
+
 .muted{ color:#8aa39a; font-size:14px; }
 .timeline{ list-style:none; padding:0 0 0 18px; margin:0; position:relative; }
 .timeline::before{ content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:#e6f1ea; }
 .timeline li{
-  position:relative; padding:12px 8px 12px 10px; cursor:pointer;
+  position:relative; padding:14px 20px 14px 20px; cursor:pointer;
 }
 .timeline li:hover .title{ text-decoration:underline; }
 .dot{ position:absolute; left:-1px; top:18px; width:10px; height:10px; border-radius:50%; background:#1d5e25; }
@@ -413,7 +445,7 @@ export default {
 .tl-content .meta{ font-size:12px; color:#8aa39a; }
 .empty{ color:#888; padding:8px; }
 .rank{ list-style:none; margin:0; padding:0; }
-.rank li{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:10px; }
+.rank li{ display:flex; align-items:center; gap:10px; padding:20px 20px 20px 20px; border-radius:10px; }
 .rank li:hover{ background:#f6fbf8; }
 .no{ width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; border:1px solid #d7e8df; }
 .info{ flex:1; }
