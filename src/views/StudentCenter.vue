@@ -102,7 +102,7 @@
                 </div>
                 <div class="text-item">
                   <span class="item-label">期望薪资:</span>
-                  <span class="item-value">{{ studentInfo.expectedSalary }}</span>
+                  <span class="item-value">{{ formatSalary(studentInfo.expectedSalary) }}</span>
                 </div>
               </div>
             </div>
@@ -211,36 +211,202 @@
 </template>
 
 <script>
-import mockStudent from '@/data/mockStudentData'
+// ✅ 导入API方法
+import { getWelcomeInfo, getResumePreview, changePassword } from '@/api'
+import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 
 export default {
   name: 'StudentCenter',
   data() {
     return {
       showPasswordDialog: false,
-      // 学生信息（使用模拟数据）
-      studentInfo: mockStudent,
+      // ✅ 学生信息(从API获取,初始为空对象)
+      studentInfo: {
+        avatar: '',  // 这里存储的是 blob URL
+        name: '',
+        school: '',
+        major: '',
+        phone: '',
+        email: '',
+        lastLogin: '',
+        tags: [],
+        gender: '',
+        birthday: '',
+        degree: '',
+        desiredPosition: '',
+        expectedSalary: '',
+        admissionDate: '',
+        graduationDate: '',
+        ranking: ''
+      },
       // 密码表单
       passwordForm: {
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
-      }
+      },
+      // ✅ 加载状态
+      loading: false,
+      // ✅ 后端基础URL
+      baseURL: 'http://localhost:8080'
     }
   },
   computed: {
     // 最多显示4个标签
     displayTags() {
-      return this.studentInfo.tags.slice(0, 4)
+      return this.studentInfo.tags ? this.studentInfo.tags.slice(0, 4) : []
+    }
+  },
+  mounted() {
+    // ✅ 页面加载时获取学生信息
+    this.loadStudentInfo()
+  },
+  beforeUnmount() {
+    // ✅ 释放 blob URL，避免内存泄漏
+    if (this.studentInfo.avatar && this.studentInfo.avatar.startsWith('blob:')) {
+      URL.revokeObjectURL(this.studentInfo.avatar)
     }
   },
   methods: {
-    // 计算年龄
+    // ✅ 获取带token的图片URL（转换为blob URL）
+    async loadImageWithAuth(avatarPath) {
+      if (!avatarPath) {
+        // 返回默认头像
+        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
+      }
+      
+      try {
+        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
+        if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+          return avatarPath
+        }
+        
+        // 拼接完整URL
+        const fullUrl = avatarPath.startsWith('/') 
+          ? `${this.baseURL}${avatarPath}` 
+          : `${this.baseURL}/${avatarPath}`
+        
+        console.log('【加载头像】', fullUrl)
+        
+        // 从 localStorage 获取 token（和 config.js 中一致）
+        const token = localStorage.getItem('token') || 
+          "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
+        
+        // 使用 fetch 带 token 请求图片
+        const response = await fetch(fullUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        
+        // 将响应转换为 blob
+        const blob = await response.blob()
+        
+        // 创建 blob URL
+        const blobUrl = URL.createObjectURL(blob)
+        console.log('【头像加载成功】', blobUrl)
+        
+        return blobUrl
+      } catch (error) {
+        console.error('【头像加载失败】', error)
+        // 返回默认头像
+        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
+      }
+    },
+    
+    // ✅ 新增:加载学生信息
+    async loadStudentInfo() {
+      try {
+        this.loading = true
+        
+        // 并行调用两个接口
+        const [welcomeData, resumeData] = await Promise.all([
+          getWelcomeInfo(),
+          getResumePreview()
+        ])
+        
+        console.log('【欢迎信息】', welcomeData)
+        console.log('【简历预览】', resumeData)
+        console.log('【头像路径】', resumeData.avatar_url)
+        
+        // ✅ 加载头像（带token验证）
+        const avatarBlobUrl = await this.loadImageWithAuth(resumeData.avatar_url)
+        
+        // 合并数据到 studentInfo
+        this.studentInfo = {
+          // 从欢迎信息接口获取
+          name: welcomeData.full_name,
+          school: welcomeData.school_name,
+          phone: welcomeData.phone_number,
+          email: welcomeData.email,
+          lastLogin: this.formatDateTime(welcomeData.last_login_at),
+          tags: welcomeData.personal_tags.map(tag => tag.name),
+          
+          // 从简历预览接口获取
+          avatar: avatarBlobUrl,  // 使用 blob URL
+          gender: resumeData.basic_info.gender,
+          birthday: '', // 接口不返回生日，使用 age 字段
+          age: resumeData.basic_info.age,
+          degree: resumeData.basic_info.degree_level,
+          
+          // 教育信息
+          major: resumeData.primary_education.major,
+          admissionDate: resumeData.primary_education.start_date,
+          graduationDate: resumeData.primary_education.end_date,
+          ranking: resumeData.primary_education.major_rank,
+          
+          // 期望职位
+          desiredPosition: resumeData.expected_job.expected_position,
+          expectedSalary: resumeData.expected_job.expected_salary
+        }
+        
+        console.log('【加载学生信息成功】', this.studentInfo)
+      } catch (error) {
+        console.error('【加载学生信息失败】', error)
+        alert('加载学生信息失败，请刷新页面重试')
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    // 计算年龄（如果有 age 字段直接使用，否则根据生日计算）
     calculateAge(birthday) {
+      // 如果直接有 age 字段，使用它
+      if (this.studentInfo.age) {
+        return this.studentInfo.age
+      }
+      // 否则根据生日计算
       if (!birthday) return '--'
       const birthYear = parseInt(birthday.split('-')[0])
       const currentYear = new Date().getFullYear()
       return currentYear - birthYear
+    },
+    
+    // 格式化日期时间
+    formatDateTime(dateTimeStr) {
+      if (!dateTimeStr) return '--'
+      try {
+        const date = new Date(dateTimeStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}`
+      } catch (error) {
+        console.error('日期格式化失败:', error)
+        return dateTimeStr
+      }
+    },
+    
+    // 格式化薪资显示
+    formatSalary(salary) {
+      return formatSalaryRangeToK(salary);
     },
     
     // 跳转到标签编辑（定位到能力标签部分）
@@ -281,8 +447,8 @@ export default {
       }
     },
     
-    // 提交密码修改
-    submitPasswordChange() {
+    // ✅ 提交密码修改(调用API)
+    async submitPasswordChange() {
       // 验证
       if (!this.passwordForm.oldPassword) {
         alert('请输入原密码')
@@ -301,9 +467,18 @@ export default {
         return
       }
       
-      // 这里应该调用API修改密码
-      alert('密码修改成功！')
-      this.cancelPasswordChange()
+      try {
+        // ✅ 调用API修改密码
+        await changePassword({
+          oldPassword: this.passwordForm.oldPassword,
+          newPassword: this.passwordForm.newPassword
+        })
+        alert('密码修改成功!')
+        this.cancelPasswordChange()
+      } catch (error) {
+        console.error('【修改密码失败】', error)
+        // 错误信息已经在axios拦截器中显示了
+      }
     }
   }
 }

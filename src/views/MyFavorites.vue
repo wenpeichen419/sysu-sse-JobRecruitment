@@ -10,21 +10,25 @@
     <!-- 岗位列表 -->
     <div class="job-list">
       <div 
-        v-for="job in displayedJobs" 
+        v-for="job in favoriteJobs" 
         :key="job.id"
         class="job-item"
         @click="goToJobDetail(job.id)"
       >
         <!-- 公司Logo -->
         <div class="job-logo">
-          <img :src="job.logo" :alt="job.company" />
+          <img 
+            :src="job.logo" 
+            :alt="job.company"
+            @error="handleImageError"
+          />
         </div>
 
         <!-- 左侧岗位信息 -->
         <div class="job-left-info">
           <div class="job-title">{{ job.title }}</div>
           <div class="job-details">
-            <span class="salary">{{ job.salary }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(job.salary) }}</span>
             <span class="divider">|</span>
             <span class="location">{{ job.location }}</span>
             <span class="divider">|</span>
@@ -51,8 +55,13 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="displayedJobs.length === 0" class="empty-state">
+      <div v-if="favoriteJobs.length === 0 && !loading" class="empty-state">
         <p>暂无收藏的岗位</p>
+      </div>
+      
+      <!-- 加载状态 -->
+      <div v-if="loading" class="empty-state">
+        <p>加载中...</p>
       </div>
     </div>
 
@@ -94,193 +103,35 @@
 </template>
 
 <script>
+import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
+import { getFavoriteJobs, unfavoriteJob } from '@/api/job'
+
 export default {
   name: 'MyFavorites',
   data() {
     return {
-      // 收藏的岗位ID列表
-      favoriteJobIds: [],
+      // 收藏的岗位列表
+      favoriteJobs: [],
       
       // 分页
       currentPage: 1,
-      pageSize: 5,
+      pageSize: 10,
+      totalJobs: 0,
       
-      // 所有岗位数据（从JobCenter复用）
-      allJobs: [
-        {
-          id: 1,
-          title: '推荐算法工程师',
-          company: '百度在线网络技术（北京）有限公司',
-          category: '算法',
-          department: 'xx部门',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '校招',
-          education: '本科',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 2,
-          title: '产品经理',
-          company: '华为技术有限公司',
-          category: '产品',
-          department: '产品部',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '实习',
-          education: '本科',
-          recruitCount: 3,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 3,
-          title: '产品设计',
-          company: '支付宝（中国）网络技术有限公司',
-          category: '设计',
-          department: '设计部',
-          salary: '7000-8000',
-          province: '广东省',
-          city: '广州',
-          location: '广东省广州市天河区',
-          type: '校招',
-          education: '本科',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 4,
-          title: '前端开发工程师',
-          company: '腾讯科技（深圳）有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '8000-10000',
-          province: '广东省',
-          city: '深圳',
-          location: '广东省深圳市南山区',
-          type: '校招',
-          education: '硕士',
-          recruitCount: 10,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 5,
-          title: '算法工程师',
-          company: '北京字节跳动科技有限公司',
-          category: '算法',
-          department: 'AI部门',
-          salary: '15000-20000',
-          province: '北京市',
-          city: '海淀区',
-          location: '北京市海淀区',
-          type: '校招',
-          education: '硕士',
-          recruitCount: 8,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 6,
-          title: 'Java后端开发',
-          company: '阿里巴巴（中国）网络技术有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '10000-15000',
-          province: '浙江省',
-          city: '杭州',
-          location: '浙江省杭州市余杭区',
-          type: '校招',
-          education: '本科',
-          recruitCount: 15,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 7,
-          title: 'UI设计师',
-          company: '美团网（北京）科技有限公司',
-          category: '设计',
-          department: '设计部',
-          salary: '8000-12000',
-          province: '北京市',
-          city: '朝阳区',
-          location: '北京市朝阳区',
-          type: '校招',
-          education: '本科',
-          recruitCount: 4,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 8,
-          title: '数据分析师',
-          company: '京东集团股份有限公司',
-          category: '算法',
-          department: '数据部',
-          salary: '9000-13000',
-          province: '北京市',
-          city: '朝阳区',
-          location: '北京市朝阳区',
-          type: '实习',
-          education: '硕士',
-          recruitCount: 6,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 9,
-          title: '运营专员',
-          company: '小红书科技有限公司',
-          category: '运营',
-          department: '运营部',
-          salary: '7000-9000',
-          province: '上海市',
-          city: '浦东新区',
-          location: '上海市浦东新区',
-          type: '实习',
-          education: '本科',
-          recruitCount: 5,
-          logo: require('@/assets/BDance_logo.png')
-        },
-        {
-          id: 10,
-          title: 'Python工程师',
-          company: '网易（杭州）网络有限公司',
-          category: '研发',
-          department: '技术部',
-          salary: '10000-14000',
-          province: '浙江省',
-          city: '杭州',
-          location: '浙江省杭州市滨江区',
-          type: '校招',
-          education: '本科',
-          recruitCount: 7,
-          logo: require('@/assets/BDance_logo.png')
-        }
-      ]
+      // 加载状态
+      loading: false,
+      
+      // 后端基础URL
+      baseURL: 'http://localhost:8080',
+      
+      // 存储已创建的 blob URLs，用于清理
+      blobUrls: []
     }
   },
   computed: {
-    // 只显示收藏的岗位
-    favoriteJobs() {
-      return this.allJobs.filter(job => this.favoriteJobIds.includes(job.id))
-    },
-    
-    // 总岗位数
-    totalJobs() {
-      return this.favoriteJobs.length
-    },
-    
     // 总页数
     totalPages() {
       return Math.ceil(this.totalJobs / this.pageSize)
-    },
-    
-    // 当前页显示的岗位
-    displayedJobs() {
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
-      return this.favoriteJobs.slice(start, end)
     },
 
     // 中间的页码
@@ -303,29 +154,185 @@ export default {
     }
   },
   mounted() {
-    // 从本地存储读取收藏列表
-    const saved = localStorage.getItem('favoriteJobs')
-    if (saved) {
-      this.favoriteJobIds = JSON.parse(saved)
-    }
+    // 加载收藏列表
+    this.loadFavorites()
+  },
+  beforeUnmount() {
+    // ✅ 释放所有 blob URLs，避免内存泄漏
+    this.blobUrls.forEach(url => URL.revokeObjectURL(url))
+    this.blobUrls = []
   },
   methods: {
+    // ✅ 获取带token的图片URL（转换为blob URL）
+    async loadImageWithAuth(logoPath) {
+      console.log('【开始加载Logo】原始路径:', logoPath)
+      
+      if (!logoPath) {
+        console.warn('【Logo路径为空】')
+        return ''
+      }
+      
+      try {
+        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
+        if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+          console.log('【完整URL】直接使用:', logoPath)
+          return logoPath
+        }
+        
+        // 拼接完整URL
+        const fullUrl = logoPath.startsWith('/') 
+          ? `${this.baseURL}${logoPath}` 
+          : `${this.baseURL}/${logoPath}`
+        
+        console.log('【拼接完整URL】', fullUrl)
+        
+        // 从 localStorage 获取 token（和 config.js 中一致）
+        const token = localStorage.getItem('token') || 
+          "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
+        
+        console.log('【使用Token】', token.substring(0, 50) + '...')
+        
+        // 使用 fetch 带 token 请求图片
+        const response = await fetch(fullUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
+          }
+        })
+        
+        const contentType = response.headers.get('content-type')
+        console.log('【Fetch响应】状态码:', response.status, 'Content-Type:', contentType)
+        
+        if (!response.ok) {
+          // 尝试读取错误信息
+          const errorText = await response.text()
+          console.error('【HTTP错误】', response.status, errorText.substring(0, 200))
+          throw new Error(`HTTP ${response.status}`)
+        }
+        
+        // 检查是否是图片类型
+        if (!contentType || !contentType.startsWith('image/')) {
+          const text = await response.text()
+          console.error('【❌ 响应不是图片】Content-Type:', contentType)
+          console.error('【响应内容】', text.substring(0, 500))
+          throw new Error(`响应类型不是图片: ${contentType}`)
+        }
+        
+        // 将响应转换为 blob
+        const blob = await response.blob()
+        console.log('【Blob创建】大小:', blob.size, '类型:', blob.type)
+        
+        // 验证 blob 大小
+        if (blob.size === 0) {
+          console.error('【❌ Blob大小为0】')
+          throw new Error('图片内容为空')
+        }
+        
+        // 创建 blob URL
+        const blobUrl = URL.createObjectURL(blob)
+        
+        // 保存 blob URL 用于后续清理
+        this.blobUrls.push(blobUrl)
+        
+        console.log('【✅ Logo加载成功】', blobUrl)
+        
+        return blobUrl
+      } catch (error) {
+        console.error('【❌ Logo加载失败】', logoPath, error)
+        // 不使用默认logo，返回空字符串
+        return ''
+      }
+    },
+    
+    // 加载收藏列表
+    async loadFavorites() {
+      try {
+        this.loading = true
+        
+        // 清理之前的 blob URLs
+        this.blobUrls.forEach(url => URL.revokeObjectURL(url))
+        this.blobUrls = []
+        
+        const response = await getFavoriteJobs({
+          page: this.currentPage,
+          size: this.pageSize
+        })
+        
+        // 根据接口文档，数据结构为 response.data.jobs
+        const jobs = response.jobs || []
+        
+        console.log('【收藏列表原始数据】共', jobs.length, '条')
+        jobs.forEach((job, index) => {
+          console.log(`  [${index}] logo_url:`, job.logo_url)
+        })
+        
+        // 映射接口字段到页面需要的字段
+        const mappedJobs = jobs.map(job => ({
+          id: job.job_id,
+          title: job.title,
+          company: job.company_name,
+          salary: job.salary_range,
+          location: job.location,
+          type: job.work_nature,
+          education: job.required_degree || '',
+          department: job.department,
+          recruitCount: job.headcount,
+          logoPath: job.logo_url,  // 暂存路径
+          logo: '',  // 稍后加载
+          isFavorited: job.is_favorited
+        }))
+        
+        console.log('【开始并行加载', mappedJobs.length, '个Logo】')
+        
+        // ✅ 并行加载所有 logo（带 token）
+        const logoPromises = mappedJobs.map((job, index) => {
+          console.log(`  → 加载第 ${index + 1} 个:`, job.logoPath)
+          return this.loadImageWithAuth(job.logoPath)
+        })
+        const logos = await Promise.all(logoPromises)
+        
+        console.log('【所有Logo加载完成】')
+        
+        // 设置 logo
+        mappedJobs.forEach((job, index) => {
+          job.logo = logos[index]
+          console.log(`  [${index}] ${job.title}: logo =`, job.logo ? job.logo.substring(0, 50) + '...' : 'empty')
+        })
+        
+        this.favoriteJobs = mappedJobs
+        this.totalJobs = response.total || 0
+        
+        console.log('【✅ 加载收藏列表成功】共', this.favoriteJobs.length, '条')
+      } catch (error) {
+        console.error('【加载收藏列表失败】', error)
+      } finally {
+        this.loading = false
+      }
+    },
+    
     // 返回
     goBack() {
       this.$router.push({ name: 'StudentCenter' })
     },
     
+    // 格式化薪资显示
+    formatSalaryRangeToK,
+    
     // 取消收藏
-    toggleFavorite(jobId) {
-      const index = this.favoriteJobIds.indexOf(jobId)
-      if (index > -1) {
-        this.favoriteJobIds.splice(index, 1)
-        localStorage.setItem('favoriteJobs', JSON.stringify(this.favoriteJobIds))
+    async toggleFavorite(jobId) {
+      try {
+        await unfavoriteJob(jobId)
+        
+        // 成功后重新加载列表
+        await this.loadFavorites()
         
         // 如果当前页没有数据了，回到上一页
-        if (this.displayedJobs.length === 0 && this.currentPage > 1) {
+        if (this.favoriteJobs.length === 0 && this.currentPage > 1) {
           this.currentPage--
+          await this.loadFavorites()
         }
+      } catch (error) {
+        console.error('【取消收藏失败】', error)
       }
     },
     
@@ -334,10 +341,18 @@ export default {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
     },
     
+    // 图片加载失败处理
+    handleImageError(event) {
+      console.error('【图片加载失败】', event.target.src)
+      // 不显示默认图片，隐藏图片元素
+      event.target.style.display = 'none'
+    },
+    
     // 切换页码
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page
+        this.loadFavorites()
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }

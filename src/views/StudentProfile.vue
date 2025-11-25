@@ -61,22 +61,24 @@
             </div>
             <div class="form-item">
               <label>出生年月</label>
-              <input type="text" v-model="formData.birthday" placeholder="选择年月" />
+              <input type="date" v-model="formData.birthday" />
             </div>
             <div class="form-item">
               <label>性别</label>
-              <select v-model="formData.gender">
-                <option value="">请选择</option>
-                <option value="male">男</option>
-                <option value="female">女</option>
+              <select v-model.number="formData.gender">
+                <option :value="null">请选择</option>
+                <option :value="0">男</option>
+                <option :value="1">女</option>
               </select>
             </div>
             <div class="form-item">
               <label>求职状态</label>
-              <select v-model="formData.jobStatus">
-                <option value="">请选择</option>
-                <option value="active">求职中</option>
-                <option value="inactive">暂不求职</option>
+              <select v-model.number="formData.jobStatus">
+                <option :value="null">请选择</option>
+                <option :value="0">在校-暂不考虑</option>
+                <option :value="1">在校-寻求实习</option>
+                <option :value="2">应届-寻求实习</option>
+                <option :value="3">应届-寻求校招</option>
               </select>
             </div>
             <div class="form-item">
@@ -100,20 +102,20 @@
             </div>
             <div class="form-item">
               <label>层次</label>
-              <select v-model="formData.degree">
-                <option value="">请选择</option>
-                <option value="bachelor">本科</option>
-                <option value="master">硕士</option>
-                <option value="doctor">博士</option>
+              <select v-model.number="formData.degree">
+                <option :value="null">请选择</option>
+                <option :value="0">本科</option>
+                <option :value="1">硕士</option>
+                <option :value="2">博士</option>
               </select>
             </div>
             <div class="form-item">
               <label>入学日期</label>
-              <input type="text" v-model="formData.admissionDate" />
+              <input type="date" v-model="formData.admissionDate" />
             </div>
             <div class="form-item">
               <label>毕业日期</label>
-              <input type="text" v-model="formData.graduationDate" />
+              <input type="date" v-model="formData.graduationDate" />
             </div>
             <div class="form-item">
               <label>专业</label>
@@ -145,9 +147,17 @@
         <div class="section-card" id="tags">
           <h3 class="section-title">能力标签</h3>
           <div class="tags-selector">
-            <select v-model="newTag" class="tag-select">
-              <option value="">+ 标签</option>
-              <option v-for="tag in availableTags" :key="tag" :value="tag">{{ tag }}</option>
+            <select v-model="selectedCategory" class="tag-select" @change="onCategoryChange">
+              <option value="">选择标签分类</option>
+              <option v-for="category in tagCategories" :key="category.category_id" :value="category.category_id">
+                {{ category.category_name }}
+              </option>
+            </select>
+            <select v-model="newTag" class="tag-select" :disabled="!selectedCategory">
+              <option value="">选择具体标签</option>
+              <option v-for="tag in currentCategoryTags" :key="tag.tag_id" :value="tag.tag_id">
+                {{ tag.tag_name }}
+              </option>
             </select>
           </div>
           <div class="selected-tags">
@@ -158,7 +168,7 @@
                 :key="index" 
                 class="tag"
               >
-                {{ tag }}
+                {{ tag.name }}
                 <span class="tag-remove" @click="removeTag(index)">×</span>
               </span>
             </div>
@@ -176,54 +186,94 @@
 </template>
 
 <script>
-import mockStudent from '@/data/mockStudentData'
+// ✅ 导入API方法
+import { getEditProfile, updateProfile, uploadAvatar } from '@/api'
+import { getAvailableTags } from '@/api/tags'
 
 export default {
   name: 'StudentProfile',
   data() {
     return {
       currentSection: 'avatar',
-      avatarUrl: mockStudent.avatar,
-      newTag: '',
+      avatarUrl: '',  // 这里存储的是 blob URL
+      loading: false,
+      baseURL: 'http://localhost:8080',
       
       // 左侧导航项
       navItems: [
-        { id: 'avatar', label: '个人头像', icon: '👤' },
-        { id: 'basic', label: '基本信息', icon: '📝' },
-        { id: 'education', label: '教育经历', icon: '🎓' },
-        { id: 'job', label: '期望岗位', icon: '💼' },
-        { id: 'tags', label: '能力标签', icon: '🏷️' }
+        { id: 'avatar', label: '个人头像' },
+        { id: 'basic', label: '基本信息'},
+        { id: 'education', label: '教育经历'},
+        { id: 'job', label: '期望岗位'},
+        { id: 'tags', label: '能力标签'}
       ],
       
-      // 表单数据（从模拟数据初始化）
-      formData: {
-        name: mockStudent.name,
-        birthday: mockStudent.birthday,
-        gender: mockStudent.gender === '男' ? 'male' : 'female',
-        jobStatus: mockStudent.jobStatus === '求职中' ? 'active' : 'inactive',
-        email: mockStudent.email,
-        phone: mockStudent.phone,
-        school: mockStudent.school,
-        degree: mockStudent.degree === '本科' ? 'bachelor' : mockStudent.degree === '硕士' ? 'master' : 'doctor',
-        admissionDate: mockStudent.admissionDate,
-        graduationDate: mockStudent.graduationDate,
-        major: mockStudent.major,
-        ranking: mockStudent.ranking,
-        desiredPosition: mockStudent.desiredPosition,
-        expectedSalary: mockStudent.expectedSalary,
-        tags: [...mockStudent.tags]
+      // ✅ 中文到数字的映射
+      genderMap: {
+        '男': 0,
+        '女': 1
+      },
+      jobStatusMap: {
+        '在校-暂不考虑': 0,
+        '在校-寻求实习': 1,
+        '寻求实习': 1,  // 兼容后端可能的简写
+        '应届-寻求实习': 2,
+        '应届-寻求校招': 3
+      },
+      degreeMap: {
+        '本科': 0,
+        '硕士': 1,
+        '博士': 2
       },
       
-      // 可选标签
-      availableTags: [
-        'AI', '算法', '机器学习', 'Python', 'Java', 'C++', 
-        '前端开发', '后端开发', '数据分析', '深度学习', 
-        'React', 'Vue', 'Node.js', 'Spring', 'MySQL', 
-        'JavaScript', 'TypeScript', 'HTML/CSS', 'Git', 'Webpack'
-      ]
+      // ✅ 数字到中文的反向映射（提交时使用）
+      genderReverseMap: {
+        0: '男',
+        1: '女'
+      },
+      jobStatusReverseMap: {
+        0: '在校-暂不考虑',
+        1: '在校-寻求实习',
+        2: '应届-寻求实习',
+        3: '应届-寻求校招'
+      },
+      degreeReverseMap: {
+        0: '本科',
+        1: '硕士',
+        2: '博士'
+      },
+      
+      // ✅ 表单数据（从API获取）
+      formData: {
+        name: '',
+        birthday: '',
+        gender: null,
+        jobStatus: null,
+        email: '',
+        phone: '',
+        school: '',
+        degree: null,
+        admissionDate: '',
+        graduationDate: '',
+        major: '',
+        ranking: '',
+        desiredPosition: '',
+        expectedSalary: '',
+        tags: []  // 改为存储对象数组 { id, name }
+      },
+      
+      // ✅ 标签相关数据
+      tagCategories: [],  // 标签分类列表
+      selectedCategory: '',  // 当前选中的分类
+      currentCategoryTags: [],  // 当前分类下的标签
+      newTag: ''  // 新选择的标签ID
     }
   },
-  mounted() {
+  async mounted() {
+    // ✅ 加载数据
+    await this.loadProfileData()
+    await this.loadAvailableTags()
+    
     // 如果URL有hash，滚动到对应位置
     if (this.$route.hash) {
       const sectionId = this.$route.hash.substring(1)
@@ -237,23 +287,227 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll)
+    
+    // ✅ 释放 blob URL，避免内存泄漏
+    if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.avatarUrl)
+    }
   },
   watch: {
-    newTag(val) {
-      if (val && !this.formData.tags.includes(val)) {
-        this.formData.tags.push(val)
+    // ✅ 监听新标签选择
+    newTag(tagId) {
+      console.log('【选择了标签ID】', tagId)
+      
+      if (tagId) {
+        // 检查是否已经添加
+        if (this.formData.tags.some(tag => tag.id === tagId)) {
+          console.log('【标签已存在，跳过】')
+          this.newTag = ''
+          return
+        }
+        
+        // 找到标签名称
+        console.log('【从以下标签中查找】', this.currentCategoryTags)
+        const tag = this.currentCategoryTags.find(t => t.tag_id === tagId)
+        console.log('【找到的标签】', tag)
+        
+        if (tag) {
+          const newTagObj = {
+            id: tag.tag_id,
+            name: tag.tag_name || tag.name || '未命名'
+          }
+          console.log('【添加标签对象】', newTagObj)
+          this.formData.tags.push(newTagObj)
+          console.log('【当前所有标签】', this.formData.tags)
+        }
+        
         this.newTag = ''
       }
     }
   },
   methods: {
+    // ✅ 获取带token的图片URL（转换为blob URL）
+    async loadImageWithAuth(avatarPath) {
+      if (!avatarPath) {
+        // 返回默认头像
+        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
+      }
+      
+      try {
+        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
+        if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+          return avatarPath
+        }
+        
+        // 拼接完整URL
+        const fullUrl = avatarPath.startsWith('/') 
+          ? `${this.baseURL}${avatarPath}` 
+          : `${this.baseURL}/${avatarPath}`
+        
+        console.log('【加载头像】', fullUrl)
+        
+        // 从 localStorage 获取 token（和 config.js 中一致）
+        const token = localStorage.getItem('token') || 
+          "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
+        
+        // 使用 fetch 带 token 请求图片
+        const response = await fetch(fullUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        
+        // 将响应转换为 blob
+        const blob = await response.blob()
+        
+        // 创建 blob URL
+        const blobUrl = URL.createObjectURL(blob)
+        console.log('【头像加载成功】', blobUrl)
+        
+        return blobUrl
+      } catch (error) {
+        console.error('【头像加载失败】', error)
+        // 返回默认头像
+        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
+      }
+    },
+    
+    // ✅ 加载个人档案数据
+    async loadProfileData() {
+      try {
+        this.loading = true
+        const data = await getEditProfile()
+        
+        console.log('【加载个人档案】', data)
+        
+        // 映射数据到表单
+        // ✅ 加载头像（带token验证）
+        this.avatarUrl = await this.loadImageWithAuth(data.avatar_url)
+        
+        // ✅ 处理枚举字段：中文字符串 → 数字
+        const gender = data.basic_info?.gender != null ? this.genderMap[data.basic_info.gender] ?? null : null
+        const jobStatus = data.basic_info?.job_seeking_status != null ? this.jobStatusMap[data.basic_info.job_seeking_status] ?? null : null
+        const degree = data.primary_education?.degree_level != null ? this.degreeMap[data.primary_education.degree_level] ?? null : null
+        
+        // ✅ 处理日期格式：如果是 "yyyy-MM" 格式，补充 "-01"
+        const formatDate = (dateStr) => {
+          if (!dateStr) return ''
+          // 如果是 yyyy-MM 格式，补充 -01
+          if (/^\d{4}-\d{2}$/.test(dateStr)) {
+            return `${dateStr}-01`
+          }
+          return dateStr
+        }
+        
+        // ✅ 打印标签原始数据
+        console.log('【原始标签数据】', data.personal_tags)
+        
+        this.formData = {
+          name: data.basic_info?.full_name || '',
+          birthday: formatDate(data.basic_info?.date_of_birth),
+          gender: gender,
+          jobStatus: jobStatus,
+          email: data.basic_info?.email || '',
+          phone: data.basic_info?.phone_number || '',
+          school: data.primary_education?.school_name || '',
+          degree: degree,
+          admissionDate: formatDate(data.primary_education?.start_date),
+          graduationDate: formatDate(data.primary_education?.end_date),
+          major: data.primary_education?.major || '',
+          ranking: data.primary_education?.major_rank || '',
+          desiredPosition: data.expected_job?.expected_position || '',
+          expectedSalary: data.expected_job?.expected_salary || '',
+          tags: (data.personal_tags || []).map(tag => {
+            console.log('【处理标签】', tag)
+            return {
+              id: tag.tag_id,
+              name: tag.tag_name || tag.name || '未命名标签'
+            }
+          })
+        }
+        
+        console.log('【转换后的formData】', this.formData)
+        console.log('【转换后的标签列表】', this.formData.tags)
+        
+      } catch (error) {
+        console.error('【加载个人档案失败】', error)
+        alert('加载个人信息失败，请刷新页面重试')
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    // ✅ 加载可用标签（分组）
+    async loadAvailableTags() {
+      try {
+        const data = await getAvailableTags()
+        console.log('【加载可用标签-完整响应】', data)
+        
+        // 保存分组标签数据
+        this.tagCategories = data.grouped_tags || data.tags || data || []
+        
+        console.log('【标签分类列表】', this.tagCategories)
+        console.log('【标签分类数量】', this.tagCategories.length)
+        
+        if (this.tagCategories.length > 0) {
+          console.log('【第一个分类示例】', this.tagCategories[0])
+        }
+        
+      } catch (error) {
+        console.error('【加载可用标签失败】', error)
+        console.warn('⚠️ 标签加载失败，使用本地标签列表作为备用')
+        
+        // ⚠️ 降级方案：使用本地标签列表（如果后端接口不可用）
+        this.tagCategories = [
+          {
+            category_id: 1,
+            category_name: '编程语言',
+            tags: [
+              { tag_id: 1, tag_name: 'Java' },
+              { tag_id: 2, tag_name: 'Python' },
+              { tag_id: 3, tag_name: 'C++' },
+              { tag_id: 4, tag_name: 'JavaScript' }
+            ]
+          },
+          {
+            category_id: 2,
+            category_name: '技术框架/库',
+            tags: [
+              { tag_id: 5, tag_name: 'React' },
+              { tag_id: 6, tag_name: 'Vue' },
+              { tag_id: 7, tag_name: 'Spring Boot' }
+            ]
+          }
+        ]
+      }
+    },
+    
+    // ✅ 分类变化时更新可选标签
+    onCategoryChange() {
+      console.log('【选择的分类ID】', this.selectedCategory)
+      console.log('【所有分类】', this.tagCategories)
+      
+      const category = this.tagCategories.find(cat => cat.category_id === this.selectedCategory)
+      console.log('【找到的分类】', category)
+      
+      this.currentCategoryTags = category ? category.tags : []
+      console.log('【当前分类下的标签】', this.currentCategoryTags)
+      
+      this.newTag = ''
+    },
+    
     // 触发文件选择
     handleAvatarUpload() {
       this.$refs.avatarInput.click()
     },
     
-    // 处理头像文件变化
-    onAvatarChange(event) {
+    // ✅ 处理头像文件变化（调用真实API）
+    async onAvatarChange(event) {
       const file = event.target.files[0]
       if (file) {
         // 验证文件类型
@@ -268,15 +522,28 @@ export default {
           return
         }
         
-        // 读取文件并预览
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          this.avatarUrl = e.target.result
-          alert('头像上传成功！当前头像已更新')
-          // 这里应该调用API上传到服务器
-          // uploadAvatar(file).then(...)
+        try {
+          // ✅ 调用API上传头像
+          const formData = new FormData()
+          formData.append('avatar_file', file)
+          
+          const data = await uploadAvatar(formData)
+          
+          console.log('【头像上传成功】', data.new_avatar_url)
+          
+          // ✅ 释放旧的 blob URL
+          if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(this.avatarUrl)
+          }
+          
+          // 更新头像预览（带token加载新头像）
+          this.avatarUrl = await this.loadImageWithAuth(data.new_avatar_url)
+          alert('头像上传成功！')
+          
+        } catch (error) {
+          console.error('【头像上传失败】', error)
+          alert('头像上传失败，请重试')
         }
-        reader.readAsDataURL(file)
         
         // 清空input，允许重复选择同一文件
         event.target.value = ''
@@ -307,7 +574,7 @@ export default {
       }
     },
     
-    // 移除标签
+    // ✅ 移除标签
     removeTag(index) {
       this.formData.tags.splice(index, 1)
     },
@@ -322,12 +589,62 @@ export default {
       this.$router.push({ name: 'StudentCenter' })
     },
     
-    // 提交表单
-    submitForm() {
-      // 这里应该调用API保存数据
-      alert('信息提交成功！')
-      this.$router.push({ name: 'StudentCenter' })
+    // ✅ 提交表单（调用真实API）
+    async submitForm() {
+      try {
+        this.loading = true
+        
+        // ✅ 处理日期格式：如果后端需要 yyyy-MM 格式，则截取前7位
+        const formatDateForSubmit = (dateStr) => {
+          if (!dateStr) return ''
+          // 如果是完整日期 yyyy-MM-dd，截取前7位得到 yyyy-MM
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr.substring(0, 7)
+          }
+          return dateStr
+        }
+        
+        // ✅ 组织成后端需要的数据格式（数字 → 中文字符串）
+        const payload = {
+          basic_info: {
+            full_name: this.formData.name,
+            gender: this.formData.gender != null ? this.genderReverseMap[this.formData.gender] : '',
+            date_of_birth: formatDateForSubmit(this.formData.birthday),
+            job_seeking_status: this.formData.jobStatus != null ? this.jobStatusReverseMap[this.formData.jobStatus] : '',
+            email: this.formData.email,
+            phone_number: this.formData.phone
+          },
+          primary_education: {
+            school_name: this.formData.school,
+            degree_level: this.formData.degree != null ? this.degreeReverseMap[this.formData.degree] : '',
+            major: this.formData.major,
+            start_date: formatDateForSubmit(this.formData.admissionDate),
+            end_date: formatDateForSubmit(this.formData.graduationDate),
+            major_rank: this.formData.ranking
+          },
+          expected_job: {
+            expected_position: this.formData.desiredPosition,
+            expected_salary: this.formData.expectedSalary
+          },
+          personal_tag_ids: this.formData.tags.map(tag => tag.id)
+        }
+        
+        console.log('【提交个人档案】', payload)
+        
+        // ✅ 调用API更新档案
+        await updateProfile(payload)
+        
+        alert('个人信息更新成功！')
+        this.$router.push({ name: 'StudentCenter' })
+        
+      } catch (error) {
+        console.error('【更新个人档案失败】', error)
+        alert('更新失败，请重试')
+      } finally {
+        this.loading = false
+      }
     }
+
   }
 }
 </script>
@@ -565,9 +882,12 @@ export default {
 /* 标签选择器 */
 .tags-selector {
   margin-bottom: 20px;
+  display: flex;
+  gap: 15px;
 }
 
 .tag-select {
+  flex: 1;
   padding: 12px 16px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
@@ -575,6 +895,12 @@ export default {
   cursor: pointer;
   transition: all 0.3s;
   background: white;
+}
+
+.tag-select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  color: #999;
 }
 
 .tag-select:focus {
