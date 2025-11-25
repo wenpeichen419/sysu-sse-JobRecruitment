@@ -271,68 +271,128 @@ export default {
   },
   methods: {
     // 加载岗位详情
-    async loadJobDetail() {
-      try {
-        this.loading = true
-        const response = await getJobDetail(this.jobId)
-        
-        // 映射接口数据到页面
-        this.jobInfo = {
-          title: response.title || '',
-          salary: response.salary_range || '',
-          location: response.address || '',
-          type: response.work_nature || '',
-          education: response.required_degree || '',
-          publishDate: response.posted_at || '',
-          viewCount: response.times || 0,
-          category: response.type || '',
-          skills: response.required_skills || [],
-          recruitCount: response.headcount || 0,
-          startDate: response.required_start_date || '',
-          description: this.parseMultilineText(response.position_description),
-          requirements: this.parseMultilineText(response.position_requirements),
-          bonusPoints: response.bonus_points || [],
-          address: response.address_detail || response.address || '',
-          longitude: response.longitude || null,  // 经度（如果后端提供）
-          latitude: response.latitude || null     // 纬度（如果后端提供）
-        }
-        
-        // ✅ 加载公司信息（包括logo）
-        if (response.company_info) {
-          // 加载公司 logo（带 token 认证）
-          const defaultLogo = require('@/assets/BDance_logo.png')
-          const logoUrl = response.company_info.logo_url 
-            ? await loadImageWithAuth(response.company_info.logo_url, this.baseURL, defaultLogo)
-            : defaultLogo
+    // 加载岗位详情
+async loadJobDetail() {
+  try {
+    this.loading = true
+    const response = await getJobDetail(this.jobId)
+    
+    console.log('【API响应完整数据】', response)
+    console.log('【公司信息数据】', response.company_info)
+    
+    // 映射接口数据到页面
+    this.jobInfo = {
+      title: response.title || '',
+      salary: response.salary_range || '',
+      location: response.address || '',
+      type: response.work_nature || '',
+      education: response.required_degree || '',
+      publishDate: response.posted_at || '',
+      viewCount: response.times || 0,
+      category: response.type || '',
+      skills: response.required_skills || [],
+      recruitCount: response.headcount || 0,
+      startDate: response.required_start_date || '',
+      description: this.parseMultilineText(response.position_description),
+      requirements: this.parseMultilineText(response.position_requirements),
+      bonusPoints: response.bonus_points || [],
+      address: response.address_detail || response.address || '',
+      longitude: response.longitude || null,
+      latitude: response.latitude || null
+    }
+    
+    // ✅ 加载公司信息 - 使用正确的字段名 company_logo_url
+    if (response.company_info) {
+      console.log('【公司信息字段】', Object.keys(response.company_info))
+      
+      // 使用正确的字段名：company_logo_url
+      const hasLogoUrl = 'company_logo_url' in response.company_info
+      const logoUrlValue = response.company_info.company_logo_url
+      
+      console.log('【logo_url检查】', {
+        hasLogoUrl,
+        logoUrlValue,
+        type: typeof logoUrlValue
+      })
+      
+      let logoUrl = require('@/assets/BDance_logo.png')
+      
+      // 如果 company_logo_url 存在且有效
+      if (hasLogoUrl && logoUrlValue && logoUrlValue.trim() !== '') {
+        try {
+          console.log('【开始加载公司logo】', logoUrlValue)
           
-          // 记录 blob URL 用于清理
-          if (logoUrl && logoUrl.startsWith('blob:')) {
-            this.blobUrls.push(logoUrl)
-          }
+          const loadedLogoUrl = await loadImageWithAuth(logoUrlValue, this.baseURL)
           
-          this.companyInfo = {
-            id: response.company_info.company_id,
-            name: response.company_info.company_name || '',
-            logo: logoUrl,
-            nature: response.company_info.company_nature || '',
-            industry: response.company_info.company_industry || '',
-            scale: response.company_info.company_scale || '',
-            contact: response.company_info.contact_person_name || '',
-            phone: response.company_info.contact_person_phone || '',
-            website: response.company_info.company_website_url || '#'
+          if (loadedLogoUrl && loadedLogoUrl !== require('@/assets/BDance_logo.png')) {
+            logoUrl = loadedLogoUrl
+            if (logoUrl.startsWith('blob:')) {
+              this.blobUrls.push(logoUrl)
+            }
+            console.log('【公司logo加载成功】')
           }
+        } catch (error) {
+          console.error('【加载公司logo失败】', error)
         }
-        
-        // 收藏状态
-        this.isFavorited = response.is_favorited || false
-        
-        console.log('【加载岗位详情成功】', this.jobInfo)
-      } catch (error) {
-        console.error('【加载岗位详情失败】', error)
-      } finally {
-        this.loading = false
+      } else {
+        console.warn('【使用默认logo】原因:', 
+          !hasLogoUrl ? 'company_logo_url字段不存在' : 
+          !logoUrlValue ? 'company_logo_url值为空' : 
+          'company_logo_url值为空字符串'
+        )
       }
-    },
+      
+      // 同时更新其他字段的映射
+      this.companyInfo = {
+        id: response.company_info.company_id,
+        name: response.company_info.company_name || '',
+        logo: logoUrl,
+        nature: response.company_info.company_nature || '',
+        industry: response.company_info.company_industry || '',
+        scale: response.company_info.company_scale || '',
+        contact: response.company_info.contact_person_name || '',
+        phone: response.company_info.contact_person_phone || '',
+        website: (response.company_info.company_links && response.company_info.company_links[0]) 
+                ? response.company_info.company_links[0].link_url 
+                : '#'
+      }
+    } else {
+      console.warn('【无公司信息】')
+      this.companyInfo = {
+        id: null,
+        name: '',
+        logo: require('@/assets/BDance_logo.png'),
+        nature: '',
+        industry: '',
+        scale: '',
+        contact: '',
+        phone: '',
+        website: '#'
+      }
+    }
+    
+    // 收藏状态
+    this.isFavorited = response.is_favorited || false
+    
+    console.log('【最终公司信息】', this.companyInfo)
+    
+  } catch (error) {
+    console.error('【加载岗位详情失败】', error)
+    this.companyInfo = {
+      id: null,
+      name: '',
+      logo: require('@/assets/BDance_logo.png'),
+      nature: '',
+      industry: '',
+      scale: '',
+      contact: '',
+      phone: '',
+      website: '#'
+    }
+  } finally {
+    this.loading = false
+  }
+},
     
     // 解析多行文本（如果接口返回的是字符串，需要分割成数组）
     parseMultilineText(text) {
@@ -464,6 +524,7 @@ export default {
     
     // ✅ 图片加载失败时显示默认图片
     handleImageError(event) {
+      console.error('【图片加载失败】', event.target.src)
       event.target.src = require('@/assets/BDance_logo.png')
     },
     
