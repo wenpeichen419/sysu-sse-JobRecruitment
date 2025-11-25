@@ -285,11 +285,15 @@ export default {
           avatarUrl = `http://localhost:8080${avatarUrl}`
         }
         
+        // 准备headers对象，仅在token存在时添加Authorization头
+        const headers = {}
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
         const response = await fetch(avatarUrl, {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          }
+          headers: Object.keys(headers).length > 0 ? headers : undefined
         })
         
         if (response.ok) {

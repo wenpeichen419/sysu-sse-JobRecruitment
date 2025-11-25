@@ -205,6 +205,7 @@
 <script>
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 import { getJobDetail, favoriteJob, unfavoriteJob, getResumeFilesForApply, applyJob, uploadResumeForApply } from '@/api/job'
+import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 
 export default {
   name: 'JobDetail',
@@ -215,6 +216,8 @@ export default {
       showResumeDialog: false,
       selectedResumeId: null,
       loading: false,
+      baseURL: 'http://localhost:8080',  // 后端基础URL
+      blobUrls: [],  // 存储 blob URLs 用于清理
       
       // 岗位信息
       jobInfo: {
@@ -261,6 +264,11 @@ export default {
     // 加载岗位详情
     this.loadJobDetail()
   },
+  beforeUnmount() {
+    // ✅ 释放 blob URLs，避免内存泄漏
+    revokeBlobUrls(this.blobUrls)
+    this.blobUrls = []
+  },
   methods: {
     // 加载岗位详情
     async loadJobDetail() {
@@ -289,12 +297,23 @@ export default {
           latitude: response.latitude || null     // 纬度（如果后端提供）
         }
         
-        // 公司信息
+        // ✅ 加载公司信息（包括logo）
         if (response.company_info) {
+          // 加载公司 logo（带 token 认证）
+          const defaultLogo = require('@/assets/BDance_logo.png')
+          const logoUrl = response.company_info.logo_url 
+            ? await loadImageWithAuth(response.company_info.logo_url, this.baseURL, defaultLogo)
+            : defaultLogo
+          
+          // 记录 blob URL 用于清理
+          if (logoUrl && logoUrl.startsWith('blob:')) {
+            this.blobUrls.push(logoUrl)
+          }
+          
           this.companyInfo = {
             id: response.company_info.company_id,
             name: response.company_info.company_name || '',
-            logo: response.company_info.logo_url || require('@/assets/BDance_logo.png'),
+            logo: logoUrl,
             nature: response.company_info.company_nature || '',
             industry: response.company_info.company_industry || '',
             scale: response.company_info.company_scale || '',

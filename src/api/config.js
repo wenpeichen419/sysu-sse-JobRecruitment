@@ -34,11 +34,8 @@ request.interceptors.request.use(
     //        - 优点：支持动态登录登出，token 自动管理
     //        - 使用方法：注释掉下面的硬编码，取消注释 localStorage 那行
     
-    // 当前使用硬编码 token (学生ID: 1)
-    const token = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
-    
-    // 将来有登录页面后，使用这行替换上面的硬编码
-    // const token = localStorage.getItem('token')
+    // 从 localStorage 获取 token
+    const token = localStorage.getItem('token')
     
     if (token) {
       // 在请求头中添加Authorization，使用Bearer格式

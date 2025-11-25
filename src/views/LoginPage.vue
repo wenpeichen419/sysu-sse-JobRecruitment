@@ -119,7 +119,7 @@ export default {
     if (token && userInfo) {
       const user = JSON.parse(userInfo)
       if (user.role === 'student') {
-        this.$router.push('/')
+        this.$router.push('/student-home')
       } else {
         this.$router.push('/enterprise-home')
       }

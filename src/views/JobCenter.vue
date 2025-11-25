@@ -224,6 +224,7 @@
 import { getJobList, favoriteJob, unfavoriteJob, getFavoriteJobs } from '@/api/job'
 import { getLocations } from '@/api/location'
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
+import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 
 export default {
   name: 'JobCenter',
@@ -311,77 +312,13 @@ export default {
     }
     
     // ✅ 释放所有 blob URLs，避免内存泄漏
-    this.blobUrls.forEach(url => URL.revokeObjectURL(url))
+    revokeBlobUrls(this.blobUrls)
     this.blobUrls = []
   },
   methods: {
     formatSalaryRangeToK,
     
-    // ✅ 获取带token的图片URL（转换为blob URL）
-    async loadImageWithAuth(logoPath) {
-      if (!logoPath) {
-        return ''
-      }
-      
-      try {
-        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
-        if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
-          return logoPath
-        }
-        
-        // 拼接完整URL
-        const fullUrl = logoPath.startsWith('/') 
-          ? `${this.baseURL}${logoPath}` 
-          : `${this.baseURL}/${logoPath}`
-        
-        console.log('【加载Logo】', fullUrl)
-        
-        // 从 localStorage 获取 token（和 config.js 中一致）
-        const token = localStorage.getItem('token') || 
-          ""
-        
-        // 使用 fetch 带 token 请求图片
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
-          }
-        })
-        
-        const contentType = response.headers.get('content-type')
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        
-        // 检查是否是图片类型
-        if (!contentType || !contentType.startsWith('image/')) {
-          throw new Error(`响应类型不是图片: ${contentType}`)
-        }
-        
-        // 将响应转换为 blob
-        const blob = await response.blob()
-        
-        // 验证 blob 大小
-        if (blob.size === 0) {
-          throw new Error('图片内容为空')
-        }
-        
-        // 创建 blob URL
-        const blobUrl = URL.createObjectURL(blob)
-        
-        // 保存 blob URL 用于后续清理
-        this.blobUrls.push(blobUrl)
-        
-        console.log('【Logo加载成功】', blobUrl)
-        
-        return blobUrl
-      } catch (error) {
-        console.error('【Logo加载失败】', logoPath, error)
-        // 不使用默认logo，返回空字符串
-        return ''
-      }
-    },
+
     
     // ✅ 新增:加载省市数据
     async loadLocations() {
@@ -470,12 +407,19 @@ export default {
         console.log('【岗位列表原始数据】', jobs)
         
         // ✅ 并行加载所有 logo（带 token）
-        const logoPromises = jobs.map(job => this.loadImageWithAuth(job.logo_url))
-        const logos = await Promise.all(logoPromises)
+        const logoPromises = jobs.map(job => loadImageWithAuth(job.logo_url, this.baseURL))
+        const logos = await Promise.allSettled(logoPromises)
         
-        // 设置 logo 的 blob URL
+        // 设置 logo 的 blob URL，对于失败的请求使用空字符串
         jobs.forEach((job, index) => {
-          job.logo_url = logos[index]
+          const result = logos[index]
+          const logoUrl = result.status === 'fulfilled' ? result.value : ''
+          job.logo_url = logoUrl
+          
+          // ✅ 记录 blob URL 用于清理
+          if (logoUrl && logoUrl.startsWith('blob:')) {
+            this.blobUrls.push(logoUrl)
+          }
         })
         
         this.allJobs = jobs
@@ -596,8 +540,8 @@ export default {
     // ✅ 图片加载失败处理
     handleImageError(event) {
       console.error('【图片加载失败】', event.target.src)
-      // 不显示默认图片，隐藏图片元素
-      event.target.style.display = 'none'
+      // 当图片加载失败时，使用默认图片
+      event.target.src = require('@/assets/BDance_logo.png')
     }
   }
 }

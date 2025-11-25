@@ -1,0 +1,154 @@
+/**
+ * 统一的带认证图片加载工具函数
+ * 用于加载需要token验证的图片资源
+ * 
+ * 使用说明：
+ * 1. 如果图片加载失败，会在控制台输出详细的错误信息
+ * 2. 可以传入 defaultImage 作为加载失败时的备用图片
+ * 3. 函数会自动处理 token 认证、CORS、blob URL 创建等
+ */
+
+/**
+ * 加载需要认证的图片
+ * @param {string} imagePath - 图片路径
+ * @param {string} baseURL - 基础URL
+ * @param {string} defaultImage - 默认图片URL（可选）
+ * @returns {Promise<string>} 返回blob URL或默认图片URL
+ */
+export async function loadImageWithAuth(imagePath, baseURL, defaultImage = '') {
+  // 如果图片路径为空，返回默认图片
+  if (!imagePath) {
+    console.warn('【图片路径为空】返回默认图片');
+    return defaultImage;
+  }
+  
+  try {
+    // 如果已经是完整URL（包含http），直接使用
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      console.log('【图片已是完整URL】', imagePath);
+      return imagePath;
+    }
+    
+    // 如果是blob URL，直接返回
+    if (imagePath.startsWith('blob:')) {
+      console.log('【图片已是blob URL】', imagePath);
+      return imagePath;
+    }
+    
+    // 拼接完整URL
+    const fullUrl = imagePath.startsWith('/') 
+      ? `${baseURL}${imagePath}` 
+      : `${baseURL}/${imagePath}`;
+    
+    console.log('【开始加载图片】URL:', fullUrl);
+    
+    // 从 localStorage 获取 token
+    const token = localStorage.getItem('token');
+    console.log('【Token状态】', token ? '存在' : '不存在');
+    
+    // 构建请求头
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    }
+    
+    console.log('【发起图片请求】', { fullUrl, hasToken: !!token });
+    
+    // 发起请求
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: Object.keys(headers).length > 0 ? headers : undefined
+    });
+    
+    console.log('【图片响应状态】', response.status, response.statusText);
+    
+    // 检查响应状态
+    if (!response.ok) {
+      console.error('【图片请求失败】状态码:', response.status);
+      throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+    }
+    
+    // 检查内容类型
+    const contentType = response.headers.get('content-type');
+    console.log('【响应Content-Type】', contentType);
+    
+    // 🔧 特殊处理：如果后端返回的是 JSON，说明这不是图片的直接响应
+    if (contentType && contentType.includes('application/json')) {
+      console.warn('⚠️【后端返回了JSON而不是图片】尝试解析...');
+      const jsonData = await response.json();
+      console.log('【JSON内容】', jsonData);
+      
+      // 如果JSON中包含真实的图片URL，尝试提取并重新加载
+      if (jsonData.url || jsonData.file_url || jsonData.path) {
+        const realImageUrl = jsonData.url || jsonData.file_url || jsonData.path;
+        console.log('【从JSON中提取到真实图片URL】', realImageUrl);
+        // 递归调用，加载真实的图片URL
+        return loadImageWithAuth(realImageUrl, baseURL, defaultImage);
+      }
+      
+      throw new Error('后端返回了JSON但没有找到图片URL字段');
+    }
+    
+    // 放宽content-type检查：某些后端可能返回application/octet-stream或不设置content-type
+    if (contentType && !contentType.startsWith('image/') && !contentType.startsWith('application/octet-stream')) {
+      console.warn('【警告】响应类型可能不是图片:', contentType);
+      // 不直接抛出错误，尝试继续处理
+    }
+    
+    // 将响应转换为 blob
+    const blob = await response.blob();
+    console.log('【Blob信息】大小:', blob.size, 'bytes, 类型:', blob.type);
+    
+    // 验证 blob 大小
+    if (blob.size === 0) {
+      throw new Error('图片内容为空');
+    }
+    
+    // 创建 blob URL
+    const blobUrl = URL.createObjectURL(blob);
+    console.log('✅【图片加载成功】Blob URL:', blobUrl.substring(0, 50) + '...');
+    
+    return blobUrl;
+  } catch (error) {
+    console.error('❌【图片加载失败】');
+    console.error('  - 原始路径:', imagePath);
+    console.error('  - 错误信息:', error.message);
+    console.error('  - 错误堆栈:', error.stack);
+    // 返回默认图片
+    return defaultImage;
+  }
+}
+
+/**
+ * 批量加载图片
+ * @param {Array} imagePaths - 图片路径数组
+ * @param {string} baseURL - 基础URL
+ * @param {string} defaultImage - 默认图片URL（可选）
+ * @returns {Promise<Array>} 返回图片URL数组
+ */
+export async function loadImagesWithAuth(imagePaths, baseURL, defaultImage = '') {
+  const loadImagePromises = imagePaths.map(path => loadImageWithAuth(path, baseURL, defaultImage));
+  return Promise.allSettled(loadImagePromises).then(results => 
+    results.map(result => 
+      result.status === 'fulfilled' ? result.value : defaultImage
+    )
+  );
+}
+
+/**
+ * 释放blob URL以避免内存泄漏
+ * @param {string|Array} blobUrls - blob URL或blob URL数组
+ */
+export function revokeBlobUrls(blobUrls) {
+  if (Array.isArray(blobUrls)) {
+    blobUrls.forEach(url => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+  } else {
+    if (blobUrls && blobUrls.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrls);
+    }
+  }
+}

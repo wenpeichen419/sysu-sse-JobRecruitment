@@ -105,6 +105,7 @@
 <script>
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 import { getFavoriteJobs, unfavoriteJob } from '@/api/job'
+import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 
 export default {
   name: 'MyFavorites',
@@ -159,90 +160,10 @@ export default {
   },
   beforeUnmount() {
     // ✅ 释放所有 blob URLs，避免内存泄漏
-    this.blobUrls.forEach(url => URL.revokeObjectURL(url))
+    revokeBlobUrls(this.blobUrls)
     this.blobUrls = []
   },
   methods: {
-    // ✅ 获取带token的图片URL（转换为blob URL）
-    async loadImageWithAuth(logoPath) {
-      console.log('【开始加载Logo】原始路径:', logoPath)
-      
-      if (!logoPath) {
-        console.warn('【Logo路径为空】')
-        return ''
-      }
-      
-      try {
-        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
-        if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
-          console.log('【完整URL】直接使用:', logoPath)
-          return logoPath
-        }
-        
-        // 拼接完整URL
-        const fullUrl = logoPath.startsWith('/') 
-          ? `${this.baseURL}${logoPath}` 
-          : `${this.baseURL}/${logoPath}`
-        
-        console.log('【拼接完整URL】', fullUrl)
-        
-        // 从 localStorage 获取 token（和 config.js 中一致）
-        const token = localStorage.getItem('token') || 
-          "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
-        
-        console.log('【使用Token】', token.substring(0, 50) + '...')
-        
-        // 使用 fetch 带 token 请求图片
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
-          }
-        })
-        
-        const contentType = response.headers.get('content-type')
-        console.log('【Fetch响应】状态码:', response.status, 'Content-Type:', contentType)
-        
-        if (!response.ok) {
-          // 尝试读取错误信息
-          const errorText = await response.text()
-          console.error('【HTTP错误】', response.status, errorText.substring(0, 200))
-          throw new Error(`HTTP ${response.status}`)
-        }
-        
-        // 检查是否是图片类型
-        if (!contentType || !contentType.startsWith('image/')) {
-          const text = await response.text()
-          console.error('【❌ 响应不是图片】Content-Type:', contentType)
-          console.error('【响应内容】', text.substring(0, 500))
-          throw new Error(`响应类型不是图片: ${contentType}`)
-        }
-        
-        // 将响应转换为 blob
-        const blob = await response.blob()
-        console.log('【Blob创建】大小:', blob.size, '类型:', blob.type)
-        
-        // 验证 blob 大小
-        if (blob.size === 0) {
-          console.error('【❌ Blob大小为0】')
-          throw new Error('图片内容为空')
-        }
-        
-        // 创建 blob URL
-        const blobUrl = URL.createObjectURL(blob)
-        
-        // 保存 blob URL 用于后续清理
-        this.blobUrls.push(blobUrl)
-        
-        console.log('【✅ Logo加载成功】', blobUrl)
-        
-        return blobUrl
-      } catch (error) {
-        console.error('【❌ Logo加载失败】', logoPath, error)
-        // 不使用默认logo，返回空字符串
-        return ''
-      }
-    },
     
     // 加载收藏列表
     async loadFavorites() {
@@ -250,7 +171,7 @@ export default {
         this.loading = true
         
         // 清理之前的 blob URLs
-        this.blobUrls.forEach(url => URL.revokeObjectURL(url))
+        revokeBlobUrls(this.blobUrls)
         this.blobUrls = []
         
         const response = await getFavoriteJobs({
@@ -287,7 +208,7 @@ export default {
         // ✅ 并行加载所有 logo（带 token）
         const logoPromises = mappedJobs.map((job, index) => {
           console.log(`  → 加载第 ${index + 1} 个:`, job.logoPath)
-          return this.loadImageWithAuth(job.logoPath)
+          return loadImageWithAuth(job.logoPath, this.baseURL)
         })
         const logos = await Promise.all(logoPromises)
         
@@ -295,8 +216,14 @@ export default {
         
         // 设置 logo
         mappedJobs.forEach((job, index) => {
-          job.logo = logos[index]
-          console.log(`  [${index}] ${job.title}: logo =`, job.logo ? job.logo.substring(0, 50) + '...' : 'empty')
+          const logoUrl = logos[index]
+          job.logo = logoUrl
+          console.log(`  [${index}] ${job.title}: logo =`, logoUrl ? logoUrl.substring(0, 50) + '...' : 'empty')
+          
+          // ✅ 记录 blob URL 用于清理
+          if (logoUrl && logoUrl.startsWith('blob:')) {
+            this.blobUrls.push(logoUrl)
+          }
         })
         
         this.favoriteJobs = mappedJobs

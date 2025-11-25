@@ -189,6 +189,7 @@
 // ✅ 导入API方法
 import { getEditProfile, updateProfile, uploadAvatar } from '@/api'
 import { getAvailableTags } from '@/api/tags'
+import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 
 export default {
   name: 'StudentProfile',
@@ -290,7 +291,7 @@ export default {
     
     // ✅ 释放 blob URL，避免内存泄漏
     if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(this.avatarUrl)
+      revokeBlobUrls([this.avatarUrl])
     }
   },
   watch: {
@@ -326,56 +327,7 @@ export default {
     }
   },
   methods: {
-    // ✅ 获取带token的图片URL（转换为blob URL）
-    async loadImageWithAuth(avatarPath) {
-      if (!avatarPath) {
-        // 返回默认头像
-        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
-      }
-      
-      try {
-        // 如果已经是完整URL（包含http），可能是外部图片或已处理的URL
-        if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-          return avatarPath
-        }
-        
-        // 拼接完整URL
-        const fullUrl = avatarPath.startsWith('/') 
-          ? `${this.baseURL}${avatarPath}` 
-          : `${this.baseURL}/${avatarPath}`
-        
-        console.log('【加载头像】', fullUrl)
-        
-        // 从 localStorage 获取 token（和 config.js 中一致）
-        const token = localStorage.getItem('token') || 
-          "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3R1ZGVudCIsImlkIjoxLCJzdWIiOiJjaGVueHk5NzlAbWFpbDIuc3lzdS5lZHUuY24iLCJpYXQiOjE3NjQwNDg0MzUsImV4cCI6MTc2NDEzNDgzNX0.47CWY2WpJ1-BqGYHtnYODLKEZ2KrIBuNxwuhk93vSMI"
-        
-        // 使用 fetch 带 token 请求图片
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
-          }
-        })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        
-        // 将响应转换为 blob
-        const blob = await response.blob()
-        
-        // 创建 blob URL
-        const blobUrl = URL.createObjectURL(blob)
-        console.log('【头像加载成功】', blobUrl)
-        
-        return blobUrl
-      } catch (error) {
-        console.error('【头像加载失败】', error)
-        // 返回默认头像
-        return 'https://ui-avatars.com/api/?name=Student&background=325e21&color=fff&size=200'
-      }
-    },
+
     
     // ✅ 加载个人档案数据
     async loadProfileData() {
@@ -387,7 +339,7 @@ export default {
         
         // 映射数据到表单
         // ✅ 加载头像（带token验证）
-        this.avatarUrl = await this.loadImageWithAuth(data.avatar_url)
+        this.avatarUrl = await loadImageWithAuth(data.avatar_url, this.baseURL)
         
         // ✅ 处理枚举字段：中文字符串 → 数字
         const gender = data.basic_info?.gender != null ? this.genderMap[data.basic_info.gender] ?? null : null
@@ -537,7 +489,7 @@ export default {
           }
           
           // 更新头像预览（带token加载新头像）
-          this.avatarUrl = await this.loadImageWithAuth(data.new_avatar_url)
+          this.avatarUrl = await loadImageWithAuth(data.new_avatar_url, this.baseURL)
           alert('头像上传成功！')
           
         } catch (error) {
