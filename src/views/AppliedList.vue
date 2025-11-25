@@ -28,7 +28,12 @@
 
     <!-- 列表 -->
     <div class="job-list">
-      <div v-for="item in paged" :key="item.job_id" class="job-item" @click="toDetail(item.job_id)">
+      <div
+        v-for="item in paged"
+        :key="item.job_id"
+        class="job-item"
+        @click="toDetail(item)"
+      >
         <div class="job-logo">
           <img :src="item.logo_url" :alt="item.company_name" />
         </div>
@@ -37,12 +42,11 @@
           <div class="job-title">
             <span class="link">{{ item.title }}</span>
             <span
-  class="status-chip"
-  :class="statusClass(item.status)"
->
-  {{ statusText(item.status) }}
-</span>
-
+              class="status-chip"
+              :class="statusClass(item.status)"
+            >
+              {{ statusText(item.status) }}
+            </span>
           </div>
           <div class="job-details">
             <span class="salary">{{ item.salary_range }}</span>
@@ -54,11 +58,13 @@
         </div>
 
         <div class="job-right-info">
-          <div class="company-name"><span class="link">{{ item.company_name }}</span></div>
+          <div class="company-name">
+            <span class="link">{{ item.company_name }}</span>
+          </div>
           <div class="company-details">
             <span class="department">{{ item.department }}</span>
             <span class="divider">|</span>
-            <span>投递时间 {{ item.submitted_at }}</span>
+            <span>投递时间 {{ formatDateTime(item.submitted_at) }}</span>
           </div>
         </div>
       </div>
@@ -77,9 +83,17 @@
           class="page-btn"
           :class="{ active: page === p }"
           @click="setPage(p)"
-        >{{ p }}</button>
+        >
+          {{ p }}
+        </button>
         <span v-if="showEllipsis" class="ellipsis">…</span>
-        <button class="page-btn" :class="{ active: page === totalPages }" @click="setPage(totalPages)">{{ totalPages }}</button>
+        <button
+          class="page-btn"
+          :class="{ active: page === totalPages }"
+          @click="setPage(totalPages)"
+        >
+          {{ totalPages }}
+        </button>
         <button class="page-next" :disabled="page >= totalPages" @click="setPage(page + 1)">›</button>
       </div>
     </div>
@@ -87,7 +101,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from 'axios'
 
 export default {
   name: 'AppliedList',
@@ -97,59 +111,64 @@ export default {
       q: { title: '', company: '' }, // 搜索条件
       page: 1, // 当前页
       size: 5 // 每页数据条数
-    };
+    }
   },
   created() {
-    this.fetchJobs(); // 组件创建时调用获取职位数据的函数
+    this.fetchJobs() // 组件创建时调用获取职位数据的函数
   },
   computed: {
     // 根据标题和公司名称进行过滤
     filtered() {
-      let arr = this.raw.slice();
+      let arr = this.raw.slice()
 
       if (this.q.title.trim()) {
-        const k = this.q.title.trim().toLowerCase();
-        arr = arr.filter(x => (x.title || '').toLowerCase().includes(k));
+        const k = this.q.title.trim().toLowerCase()
+        arr = arr.filter(x => (x.title || '').toLowerCase().includes(k))
       }
 
       if (this.q.company.trim()) {
-        const k = this.q.company.trim().toLowerCase();
+        const k = this.q.company.trim().toLowerCase()
         // 注意这里用 company_name，和模板里保持一致
-        arr = arr.filter(x => (x.company_name || '').toLowerCase().includes(k));
+        arr = arr.filter(x => (x.company_name || '').toLowerCase().includes(k))
       }
 
-      return arr;
+      return arr
     },
     // 计算分页总页数
     totalPages() {
-      return Math.max(1, Math.ceil(this.filtered.length / this.size));
+      return Math.max(1, Math.ceil(this.filtered.length / this.size))
     },
     // 当前页的数据
     paged() {
-      const start = (this.page - 1) * this.size;
-      return this.filtered.slice(start, start + this.size);
+      const start = (this.page - 1) * this.size
+      return this.filtered.slice(start, start + this.size)
     },
     // 计算页码范围
     middlePages() {
-      const res = [];
-      const start = Math.max(2, this.page - 1);
-      const end = Math.min(this.totalPages - 1, this.page + 1);
-      for (let i = start; i <= end; i++) res.push(i);
-      return res;
+      const res = []
+      const start = Math.max(2, this.page - 1)
+      const end = Math.min(this.totalPages - 1, this.page + 1)
+      for (let i = start; i <= end; i++) res.push(i)
+      return res
     },
     // 是否需要显示省略号
     showEllipsis() {
-      return this.totalPages > 5 && this.page < this.totalPages - 2;
+      return this.totalPages > 5 && this.page < this.totalPages - 2
     }
   },
   methods: {
+    formatDateTime(str) {
+  if (!str) return '';
+  return str.replace('T', ' ').slice(0, 19);
+},
+
     // 获取职位列表数据
     async fetchJobs() {
       try {
-        const token = localStorage.getItem('token'); // 从 localStorage 获取 token
+        const token = localStorage.getItem('token') // 从 localStorage 获取 token
         if (!token) {
-          console.error('Token 不存在，请先登录'); // Token 为空，打印提示
-          return;
+          console.error('Token 不存在，请先登录')
+          return
         }
 
         const response = await axios.get(
@@ -157,12 +176,12 @@ export default {
           {
             headers: { Authorization: `Bearer ${token}` } // 在请求头中添加 token
           }
-        );
+        )
 
-        this.raw = response.data.data.jobs; // 处理数据
-        console.log('列表 jobs:', this.raw);
+        this.raw = response.data.data.jobs // 处理数据
+        console.log('列表 jobs:', this.raw)
       } catch (error) {
-        console.error('获取职位列表失败', error);
+        console.error('获取职位列表失败', error)
       }
     },
 
@@ -170,7 +189,7 @@ export default {
     statusText(status) {
       // 如果后端直接给中文（已投递/候选人/面试邀请/Offer/拒绝），直接用
       if (typeof status === 'string' && isNaN(Number(status))) {
-        return status;
+        return status
       }
 
       // 兼容数字 10 / 20 / 30 / 40 / 50
@@ -180,49 +199,50 @@ export default {
         30: '面试邀请',
         40: '通过',
         50: '拒绝'
-      };
+      }
 
-      const s = Number(status);
-      return map[s] || '未知状态';
+      const s = Number(status)
+      return map[s] || '未知状态'
     },
 
     // 状态对应的小标签 class，和 CSS 里的 submitted/interview/... 对上
     statusClass(status) {
       // 先按中文判断
-      if (status === '已投递') return 'submitted';
-      if (status === '候选人' || status === '面试邀请') return 'interview';
-      if (status === 'Offer' || status === '通过') return 'passed';
-      if (status === '拒绝') return 'stopped';
+      if (status === '已投递') return 'submitted'
+      if (status === '候选人' || status === '面试邀请') return 'interview'
+      if (status === 'Offer' || status === '通过') return 'passed'
+      if (status === '拒绝') return 'stopped'
 
       // 再兼容数字编码
-      const s = Number(status);
-      if (s === 10) return 'submitted';
-      if (s === 20 || s === 30) return 'interview';
-      if (s === 40) return 'passed';
-      if (s === 50) return 'stopped';
+      const s = Number(status)
+      if (s === 10) return 'submitted'
+      if (s === 20 || s === 30) return 'interview'
+      if (s === 40) return 'passed'
+      if (s === 50) return 'stopped'
 
-      return '';
+      return ''
     },
 
     // 搜索操作，重置页码为1
     handleSearch() {
-      this.page = 1;
+      this.page = 1
     },
     // 设置当前页
     setPage(p) {
       if (p >= 1 && p <= this.totalPages) {
-        this.page = p;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.page = p
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
-    // 查看职位详情
-    toDetail(id) {
-      this.$router.push({ name: 'AppliedDetail', params: { id } });
+    // 查看职位详情（传整条 item，取投递记录 id）
+    toDetail(item) {
+      const id = item.id || item.application_id || item.delivery_id || item.job_id
+      console.log('跳转投递详情，id =', id, '原始 item =', item)
+      this.$router.push({ name: 'AppliedDetail', params: { id } })
     }
   }
-};
+}
 </script>
-
 
 <style scoped>
 .job-center-page{min-height:100vh;background:#f0f0f0;padding:20px 40px}

@@ -1,85 +1,93 @@
 <template>
   <div class="detail-page">
-    <!-- 面包屑（等 job 加载出来再渲染，避免空指针） -->
-    <div class="breadcrumb" v-if="job">
-      <router-link class="crumb-link" to="/applied">投递情况</router-link>
-      <span class="sep">></span>
-      <span class="muted">{{ job.company.name }} - {{ job.job.title }}</span>
-    </div>
-
-    <!-- 头部信息栏 -->
-    <div class="meta-card" v-if="job">
-      <div class="row">
-        <div class="meta-item">
-          <span class="label">投递时间：</span>
-          <b>{{ submittedAtText }}</b>
-        </div>
-        <div class="meta-item">
-          <span class="label">状态更新时间：</span>
-          <b>{{ updatedAtText }}</b>
-        </div>
-        <div class="meta-item right">
-          <span class="label">投递岗位：</span>
-          <b>{{ job.job.title }}</b>
-        </div>
+    <!-- 有数据时的内容 -->
+    <div v-if="job">
+      <!-- 面包屑 -->
+      <div class="breadcrumb">
+        <router-link class="crumb-link" to="/applied">投递情况</router-link>
+        <span class="sep">></span>
+        <span class="muted">{{ companyName }} - {{ jobTitle }}</span>
       </div>
 
-      <!-- 状态横幅 -->
-      <div class="state-banner" :class="bannerClass">
-        <div class="state-left">
-          <div class="state-title">
-            当前状态：{{ stateTitle }}
+      <!-- 头部信息栏 -->
+      <div class="meta-card">
+        <div class="row">
+          <div class="meta-item">
+            <span class="label">投递时间：</span>
+            <b>{{ submittedAtText }}</b>
           </div>
-          <div class="state-desc">{{ stateDescription }}</div>
+          <div class="meta-item">
+            <span class="label">状态更新时间：</span>
+            <b>{{ updatedAtText }}</b>
+          </div>
+          <div class="meta-item right">
+            <span class="label">投递岗位：</span>
+            <b>{{ jobTitle }}</b>
+          </div>
         </div>
-        <div class="state-icon">
-          <div v-if="job.status === '已投递'" class="ico paper">📄</div>
-          <div v-else-if="job.status === '候选人'" class="ico mail">✉️</div>
-          <div v-else-if="job.status === '面试邀请'" class="ico like">👍</div>
-          <div v-else-if="job.status === 'Offer'" class="ico check">✅</div>
-          <div v-else-if="job.status === '拒绝'" class="ico sad">🙁</div>
+
+        <!-- 状态横幅 -->
+        <div class="state-banner" :class="bannerClass">
+          <div class="state-left">
+            <div class="state-title">
+              当前状态：{{ stateTitle }}
+            </div>
+            <div class="state-desc">{{ stateDescription }}</div>
+          </div>
+          <div class="state-icon">
+            <div v-if="job.status === '已投递'" class="ico paper">📄</div>
+            <div v-else-if="job.status === '候选人'" class="ico mail">✉️</div>
+            <div v-else-if="job.status === '面试邀请'" class="ico like">👍</div>
+            <div v-else-if="job.status === 'Offer'" class="ico check">✅</div>
+            <div v-else-if="job.status === '拒绝'" class="ico sad">🙁</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 进度条 -->
+      <div class="step-card">
+        <div class="step-line">
+          <!-- 第一步：投递岗位 -->
+          <div
+            class="step-node"
+            :class="{ done: step >= 1, danger: job.status === '拒绝' && step === 1 }"
+          >
+            <span class="check">
+              {{ job.status === '拒绝' && step === 1 ? '✕' : '✓' }}
+            </span>
+            <div class="label">投递岗位</div>
+          </div>
+
+          <div
+            class="step-bar"
+            :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
+          ></div>
+
+          <!-- 第二步：面试邀请 / 候选人 -->
+          <div
+            class="step-node"
+            :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
+          >
+            <span class="check">
+              {{ job.status === '拒绝' && step <= 2 ? '✕' : '✓' }}
+            </span>
+            <div class="label">面试邀请</div>
+          </div>
+
+          <div class="step-bar" :class="{ done: step === 3 }"></div>
+
+          <!-- 第三步：Offer -->
+          <div class="step-node" :class="{ done: step === 3 }">
+            <span class="check">✓</span>
+            <div class="label">Offer</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 进度条 -->
-    <div class="step-card" v-if="job">
-      <div class="step-line">
-        <!-- 第一步：投递岗位 -->
-        <div
-          class="step-node"
-          :class="{ done: step >= 1, danger: job.status === '拒绝' && step === 1 }"
-        >
-          <span class="check">
-            {{ job.status === '拒绝' && step === 1 ? '✕' : '✓' }}
-          </span>
-          <div class="label">投递岗位</div>
-        </div>
-
-        <div
-          class="step-bar"
-          :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
-        ></div>
-
-        <!-- 第二步：面试邀请 / 候选人 -->
-        <div
-          class="step-node"
-          :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
-        >
-          <span class="check">
-            {{ job.status === '拒绝' && step <= 2 ? '✕' : '✓' }}
-          </span>
-          <div class="label">面试邀请</div>
-        </div>
-
-        <div class="step-bar" :class="{ done: step === 3 }"></div>
-
-        <!-- 第三步：Offer -->
-        <div class="step-node" :class="{ done: step === 3 }">
-          <span class="check">✓</span>
-          <div class="label">Offer</div>
-        </div>
-      </div>
+    <!-- 没数据时的兜底提示 -->
+    <div v-else class="empty">
+      暂未查询到该投递记录，请返回列表重试。
     </div>
   </div>
 </template>
@@ -100,6 +108,24 @@ export default {
     this.getJobDetail(id)
   },
   computed: {
+    // 公司名称：兼容多种结构
+    companyName() {
+      if (!this.job) return ''
+      return (
+        this.job.company_name ||
+        (this.job.company && this.job.company.name) ||
+        ''
+      )
+    },
+    // 职位名称：兼容多种结构
+    jobTitle() {
+      if (!this.job) return ''
+      return (
+        this.job.title ||
+        (this.job.job && this.job.job.title) ||
+        ''
+      )
+    },
     // 进度条所在步骤：1/2/3
     step() {
       if (!this.job) return 1
@@ -154,27 +180,56 @@ export default {
     }
   },
   methods: {
-    async getJobDetail(id) {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          console.error('Token 不存在，请先登录')
-          return
-        }
+    async getJobDetail(jobId) {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('Token 不存在，请先登录')
+      return
+    }
 
-        const response = await axios.get(
-          `http://localhost:8080/student/applications/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
-
-        console.log('获取到的岗位详情:', response.data)
-        this.job = response.data.data
-      } catch (error) {
-        console.error('获取岗位详情失败', error)
+    // 1. 复用列表接口
+    const resp = await axios.get(
+      'http://localhost:8080/position-center/delivery/list',
+      {
+        headers: { Authorization: `Bearer ${token}` }
       }
-    },
+    )
+
+    const jobs = (resp.data && resp.data.data && resp.data.data.jobs) || []
+    // 2. 按 job_id 匹配当前这条
+    const record = jobs.find(
+      x => String(x.job_id) === String(jobId)
+    )
+
+    console.log('详情匹配到的记录:', record)
+
+    if (!record) {
+      console.warn('未在投递列表中找到对应记录')
+      this.job = null
+      return
+    }
+
+    // 3. 把列表里的字段，组装成 AppliedDetail 目前用的结构
+    this.job = {
+      status: record.status_text || record.status,   // 列表有 status / status_text
+      status_detail: null,                          // 后端没给就先留空，用兜底文案
+      submitted_at: record.submitted_at,
+      updated_at: record.updated_at || record.submitted_at,
+      job: {
+        id: record.job_id,
+        title: record.title
+      },
+      company: {
+        name: record.company_name
+      }
+    }
+  } catch (error) {
+    console.error('获取岗位详情失败', error)
+    this.job = null
+  }
+},
+
     // 简单的时间格式化：2025-11-20T17:14:30 => 2025-11-20 17:14:30
     formatDateTime(str) {
       if (!str) return ''
@@ -364,5 +419,12 @@ export default {
 
 .step-bar.danger {
   background: linear-gradient(90deg, #c62828 0%, #e57373 100%);
+}
+
+.empty {
+  margin-top: 40px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
 }
 </style>

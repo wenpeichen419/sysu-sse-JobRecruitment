@@ -983,23 +983,29 @@ async fetchStudentAvatar () {
       const hasComp = Array.isArray(f.competitions) && f.competitions.length > 0
 
       const infoItems = [
-        ['姓 名', f.profile?.name],
-        ['出生年月', f.profile?.birthday],
-        ['邮 箱', f.profile?.email],
-        ['电 话', f.profile?.phone],
-        ['求职状态', f.profile?.status],
-        ['层 次', f.profile?.degree]
-      ].map(([k, v]) =>
-        `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`
-      ).join('')
+  ['姓 名', f.profile?.name],
+  ['出生年月', f.profile?.birthday],
+  ['邮 箱', f.profile?.email],
+  ['电 话', f.profile?.phone],
+  ['求职状态', f.profile?.status],
+  ['层 次', f.profile?.degree]
+].map(([k, v]) =>
+  `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`
+).join('')
 
-      const avatar = f.profile?.avatar || f.profile?.photo || ''
-      const infoHtml = `
-        <div class="info-row">
-          <div class="info-grid">${infoItems}</div>
-          <div class="avatar">${avatar ? `<img src="${esc(avatar)}" alt="avatar">` : ''}</div>
-        </div>
-      `
+// 统一规范头像地址：相对路径就补上 API_PREFIX
+let avatar = f.profile?.avatar || f.profile?.photo || ''
+if (avatar && !/^https?:\/\//.test(avatar)) {
+  avatar = `${API_PREFIX}${avatar.startsWith('/') ? '' : '/'}${avatar}`
+}
+
+const infoHtml = `
+  <div class="info-row">
+    <div class="info-grid">${infoItems}</div>
+    <div class="avatar">${avatar ? `<img src="${esc(avatar)}" alt="avatar">` : ''}</div>
+  </div>
+`
+
       const block = (title, html) => `
         <div class="p-sec">
           <div class="p-sec-title">${esc(title)}</div>
