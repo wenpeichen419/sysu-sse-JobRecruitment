@@ -34,27 +34,28 @@
       </div>
 
       <!-- 数据表格 -->
-      <div class="table-section">
-        <div class="table-header">
-          <div class="table-col">职位名称</div>
-          <div class="table-col">招聘目标</div>
-          <div class="table-col">当前投递人数</div>
-          <div class="table-col">未审核简历数</div>
-        </div>
-        <div class="table-body">
-          <div 
-            v-for="position in positions" 
-            :key="position.job_id"
-            class="table-row"
-            @click="viewCandidates(position.job_id)"
-          >
-            <div class="table-col">{{ position.title }}</div>
-            <div class="table-col">{{ getRecruitTargetText(position.work_nature) }}</div>
-            <div class="table-col">{{ position.received_num }}人</div>
-            <div class="table-col">{{ position.no_review_num }}份</div>
-          </div>
-        </div>
-      </div>
+      
+<div class="table-section">
+  <div class="table-header">
+    <div class="table-col">职位名称</div>
+    <div class="table-col">招聘目标</div>
+    <div class="table-col">当前投递人数</div>
+    <div class="table-col">未审核简历数</div>
+  </div>
+  <div class="table-body">
+    <div 
+      v-for="position in sortedPositions"  
+      :key="position.job_id"
+      class="table-row"
+      @click="viewCandidates(position.job_id)"
+    >
+      <div class="table-col">{{ position.title }}</div>
+      <div class="table-col">{{ getRecruitTargetText(position.work_nature) }}</div>
+      <div class="table-col">{{ position.received_num }}人</div>
+      <div class="table-col">{{ position.no_review_num }}份</div>
+    </div>
+  </div>
+</div>
 
       <!-- 分页 -->
       <div class="pagination" v-if="totalPages > 1">
@@ -109,7 +110,8 @@ export default {
       pageSize: 10,
       totalItems: 0,
       totalPages: 0,
-      loading: false
+      loading: false,
+      allPositions: [] // 新增：存储所有数据用于前端排序
     }
   },
   computed: {
@@ -130,6 +132,13 @@ export default {
     // 是否显示省略号
     showEllipsis() {
       return this.totalPages > 5 && this.currentPage < this.totalPages - 2
+    },
+
+    // 前端排序后的数据
+    sortedPositions() {
+      return [...this.positions].sort((a, b) => {
+        return b.no_review_num - a.no_review_num; // 降序排列
+      });
     }
   },
   mounted() {
@@ -175,7 +184,12 @@ export default {
         console.log('接口返回数据:', data);
         
         if (data.code === 200 && data.data) {
-          this.positions = data.data.job_list || []
+          let positions = data.data.job_list || []
+          
+          // 前端排序：按未审核人数降序
+          positions = positions.sort((a, b) => b.no_review_num - a.no_review_num)
+          
+          this.positions = positions
           this.totalItems = data.data.pagination?.total_items || 0
           this.totalPages = data.data.pagination?.total_pages || 0
           this.currentPage = data.data.pagination?.current_page || 1
