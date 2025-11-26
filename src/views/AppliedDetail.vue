@@ -231,7 +231,7 @@ export default {
 
 <style scoped>
 .detail-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
   background: #f0f0f0;
   padding: 20px 40px;
 }
@@ -357,6 +357,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin: 40px 0;
 }
 
 .step-node {
@@ -375,7 +376,7 @@ export default {
   justify-content: center;
   border: 6px solid #d8ead3;
   background: #fff;
-  font-size: 22px;
+  font-size: 30px;
   color: #2e7d32;
   font-weight: 700;
 }

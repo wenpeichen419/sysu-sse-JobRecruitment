@@ -29,11 +29,12 @@
     <!-- 列表 -->
     <div class="job-list">
       <div
-        v-for="(item, index) in paged"
-        :key="item.job_id || index"
-        class="job-item"
-        @click="toDetail(item.job_id)"
-      >
+  v-for="(item, index) in paged"
+  :key="item.application_id || item.job_id || index"
+  class="job-item"
+  @click="toDetail(item.application_id)"
+>
+
         <div class="job-logo">
           <img :src="item.logo_url" :alt="item.company_name" />
         </div>
@@ -234,17 +235,17 @@ export default {
       }
     },
 
-    // 查看职位详情：这里暂时用 job_id 作为路由参数
-    toDetail(jobId) {
-      if (!jobId) {
-        console.warn('当前列表项没有 job_id：', jobId)
-        return
-      }
-      this.$router.push({
-        name: 'AppliedDetail',
-        params: { id: jobId } // /applied/:id
-      })
+  // 查看投递详情：使用 application_id 作为路由参数
+  toDetail(applicationId) {
+    if (!applicationId) {
+      console.warn('当前列表项没有 application_id：', applicationId)
+      return
     }
+    this.$router.push({
+      name: 'AppliedDetail',
+      params: { id: applicationId }   // /applied/:id => /student/applications/{id}
+    })
+  }
   }
 }
 </script>
