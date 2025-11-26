@@ -35,11 +35,11 @@
             <div class="state-desc">{{ stateDescription }}</div>
           </div>
           <div class="state-icon">
-            <div v-if="job.status === '已投递'" class="ico paper">📄</div>
-            <div v-else-if="job.status === '候选人'" class="ico mail">✉️</div>
-            <div v-else-if="job.status === '面试邀请'" class="ico like">👍</div>
-            <div v-else-if="job.status === 'Offer'" class="ico check">✅</div>
-            <div v-else-if="job.status === '拒绝'" class="ico sad">🙁</div>
+            <div v-if="normalizedStatus === '已投递'" class="ico paper">📄</div>
+            <div v-else-if="normalizedStatus === '候选人'" class="ico mail">✉️</div>
+            <div v-else-if="normalizedStatus === '邀请面试'" class="ico like">👍</div>
+            <div v-else-if="normalizedStatus === 'Offer'" class="ico check">✅</div>
+            <div v-else-if="normalizedStatus === '拒绝'" class="ico sad">🙁</div>
           </div>
         </div>
       </div>
@@ -50,28 +50,28 @@
           <!-- 第一步：投递岗位 -->
           <div
             class="step-node"
-            :class="{ done: step >= 1, danger: job.status === '拒绝' && step === 1 }"
+            :class="{ done: step >= 1, danger: normalizedStatus === '拒绝' && step === 1 }"
           >
             <span class="check">
-              {{ job.status === '拒绝' && step === 1 ? '✕' : '✓' }}
+              {{ normalizedStatus === '拒绝' && step === 1 ? '✕' : '✓' }}
             </span>
             <div class="label">投递岗位</div>
           </div>
 
           <div
             class="step-bar"
-            :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
+            :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
           ></div>
 
-          <!-- 第二步：面试邀请 / 候选人 -->
+          <!-- 第二步：邀请面试 / 候选人 -->
           <div
             class="step-node"
-            :class="{ done: step >= 2, danger: job.status === '拒绝' && step <= 2 }"
+            :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
           >
             <span class="check">
-              {{ job.status === '拒绝' && step <= 2 ? '✕' : '✓' }}
+              {{ normalizedStatus === '拒绝' && step <= 2 ? '✕' : '✓' }}
             </span>
-            <div class="label">面试邀请</div>
+            <div class="label">邀请面试</div>
           </div>
 
           <div class="step-bar" :class="{ done: step === 3 }"></div>
@@ -108,7 +108,17 @@ export default {
     this.getJobDetail(id)
   },
   computed: {
-    // 公司名称：兼容多种结构
+    // 把后端各种状态统一成逻辑状态：
+    // "面试邀请"/"邀请面试" -> "邀请面试"，"通过" -> "Offer"
+    normalizedStatus() {
+      if (!this.job || !this.job.status) return ''
+      const s = this.job.status
+      if (s === '面试邀请' || s === '邀请面试') return '邀请面试'
+      if (s === '通过') return 'Offer'
+      return s
+    },
+
+    // 公司名称
     companyName() {
       if (!this.job) return ''
       return (
@@ -117,7 +127,8 @@ export default {
         ''
       )
     },
-    // 职位名称：兼容多种结构
+
+    // 职位名称
     jobTitle() {
       if (!this.job) return ''
       return (
@@ -126,31 +137,34 @@ export default {
         ''
       )
     },
+
     // 进度条所在步骤：1/2/3
     step() {
       if (!this.job) return 1
-      const s = this.job.status
+      const s = this.normalizedStatus
       if (s === '已投递') return 1
-      if (s === '候选人' || s === '面试邀请') return 2
+      if (s === '候选人' || s === '邀请面试') return 2
       if (s === 'Offer') return 3
       if (s === '拒绝') return 1
       return 1
     },
-    // 状态标题
+
+    // 状态标题：保留后端原始文案（面试邀请 / 通过 等）
     stateTitle() {
       return this.job ? this.job.status : ''
     },
-    // 状态描述：优先用后端的 status_detail，没有的话再兜底
+
+    // 状态描述：逻辑上用 normalizedStatus
     stateDescription() {
       if (!this.job) return ''
       if (this.job.status_detail) return this.job.status_detail
 
-      const s = this.job.status
+      const s = this.normalizedStatus
       if (s === '已投递') {
         return '您的简历已成功投递至企业，请耐心等待企业审核。'
       } else if (s === '候选人') {
         return '企业已将您加入候选人名单，后续如有匹配岗位会继续联系您。'
-      } else if (s === '面试邀请') {
+      } else if (s === '邀请面试') {
         return '您的简历已通过初筛，请留意平台及预留联系方式的面试通知。'
       } else if (s === 'Offer') {
         return '恭喜您已通过本次招聘流程，企业将与您沟通入职相关事宜。'
@@ -159,17 +173,19 @@ export default {
       }
       return ''
     },
-    // 横幅颜色 class 映射到 submitted/interview/passed/stopped
+
+    // 横幅颜色 class 映射
     bannerClass() {
       if (!this.job) return ''
-      const s = this.job.status
+      const s = this.normalizedStatus
       if (s === '已投递') return 'submitted'
-      if (s === '候选人' || s === '面试邀请') return 'interview'
+      if (s === '候选人' || s === '邀请面试') return 'interview'
       if (s === 'Offer') return 'passed'
       if (s === '拒绝') return 'stopped'
       return ''
     },
-    // 格式化后的时间（去掉 T，长度控制到秒）
+
+    // 格式化后的时间
     submittedAtText() {
       if (!this.job || !this.job.submitted_at) return ''
       return this.formatDateTime(this.job.submitted_at)
@@ -180,57 +196,31 @@ export default {
     }
   },
   methods: {
-    async getJobDetail(jobId) {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error('Token 不存在，请先登录')
-      return
-    }
+    // 直接用 /student/applications/{id} 详情接口
+    async getJobDetail(id) {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          console.error('Token 不存在，请先登录')
+          return
+        }
 
-    // 1. 复用列表接口
-    const resp = await axios.get(
-      'http://localhost:8080/position-center/delivery/list',
-      {
-        headers: { Authorization: `Bearer ${token}` }
+        const resp = await axios.get(
+          `http://localhost:8080/student/applications/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+
+        console.log('投递详情接口数据:', resp.data)
+        this.job = resp.data.data || null
+      } catch (e) {
+        console.error('获取岗位详情失败', e)
+        this.job = null
       }
-    )
+    },
 
-    const jobs = (resp.data && resp.data.data && resp.data.data.jobs) || []
-    // 2. 按 job_id 匹配当前这条
-    const record = jobs.find(
-      x => String(x.job_id) === String(jobId)
-    )
-
-    console.log('详情匹配到的记录:', record)
-
-    if (!record) {
-      console.warn('未在投递列表中找到对应记录')
-      this.job = null
-      return
-    }
-
-    // 3. 把列表里的字段，组装成 AppliedDetail 目前用的结构
-    this.job = {
-      status: record.status_text || record.status,   // 列表有 status / status_text
-      status_detail: null,                          // 后端没给就先留空，用兜底文案
-      submitted_at: record.submitted_at,
-      updated_at: record.updated_at || record.submitted_at,
-      job: {
-        id: record.job_id,
-        title: record.title
-      },
-      company: {
-        name: record.company_name
-      }
-    }
-  } catch (error) {
-    console.error('获取岗位详情失败', error)
-    this.job = null
-  }
-},
-
-    // 简单的时间格式化：2025-11-20T17:14:30 => 2025-11-20 17:14:30
+    // 时间格式化：兼容 "2025-11-25T21:55:42" 和 "2025-11-25 21:55:42"
     formatDateTime(str) {
       if (!str) return ''
       return str.replace('T', ' ').slice(0, 19)

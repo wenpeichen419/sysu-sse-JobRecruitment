@@ -29,10 +29,10 @@
     <!-- 列表 -->
     <div class="job-list">
       <div
-        v-for="item in paged"
-        :key="item.job_id"
+        v-for="(item, index) in paged"
+        :key="item.job_id || index"
         class="job-item"
-        @click="toDetail(item)"
+        @click="toDetail(item.job_id)"
       >
         <div class="job-logo">
           <img :src="item.logo_url" :alt="item.company_name" />
@@ -51,9 +51,11 @@
           <div class="job-details">
             <span class="salary">{{ item.salary_range }}</span>
             <span class="divider">|</span>
-            <span class="location">{{ item.province }} · {{ item.city }}</span>
+            <!-- 用 address 当城市显示 -->
+            <span class="location">{{ item.address }}</span>
             <span class="divider">|</span>
-            <span class="type-tag">{{ item.type }}</span>
+            <!-- 用 work_nature 显示 实习 / 全职 -->
+            <span class="type-tag">{{ item.work_nature }}</span>
           </div>
         </div>
 
@@ -62,7 +64,7 @@
             <span class="link">{{ item.company_name }}</span>
           </div>
           <div class="company-details">
-            <span class="department">{{ item.department }}</span>
+            <span class="department">{{ item.department || '—' }}</span>
             <span class="divider">|</span>
             <span>投递时间 {{ formatDateTime(item.submitted_at) }}</span>
           </div>
@@ -114,7 +116,7 @@ export default {
     }
   },
   created() {
-    this.fetchJobs() // 组件创建时调用获取职位数据的函数
+    this.fetchJobs()
   },
   computed: {
     // 根据标题和公司名称进行过滤
@@ -128,7 +130,6 @@ export default {
 
       if (this.q.company.trim()) {
         const k = this.q.company.trim().toLowerCase()
-        // 注意这里用 company_name，和模板里保持一致
         arr = arr.filter(x => (x.company_name || '').toLowerCase().includes(k))
       }
 
@@ -158,14 +159,14 @@ export default {
   },
   methods: {
     formatDateTime(str) {
-  if (!str) return '';
-  return str.replace('T', ' ').slice(0, 19);
-},
+      if (!str) return ''
+      return str.replace('T', ' ').slice(0, 19)
+    },
 
     // 获取职位列表数据
     async fetchJobs() {
       try {
-        const token = localStorage.getItem('token') // 从 localStorage 获取 token
+        const token = localStorage.getItem('token')
         if (!token) {
           console.error('Token 不存在，请先登录')
           return
@@ -174,11 +175,12 @@ export default {
         const response = await axios.get(
           'http://localhost:8080/position-center/delivery/list',
           {
-            headers: { Authorization: `Bearer ${token}` } // 在请求头中添加 token
+            headers: { Authorization: `Bearer ${token}` }
           }
         )
 
-        this.raw = response.data.data.jobs // 处理数据
+        // 接口：data.jobs 是数组
+        this.raw = (response.data && response.data.data && response.data.data.jobs) || []
         console.log('列表 jobs:', this.raw)
       } catch (error) {
         console.error('获取职位列表失败', error)
@@ -187,12 +189,10 @@ export default {
 
     // 根据投递状态返回不同的文本（兼容数字码 + 中文）
     statusText(status) {
-      // 如果后端直接给中文（已投递/候选人/面试邀请/Offer/拒绝），直接用
       if (typeof status === 'string' && isNaN(Number(status))) {
         return status
       }
 
-      // 兼容数字 10 / 20 / 30 / 40 / 50
       const map = {
         10: '已投递',
         20: '候选人',
@@ -205,15 +205,13 @@ export default {
       return map[s] || '未知状态'
     },
 
-    // 状态对应的小标签 class，和 CSS 里的 submitted/interview/... 对上
+    // 状态对应的小标签 class
     statusClass(status) {
-      // 先按中文判断
       if (status === '已投递') return 'submitted'
       if (status === '候选人' || status === '面试邀请') return 'interview'
       if (status === 'Offer' || status === '通过') return 'passed'
       if (status === '拒绝') return 'stopped'
 
-      // 再兼容数字编码
       const s = Number(status)
       if (s === 10) return 'submitted'
       if (s === 20 || s === 30) return 'interview'
@@ -227,6 +225,7 @@ export default {
     handleSearch() {
       this.page = 1
     },
+
     // 设置当前页
     setPage(p) {
       if (p >= 1 && p <= this.totalPages) {
@@ -234,11 +233,17 @@ export default {
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
-    // 查看职位详情（传整条 item，取投递记录 id）
-    toDetail(item) {
-      const id = item.id || item.application_id || item.delivery_id || item.job_id
-      console.log('跳转投递详情，id =', id, '原始 item =', item)
-      this.$router.push({ name: 'AppliedDetail', params: { id } })
+
+    // 查看职位详情：这里暂时用 job_id 作为路由参数
+    toDetail(jobId) {
+      if (!jobId) {
+        console.warn('当前列表项没有 job_id：', jobId)
+        return
+      }
+      this.$router.push({
+        name: 'AppliedDetail',
+        params: { id: jobId } // /applied/:id
+      })
     }
   }
 }

@@ -117,7 +117,7 @@
         <label>工作内容</label>
         <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="form.work.splice(i,1)">删除该经历</button>
+      <button v-if="editing" class="link-del" @click="removeWork(i, w)">删除该经历</button>
     </div>
   </section>
 
@@ -143,7 +143,7 @@
       <div class="field mt8"><label>项目描述</label>
         <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="form.projects.splice(i,1)">删除该项目</button>
+      <button v-if="editing" class="link-del" @click="removeProject(i, p)">删除该项目</button>
     </div>
   </section>
 
@@ -151,7 +151,9 @@
   <section id="edu" ref="edu" class="card">
     <div class="card-head">
       <h3 class="section-title">教育经历</h3>
-      <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button>
+         <!-- 教育经历只读，不允许新增 -->
+    <!-- <button v-if="editing" class="link-add" @click="addEdu">+ 添加</button> -->
+
     </div>
     <div v-for="(e,i) in form.education" :key="i" class="block">
       <div class="grid-3">
@@ -211,7 +213,7 @@
       <div class="field mt8"><label>经历描述</label>
         <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="form.orgs.splice(i,1)">删除该经历</button>
+      <button v-if="editing" class="link-del" @click="removeOrg(i, o)">删除该经历</button>
     </div>
   </section>
 
@@ -228,7 +230,7 @@
         <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
       </div>
       <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
-      <button v-if="editing" class="link-del" @click="form.competitions.splice(i,1)">删除该竞赛</button>
+      <button v-if="editing" class="link-del" @click="removeCompetition(i, c)">删除该竞赛</button>
     </div>
   </section>
 </main>
@@ -406,6 +408,80 @@ export default {
 },
 
   methods: {
+    // ========= 保存前统一必填校验 =========
+    checkRequiredFields () {
+      // 1) 工作经历：公司名称、职位名称必填
+      const workIdxNoCompany = this.form.work.findIndex(
+        w => !w.company || !w.company.trim()
+      )
+      if (workIdxNoCompany !== -1) {
+        ElMessage.warning(`请填写第 ${workIdxNoCompany + 1} 条工作经历的「公司名称」`)
+        return false
+      }
+
+      const workIdxNoTitle = this.form.work.findIndex(
+        w => !w.title || !w.title.trim()
+      )
+      if (workIdxNoTitle !== -1) {
+        ElMessage.warning(`请填写第 ${workIdxNoTitle + 1} 条工作经历的「职位名称」`)
+        return false
+      }
+
+      // 2) 项目经历：项目名称、项目角色必填
+      const projIdxNoName = this.form.projects.findIndex(
+        p => !p.name || !p.name.trim()
+      )
+      if (projIdxNoName !== -1) {
+        ElMessage.warning(`请填写第 ${projIdxNoName + 1} 条项目经历的「项目名称」`)
+        return false
+      }
+
+      const projIdxNoRole = this.form.projects.findIndex(
+        p => !p.role || !p.role.trim()
+      )
+      if (projIdxNoRole !== -1) {
+        ElMessage.warning(`请填写第 ${projIdxNoRole + 1} 条项目经历的「项目角色」`)
+        return false
+      }
+
+      // 3) 社团 / 组织经历：社团/组织名称、担任角色必填
+      const orgIdxNoName = this.form.orgs.findIndex(
+        o => !o.name || !o.name.trim()
+      )
+      if (orgIdxNoName !== -1) {
+        ElMessage.warning(`请填写第 ${orgIdxNoName + 1} 条社团/组织经历的「社团/组织名称」`)
+        return false
+      }
+
+      const orgIdxNoRole = this.form.orgs.findIndex(
+        o => !o.role || !o.role.trim()
+      )
+      if (orgIdxNoRole !== -1) {
+        ElMessage.warning(`请填写第 ${orgIdxNoRole + 1} 条社团/组织经历的「担任角色」`)
+        return false
+      }
+
+      // 4) 竞赛经历：竞赛名称、担任角色必填
+      const compIdxNoName = this.form.competitions.findIndex(
+        c => !c.name || !c.name.trim()
+      )
+      if (compIdxNoName !== -1) {
+        ElMessage.warning(`请填写第 ${compIdxNoName + 1} 条竞赛经历的「竞赛名称」`)
+        return false
+      }
+
+      const compIdxNoRole = this.form.competitions.findIndex(
+        c => !c.role || !c.role.trim()
+      )
+      if (compIdxNoRole !== -1) {
+        ElMessage.warning(`请填写第 ${compIdxNoRole + 1} 条竞赛经历的「担任角色」`)
+        return false
+      }
+
+      return true
+    },
+
+
     getDefaultForm () {
       return {
         profile: {
@@ -449,87 +525,123 @@ export default {
 
     /* ========== 加载简历草稿 ========== */
     async fetchResumeDraft () {
-      try {
-        const res = await axios.get(API_GET_DRAFT, {
-          headers: getAuthHeaders()
-        })
-        if (!res.data || res.data.code !== 200 || !res.data.data) return
+  try {
+    const res = await axios.get(API_GET_DRAFT, {
+      headers: getAuthHeaders()
+    })
+    if (!res.data || res.data.code !== 200 || !res.data.data) return
 
-        const d = res.data.data
-        const f = this.getDefaultForm()
+    const d = res.data.data
+    const f = this.getDefaultForm()
 
-        // profile
-        const p = d.profile || {}
-        f.profile.name = p.full_name || ''
-        f.profile.birthday = p.date_of_birth || ''
-        f.profile.email = p.email || ''
-        f.profile.gender = p.gender || ''
-        f.profile.status = p.job_seeking_status || f.profile.status
-        f.profile.phone = p.phone_number || ''
-        f.profile.avatar = p.avatar_url || ''
+    // profile
+    const p = d.profile || {}
+    f.profile.name = p.full_name || ''
+    f.profile.birthday = p.date_of_birth || ''
+    f.profile.email = p.email || ''
+    f.profile.gender = p.gender || ''
+    f.profile.status = p.job_seeking_status || f.profile.status
+    f.profile.phone = p.phone_number || ''
 
-        // skills
-        f.skills = d.skills_summary || ''
-
-        // education（接口里是一个 education 对象）
-        const edu = d.education || {}
-        if (Object.keys(edu).length) {
-          f.education = [{
-            id: edu.id || null,
-            school: edu.school_name || '',
-            major: edu.major || '',
-            rank: edu.major_rank || '',
-            start: edu.start_date || '',
-            end: edu.end_date || ''
-          }]
-        }
-
-        // work_experiences
-        f.work = (d.work_experiences || []).map(w => ({
-          id: w.id || null,
-          company: w.company_name || '',
-          title: w.position_title || '',
-          start: w.start_date || '',
-          end: w.end_date || '',
-          content: w.description || ''
-        }))
-
-        // projects
-        f.projects = (d.projects || []).map(pj => ({
-          id: pj.id || null,
-          name: pj.project_name || '',
-          role: pj.role || '',
-          start: pj.start_date || '',
-          end: pj.end_date || '',
-          desc: pj.description || '',
-          link: pj.project_link || ''
-        }))
-
-        // organizations
-        f.orgs = (d.organizations || []).map(o => ({
-          id: o.id || null,
-          name: o.organization_name || '',
-          role: o.role || '',
-          start: o.start_date || '',
-          end: o.end_date || '',
-          desc: o.description || ''
-        }))
-
-        // competitions
-        f.competitions = (d.competitions || []).map(c => ({
-          id: c.id || null,
-          name: c.competition_name || '',
-          role: c.role || '',
-          award: c.award || '',
-          time: c.date || ''
-        }))
-
-        this.form = f
-        this.persist()
-      } catch (e) {
-        console.error('加载简历草稿失败：', e)
+    // ⭐ 先把 avatar_url 拼成完整地址（后面再拉回来转 base64）
+    if (p.avatar_url) {
+      const raw = p.avatar_url
+      if (/^https?:\/\//.test(raw)) {
+        f.profile.avatar = raw
+      } else {
+        f.profile.avatar = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
       }
-    },
+    } else {
+      f.profile.avatar = ''
+    }
+
+    // skills
+    f.skills = d.skills_summary || ''
+
+    // education（接口里是一个 education 对象）
+    const edu = d.education || {}
+    if (Object.keys(edu).length) {
+      f.education = [{
+        id: edu.id || null,
+        school: edu.school_name || '',
+        major: edu.major || '',
+        rank: edu.major_rank || '',
+        start: edu.start_date || '',
+        end: edu.end_date || ''
+      }]
+    }
+
+    // work_experiences
+    f.work = (d.work_experiences || []).map(w => ({
+      id: w.id || null,
+      company: w.company_name || '',
+      title: w.position_title || '',
+      start: w.start_date || '',
+      end: w.end_date || '',
+      content: w.description || ''
+    }))
+
+    // projects
+    f.projects = (d.projects || []).map(pj => ({
+      id: pj.id || null,
+      name: pj.project_name || '',
+      role: pj.role || '',
+      start: pj.start_date || '',
+      end: pj.end_date || '',
+      desc: pj.description || '',
+      link: pj.project_link || ''
+    }))
+
+    // organizations
+    f.orgs = (d.organizations || []).map(o => ({
+      id: o.id || null,
+      name: o.organization_name || '',
+      role: o.role || '',
+      start: o.start_date || '',
+      end: o.end_date || '',
+      desc: o.description || ''
+    }))
+
+    // competitions
+    f.competitions = (d.competitions || []).map(c => ({
+      id: c.id || null,
+      name: c.competition_name || '',
+      role: c.role || '',
+      award: c.award || '',
+      time: c.date || ''
+    }))
+
+    // ⭐ 关键：用带 token 的 axios 把头像拉回来，转成 base64，
+    // 这样 <img> 就不用再去请求受保护的 /files/** 了
+    if (f.profile.avatar) {
+      try {
+        const imgRes = await axios.get(f.profile.avatar, {
+          headers: getAuthHeaders(),
+          responseType: 'blob'
+        })
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(imgRes.data)
+        })
+
+        // 把 avatar 换成 base64
+        f.profile.avatar = dataUrl
+      } catch (err) {
+        console.warn('头像加载失败，将不显示头像', err)
+        f.profile.avatar = ''
+      }
+    }
+
+    this.form = f
+    this.persist()
+  } catch (e) {
+    console.error('加载简历草稿失败：', e)
+  }
+},
+
 /* ========== 从学生中心同步头像 ========== */
 async fetchStudentAvatar () {
   try {
@@ -559,11 +671,15 @@ async fetchStudentAvatar () {
   }
 },
 
-
-    /* ========== 保存简历（按接口逐个调） ========== */
-    async saveResume () {
+async saveResume () {
+      // 手机号校验
       this.validatePhone()
       if (this.phoneError) return
+
+      // ★ 统一必填校验：任何一类缺职位/角色就直接 return
+      if (!this.checkRequiredFields()) {
+        return
+      }
 
       try {
         const headers = {
@@ -591,8 +707,15 @@ async fetchStudentAvatar () {
             await axios.put(API_WORK_EDIT(w.id), payload, { headers })
           } else {
             const res = await axios.post(API_WORK_ADD, payload, { headers })
-            if (res.data && res.data.data && res.data.data.id) {
+
+            // 按统一返回：{ code, message, data:{ id } }
+            if (res.data && res.data.code === 200 && res.data.data && res.data.data.id) {
               w.id = res.data.data.id
+            } else {
+              console.error('新增工作经历返回异常', res.data)
+              const msg = res.data?.message || '新增工作经历失败'
+              ElMessage.error(msg)
+              throw new Error(msg)
             }
           }
         }
@@ -611,7 +734,7 @@ async fetchStudentAvatar () {
             await axios.put(API_PROJ_EDIT(p.id), payload, { headers })
           } else {
             const res = await axios.post(API_PROJ_ADD, payload, { headers })
-            if (res.data && res.data.data && res.data.data.id) {
+            if (res.data && res.data.code === 200 && res.data.data && res.data.data.id) {
               p.id = res.data.data.id
             }
           }
@@ -630,7 +753,7 @@ async fetchStudentAvatar () {
             await axios.put(API_ORG_EDIT(o.id), payload, { headers })
           } else {
             const res = await axios.post(API_ORG_ADD, payload, { headers })
-            if (res.data && res.data.data && res.data.data.id) {
+            if (res.data && res.data.code === 200 && res.data.data && res.data.data.id) {
               o.id = res.data.data.id
             }
           }
@@ -648,16 +771,16 @@ async fetchStudentAvatar () {
             await axios.put(API_COMP_EDIT(c.id), payload, { headers })
           } else {
             const res = await axios.post(API_COMP_ADD, payload, { headers })
-            if (res.data && res.data.data && res.data.data.id) {
+            if (res.data && res.data.code === 200 && res.data.data && res.data.data.id) {
               c.id = res.data.data.id
             }
           }
         }
 
-        // 6. 设置简历模板（现在只有 school，也同步给后端）
+        // 6. 设置简历模板
         await axios.patch(
           API_TEMPLATE,
-          { template: this.form.template }, // 这里如果你后端要 template_id 就改成 template_id
+          { template: this.form.template },
           { headers }
         )
 
@@ -666,7 +789,10 @@ async fetchStudentAvatar () {
         ElMessage.success('简历已保存')
       } catch (e) {
         console.error('保存简历失败：', e)
-        ElMessage.error('保存失败，请稍后重试')
+        // 上面已经弹过更具体的错误，这里兜底
+        if (!e.message) {
+          ElMessage.error('保存失败，请稍后重试')
+        }
       }
     },
 
@@ -993,16 +1119,14 @@ async fetchStudentAvatar () {
   `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`
 ).join('')
 
-// 统一规范头像地址：相对路径就补上 API_PREFIX
-let avatar = f.profile?.avatar || f.profile?.photo || ''
-if (avatar && !/^https?:\/\//.test(avatar)) {
-  avatar = `${API_PREFIX}${avatar.startsWith('/') ? '' : '/'}${avatar}`
-}
+const avatar = f.profile?.avatar || f.profile?.photo || ''
 
 const infoHtml = `
   <div class="info-row">
     <div class="info-grid">${infoItems}</div>
-    <div class="avatar">${avatar ? `<img src="${esc(avatar)}" alt="avatar">` : ''}</div>
+    <div class="avatar">
+      ${avatar ? `<img src="${esc(avatar)}" alt="avatar" crossorigin="anonymous">` : ''}
+    </div>
   </div>
 `
 
@@ -1206,11 +1330,17 @@ const infoHtml = `
 .sidebar-item:hover{ color:#325e21; background:#f8f9fa; }
 .sidebar-item.active{ color:#325e21; font-weight:bold; background:#f0f7f0; }
 .center-content{ flex:1; display:flex; flex-direction:column; gap:20px; min-width:0; margin-left:320px; margin-right:400px; }
-.right-sidebar.fixed-sidebar{ position:fixed; top:220px; right:30px; width:360px; display:flex; flex-direction:column; gap:20px; }
+.right-sidebar.fixed-sidebar{ position:fixed; top:220px; right:30px; width:360px; display:flex; flex-direction:column; gap:20px;max-height: calc(100vh - 240px); }
 .small-card{ padding:18px; }
 .divider{ height:1px; background:#eaeaea; margin:12px 0; }
 .w-100{ width:100%; }
-
+/* 第二张 small-card（“我的简历”）填满剩余空间 */
+.right-sidebar .small-card:last-child{
+  flex:1;                    /* 占满右侧剩余高度 */
+  display:flex;
+  flex-direction:column;
+  min-height:0;              /* 允许内部元素压缩 */
+}
 /* 卡片/表单 */
 .card{ background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.1); padding:40px; box-sizing:border-box; }
 .card-head{ display:flex; align-items:center; justify-content:space-between; }
@@ -1272,7 +1402,14 @@ const infoHtml = `
 .icon-btn:hover{ background:#edf7ef; }
 .hidden-input{ display:none; }
 
-.file-list{ display:flex; flex-direction:column; }
+/* 右侧：我的简历（简约风） */
+.file-list{
+  flex:1;                    /* 占满卡片主体 */
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;           /* ⭐ 关键：内部滚动 */
+  padding-right:4px;         /* 给滚动条留点空间 */
+}
 .file-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
 .file-row + .file-row{ border-top:1px dashed #e6eae6; }
 .file-left{ display:flex; align-items:center; gap:10px; min-width:0; }
