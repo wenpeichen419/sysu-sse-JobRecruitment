@@ -410,266 +410,265 @@ export default {
   methods: {
     // ========= 保存前统一必填校验 =========
     checkRequiredFields () {
-      // 1) 工作经历：公司名称、职位名称必填
-      const workIdxNoCompany = this.form.work.findIndex(
-        w => !w.company || !w.company.trim()
-      )
-      if (workIdxNoCompany !== -1) {
-        ElMessage.warning(`请填写第 ${workIdxNoCompany + 1} 条工作经历的「公司名称」`)
-        return false
-      }
+    // 1) 工作经历：公司名称、职位名称必填
+    const workIdxNoCompany = this.form.work.findIndex(
+      w => !w.company || !w.company.trim()
+    )
+    if (workIdxNoCompany !== -1) {
+      ElMessage.warning(`请填写第 ${workIdxNoCompany + 1} 条工作经历的「公司名称」`)
+      return false
+    }
 
-      const workIdxNoTitle = this.form.work.findIndex(
-        w => !w.title || !w.title.trim()
-      )
-      if (workIdxNoTitle !== -1) {
-        ElMessage.warning(`请填写第 ${workIdxNoTitle + 1} 条工作经历的「职位名称」`)
-        return false
-      }
+    const workIdxNoTitle = this.form.work.findIndex(
+      w => !w.title || !w.title.trim()
+    )
+    if (workIdxNoTitle !== -1) {
+      ElMessage.warning(`请填写第 ${workIdxNoTitle + 1} 条工作经历的「职位名称」`)
+      return false
+    }
 
-      // 2) 项目经历：项目名称、项目角色必填
-      const projIdxNoName = this.form.projects.findIndex(
-        p => !p.name || !p.name.trim()
-      )
-      if (projIdxNoName !== -1) {
-        ElMessage.warning(`请填写第 ${projIdxNoName + 1} 条项目经历的「项目名称」`)
-        return false
-      }
+    // 2) 项目经历：项目名称、项目角色必填
+    const projIdxNoName = this.form.projects.findIndex(
+      p => !p.name || !p.name.trim()
+    )
+    if (projIdxNoName !== -1) {
+      ElMessage.warning(`请填写第 ${projIdxNoName + 1} 条项目经历的「项目名称」`)
+      return false
+    }
 
-      const projIdxNoRole = this.form.projects.findIndex(
-        p => !p.role || !p.role.trim()
-      )
-      if (projIdxNoRole !== -1) {
-        ElMessage.warning(`请填写第 ${projIdxNoRole + 1} 条项目经历的「项目角色」`)
-        return false
-      }
+    const projIdxNoRole = this.form.projects.findIndex(
+      p => !p.role || !p.role.trim()
+    )
+    if (projIdxNoRole !== -1) {
+      ElMessage.warning(`请填写第 ${projIdxNoRole + 1} 条项目经历的「项目角色」`)
+      return false
+    }
 
-      // 3) 社团 / 组织经历：社团/组织名称、担任角色必填
-      const orgIdxNoName = this.form.orgs.findIndex(
-        o => !o.name || !o.name.trim()
-      )
-      if (orgIdxNoName !== -1) {
-        ElMessage.warning(`请填写第 ${orgIdxNoName + 1} 条社团/组织经历的「社团/组织名称」`)
-        return false
-      }
+    // 3) 社团 / 组织经历：社团/组织名称、担任角色必填
+    const orgIdxNoName = this.form.orgs.findIndex(
+      o => !o.name || !o.name.trim()
+    )
+    if (orgIdxNoName !== -1) {
+      ElMessage.warning(`请填写第 ${orgIdxNoName + 1} 条社团/组织经历的「社团/组织名称」`)
+      return false
+    }
 
-      const orgIdxNoRole = this.form.orgs.findIndex(
-        o => !o.role || !o.role.trim()
-      )
-      if (orgIdxNoRole !== -1) {
-        ElMessage.warning(`请填写第 ${orgIdxNoRole + 1} 条社团/组织经历的「担任角色」`)
-        return false
-      }
+    const orgIdxNoRole = this.form.orgs.findIndex(
+      o => !o.role || !o.role.trim()
+    )
+    if (orgIdxNoRole !== -1) {
+      ElMessage.warning(`请填写第 ${orgIdxNoRole + 1} 条社团/组织经历的「担任角色」`)
+      return false
+    }
 
-      // 4) 竞赛经历：竞赛名称、担任角色必填
-      const compIdxNoName = this.form.competitions.findIndex(
-        c => !c.name || !c.name.trim()
-      )
-      if (compIdxNoName !== -1) {
-        ElMessage.warning(`请填写第 ${compIdxNoName + 1} 条竞赛经历的「竞赛名称」`)
-        return false
-      }
+    // 4) 竞赛经历：竞赛名称、担任角色必填
+    const compIdxNoName = this.form.competitions.findIndex(
+      c => !c.name || !c.name.trim()
+    )
+    if (compIdxNoName !== -1) {
+      ElMessage.warning(`请填写第 ${compIdxNoName + 1} 条竞赛经历的「竞赛名称」`)
+      return false
+    }
 
-      const compIdxNoRole = this.form.competitions.findIndex(
-        c => !c.role || !c.role.trim()
-      )
-      if (compIdxNoRole !== -1) {
-        ElMessage.warning(`请填写第 ${compIdxNoRole + 1} 条竞赛经历的「担任角色」`)
-        return false
-      }
+    const compIdxNoRole = this.form.competitions.findIndex(
+      c => !c.role || !c.role.trim()
+    )
+    if (compIdxNoRole !== -1) {
+      ElMessage.warning(`请填写第 ${compIdxNoRole + 1} 条竞赛经历的「担任角色」`)
+      return false
+    }
 
-      return true
-    },
+    return true
+  },
 
+  getDefaultForm () {
+    return {
+      profile: {
+        name: '',          // full_name
+        birthday: '',      // date_of_birth
+        email: '',         // email
+        gender: '',        // gender
+        status: '校招',    // job_seeking_status
+        phone: '',         // phone_number
+        degree: '本科',    // 可由 degree_level 映射
+        avatar: ''         // avatar_url
+      },
+      skills: '',          // skills_summary
+      work: [],            // work_experiences
+      projects: [],        // project_experiences
+      education: [],       // education_experiences（只展示，不在这里保存）
+      orgs: [],            // organization_experiences
+      competitions: [],    // competition_experiences
+      template: 'school'
+    }
+  },
 
-    getDefaultForm () {
-      return {
-        profile: {
-          name: '',          // full_name
-          birthday: '',      // date_of_birth
-          email: '',         // email
-          gender: '',        // gender
-          status: '校招',    // job_seeking_status
-          phone: '',         // phone_number
-          degree: '本科',    // 可由 degree_level 映射
-          avatar: ''         // avatar_url
-        },
-        skills: '',          // skills_summary
-        work: [],            // work_experiences
-        projects: [],        // project_experiences
-        education: [],       // education_experiences（只展示，不在这里保存）
-        orgs: [],            // organization_experiences
-        competitions: [],    // competition_experiences
-        template: 'school'
-      }
-    },
+  // 哪些字段被锁定（不能在这个页面改）
+  isLocked (path) {
+    const locked = new Set([
+      'profile.name',
+      'profile.birthday',
+      'profile.gender',
+      'profile.status',
+      'profile.email',
+      'profile.phone',
+      'profile.degree',
+      'edu.school',
+      'edu.major',
+      'edu.rank',
+      'edu.start',
+      'edu.end'
+    ])
+    return locked.has(path)
+  },
 
-    // 哪些字段被锁定（不能在这个页面改）
-    isLocked (path) {
-      const locked = new Set([
-        'profile.name',
-        'profile.birthday',
-        'profile.gender',
-        'profile.status',
-        'profile.email',
-        'profile.phone',
-        'profile.degree',
-        'edu.school',
-        'edu.major',
-        'edu.rank',
-        'edu.start',
-        'edu.end'
-      ])
-      return locked.has(path)
-    },
+  /* ========== 加载简历草稿 ========== */
+  async fetchResumeDraft () {
+    try {
+      const res = await axios.get(API_GET_DRAFT, {
+        headers: getAuthHeaders()
+      })
+      if (!res.data || res.data.code !== 200 || !res.data.data) return
 
-    /* ========== 加载简历草稿 ========== */
-    async fetchResumeDraft () {
-  try {
-    const res = await axios.get(API_GET_DRAFT, {
-      headers: getAuthHeaders()
-    })
-    if (!res.data || res.data.code !== 200 || !res.data.data) return
+      const d = res.data.data
+      const f = this.getDefaultForm()
 
-    const d = res.data.data
-    const f = this.getDefaultForm()
+      // profile
+      const p = d.profile || {}
+      f.profile.name = p.full_name || ''
+      f.profile.birthday = p.date_of_birth || ''
+      f.profile.email = p.email || ''
+      f.profile.gender = p.gender || ''
+      f.profile.status = p.job_seeking_status || f.profile.status
+      f.profile.phone = p.phone_number || ''
 
-    // profile
-    const p = d.profile || {}
-    f.profile.name = p.full_name || ''
-    f.profile.birthday = p.date_of_birth || ''
-    f.profile.email = p.email || ''
-    f.profile.gender = p.gender || ''
-    f.profile.status = p.job_seeking_status || f.profile.status
-    f.profile.phone = p.phone_number || ''
-
-    // ⭐ 先把 avatar_url 拼成完整地址（后面再拉回来转 base64）
-    if (p.avatar_url) {
-      const raw = p.avatar_url
-      if (/^https?:\/\//.test(raw)) {
-        f.profile.avatar = raw
+      // ⭐ 先把 avatar_url 拼成完整地址（后面再拉回来转 base64）
+      if (p.avatar_url) {
+        const raw = p.avatar_url
+        if (/^https?:\/\//.test(raw)) {
+          f.profile.avatar = raw
+        } else {
+          f.profile.avatar = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
+        }
       } else {
-        f.profile.avatar = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
-      }
-    } else {
-      f.profile.avatar = ''
-    }
-
-    // skills
-    f.skills = d.skills_summary || ''
-
-    // education（接口里是一个 education 对象）
-    const edu = d.education || {}
-    if (Object.keys(edu).length) {
-      f.education = [{
-        id: edu.id || null,
-        school: edu.school_name || '',
-        major: edu.major || '',
-        rank: edu.major_rank || '',
-        start: edu.start_date || '',
-        end: edu.end_date || ''
-      }]
-    }
-
-    // work_experiences
-    f.work = (d.work_experiences || []).map(w => ({
-      id: w.id || null,
-      company: w.company_name || '',
-      title: w.position_title || '',
-      start: w.start_date || '',
-      end: w.end_date || '',
-      content: w.description || ''
-    }))
-
-    // projects
-    f.projects = (d.projects || []).map(pj => ({
-      id: pj.id || null,
-      name: pj.project_name || '',
-      role: pj.role || '',
-      start: pj.start_date || '',
-      end: pj.end_date || '',
-      desc: pj.description || '',
-      link: pj.project_link || ''
-    }))
-
-    // organizations
-    f.orgs = (d.organizations || []).map(o => ({
-      id: o.id || null,
-      name: o.organization_name || '',
-      role: o.role || '',
-      start: o.start_date || '',
-      end: o.end_date || '',
-      desc: o.description || ''
-    }))
-
-    // competitions
-    f.competitions = (d.competitions || []).map(c => ({
-      id: c.id || null,
-      name: c.competition_name || '',
-      role: c.role || '',
-      award: c.award || '',
-      time: c.date || ''
-    }))
-
-    // ⭐ 关键：用带 token 的 axios 把头像拉回来，转成 base64，
-    // 这样 <img> 就不用再去请求受保护的 /files/** 了
-    if (f.profile.avatar) {
-      try {
-        const imgRes = await axios.get(f.profile.avatar, {
-          headers: getAuthHeaders(),
-          responseType: 'blob'
-        })
-
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result)
-          reader.onerror = reject
-          reader.readAsDataURL(imgRes.data)
-        })
-
-        // 把 avatar 换成 base64
-        f.profile.avatar = dataUrl
-      } catch (err) {
-        console.warn('头像加载失败，将不显示头像', err)
         f.profile.avatar = ''
       }
-    }
 
-    this.form = f
-    this.persist()
-  } catch (e) {
-    console.error('加载简历草稿失败：', e)
-  }
-},
+      // skills
+      f.skills = d.skills_summary || ''
 
-/* ========== 从学生中心同步头像 ========== */
-async fetchStudentAvatar () {
-  try {
-    const res = await axios.get(API_STUDENT_PROFILE, {
-      headers: getAuthHeaders()
-    })
-
-    // 根据你给的示例结构：{ code:200, data:{ avatar_url: '...' , basic_info:{...} } }
-    if (res.data && res.data.code === 200 && res.data.data) {
-      const raw = res.data.data.avatar_url
-      if (raw) {
-        // 如果是相对路径，就补上 http://localhost:8080
-        let full = raw
-        if (!/^https?:\/\//.test(raw)) {
-          // 确保只有一个斜杠
-          full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
-        }
-
-        // 覆盖简历里的头像字段（预览用的就是这个）
-        this.form.profile.avatar = full
-        this.persist() // 顺便存到 localStorage
+      // education（接口里是一个 education 对象）
+      const edu = d.education || {}
+      if (Object.keys(edu).length) {
+        f.education = [{
+          id: edu.id || null,
+          school: edu.school_name || '',
+          major: edu.major || '',
+          rank: edu.major_rank || '',
+          start: edu.start_date || '',
+          end: edu.end_date || ''
+        }]
       }
+
+      // work_experiences
+      f.work = (d.work_experiences || []).map(w => ({
+        id: w.id || null,
+        company: w.company_name || '',
+        title: w.position_title || '',
+        start: w.start_date || '',
+        end: w.end_date || '',
+        content: w.description || ''
+      }))
+
+      // projects
+      f.projects = (d.projects || []).map(pj => ({
+        id: pj.id || null,
+        name: pj.project_name || '',
+        role: pj.role || '',
+        start: pj.start_date || '',
+        end: pj.end_date || '',
+        desc: pj.description || '',
+        link: pj.project_link || ''
+      }))
+
+      // organizations
+      f.orgs = (d.organizations || []).map(o => ({
+        id: o.id || null,
+        name: o.organization_name || '',
+        role: o.role || '',
+        start: o.start_date || '',
+        end: o.end_date || '',
+        desc: o.description || ''
+      }))
+
+      // competitions
+      f.competitions = (d.competitions || []).map(c => ({
+        id: c.id || null,
+        name: c.competition_name || '',
+        role: c.role || '',
+        award: c.award || '',
+        time: c.date || ''
+      }))
+
+      // ⭐ 关键：用带 token 的 axios 把头像拉回来，转成 base64，
+      // 这样 <img> 就不用再去请求受保护的 /files/** 了
+      if (f.profile.avatar) {
+        try {
+          const imgRes = await axios.get(f.profile.avatar, {
+            headers: getAuthHeaders(),
+            responseType: 'blob'
+          })
+
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(imgRes.data)
+          })
+
+          // 把 avatar 换成 base64
+          f.profile.avatar = dataUrl
+        } catch (err) {
+          console.warn('头像加载失败，将不显示头像', err)
+          f.profile.avatar = ''
+        }
+      }
+
+      this.form = f
+      this.persist()
+    } catch (e) {
+      console.error('加载简历草稿失败：', e)
     }
-  } catch (e) {
-    console.error('获取学生中心头像失败：', e)
-    // 不弹错，没头像就继续用默认灰色圆圈
-  }
-},
+  },
+
+  /* ========== 从学生中心同步头像 ========== */
+  async fetchStudentAvatar () {
+    try {
+      const res = await axios.get(API_STUDENT_PROFILE, {
+        headers: getAuthHeaders()
+      })
+
+      // 根据你给的示例结构：{ code:200, data:{ avatar_url: '...' , basic_info:{...} } }
+      if (res.data && res.data.code === 200 && res.data.data) {
+        const raw = res.data.data.avatar_url
+        if (raw) {
+          // 如果是相对路径，就补上 http://localhost:8080
+          let full = raw
+          if (!/^https?:\/\//.test(raw)) {
+            // 确保只有一个斜杠
+            full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
+          }
+
+          // 覆盖简历里的头像字段（预览用的就是这个）
+          this.form.profile.avatar = full
+          this.persist() // 顺便存到 localStorage
+        }
+      }
+    } catch (e) {
+      console.error('获取学生中心头像失败：', e)
+      // 不弹错，没头像就继续用默认灰色圆圈
+    }
+  },
 
 async saveResume () {
       // 手机号校验
@@ -1074,7 +1073,6 @@ async saveResume () {
       )
     },
 
-    /* ========== 预览/导出 ========== */
     /* ========== 预览/导出（学校模版-纯文本） ========== */
     openPreview () {
       this.previewVisible = true
@@ -1229,8 +1227,20 @@ const infoHtml = `
           .info-item{ display:flex; gap:6px; min-width:0; }
           .info-item .k{ color:#1d5e2a; font-weight:700; white-space:nowrap; }
           .info-item .v{ flex:1; min-width:0; word-break:break-all; }
-          .avatar{ flex:0 0 64px; width:64px; height:64px; border-radius:50%; background:#e0e0e0; overflow:hidden; }
-          .avatar img{ width:100%; height:100%; object-fit:cover; }
+          .avatar {
+  flex: 0 0 20mm;   /* 设置头像的宽度为 35mm */
+  width: 20mm;      /* 宽度设置为 35mm */
+  height: 28mm;     /* 高度设置为 25mm */
+  border-radius: 0; /* 取消圆形效果，改为矩形 */
+  background: #e0e0e0; /* 背景色 */
+  overflow: hidden;  /* 确保图片不会超出容器 */
+}
+/* 头像图片样式 */
+.avatar img {
+  width: 100%;       /* 让图片宽度填满容器 */
+  height: 100%;      /* 让图片高度填满容器 */
+  object-fit: cover; /* 保持图片的比例，覆盖整个容器 */
+}
           .p-card{ border:1px solid #e9ecef; border-radius:8px; padding:10px 12px; margin-top:10px; background:#fff; }
           .meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px dashed #e6e6e6; padding-bottom:6px; }
           .meta .label{ color:#1d5e2a; font-weight:700; margin-right:4px; }
