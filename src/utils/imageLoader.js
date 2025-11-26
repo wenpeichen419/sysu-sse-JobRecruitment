@@ -9,6 +9,49 @@
  */
 
 /**
+ * 获取正确的BaseURL用于图片请求
+ * @param {string} baseURL - 原始基础URL
+ * @returns {string} 正确的BaseURL
+ */
+function getImageBaseURL(baseURL) {
+  // 在开发环境中，可能需要特殊处理以确保图片请求发送到正确的后端服务器
+  // 检查是否在浏览器环境中
+  if (typeof window !== 'undefined') {
+    // 获取当前页面的origin
+    const currentOrigin = window.location.origin;
+    
+    // 如果baseURL与当前页面origin相同，但我们需要请求后端服务器上的图片
+    // 则使用默认的后端地址（通常与API服务器相同）
+    if (currentOrigin === baseURL) {
+      // 检查是否定义了API_BASE_URL环境变量
+      if (process.env.VUE_APP_API_BASE_URL) {
+        return process.env.VUE_APP_API_BASE_URL;
+      }
+      
+      // 默认情况下，使用API配置中的baseURL
+      // 注意：这里我们假设API配置文件导出了baseURL
+      try {
+        // 动态导入API配置获取baseURL
+        const apiConfig = require('../api/config.js');
+        if (apiConfig.default && apiConfig.default.defaults && apiConfig.default.defaults.baseURL) {
+          return apiConfig.default.defaults.baseURL;
+        }
+      } catch (e) {
+        console.warn('无法获取API配置中的baseURL，使用默认值');
+      }
+      
+      // 如果是开发环境，默认后端地址为localhost:8080
+      if (process.env.NODE_ENV === 'development') {
+        return 'http://localhost:8080';
+      }
+    }
+  }
+  
+  // 其他情况直接返回原始baseURL
+  return baseURL;
+}
+
+/**
  * 加载需要认证的图片
  * @param {string} imagePath - 图片路径
  * @param {string} baseURL - 基础URL
@@ -21,6 +64,9 @@ export async function loadImageWithAuth(imagePath, baseURL, defaultImage = '') {
     console.warn('【图片路径为空】返回默认图片');
     return defaultImage;
   }
+  
+  // 获取正确的BaseURL用于图片请求
+  const imageBaseURL = getImageBaseURL(baseURL);
   
   try {
     // 如果已经是完整URL（包含http），直接使用
@@ -35,10 +81,17 @@ export async function loadImageWithAuth(imagePath, baseURL, defaultImage = '') {
       return imagePath;
     }
     
-    // 拼接完整URL
-    const fullUrl = imagePath.startsWith('/') 
-      ? `${baseURL}${imagePath}` 
-      : `${baseURL}/${imagePath}`;
+    // 🔧 修复：处理以/files开头的路径，这类路径应该直接指向后端服务器
+    let fullUrl;
+    if (imagePath.startsWith('/files/')) {
+      // 对于以/files/开头的路径，直接使用imageBaseURL（通常是后端API地址）
+      fullUrl = `${imageBaseURL}${imagePath}`;
+    } else {
+      // 拼接完整URL
+      fullUrl = imagePath.startsWith('/') 
+        ? `${imageBaseURL}${imagePath}` 
+        : `${imageBaseURL}/${imagePath}`;
+    }
     
     console.log('【开始加载图片】URL:', fullUrl);
     
@@ -65,7 +118,16 @@ export async function loadImageWithAuth(imagePath, baseURL, defaultImage = '') {
     // 检查响应状态
     if (!response.ok) {
       console.error('【图片请求失败】状态码:', response.status);
-      throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+      // 🔧 新增：提供更多关于失败原因的信息
+      if (response.status === 404) {
+        throw new Error(`图片未找到 (404) - 请确认文件路径是否正确`);
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error(`访问被拒绝 (${response.status}) - 可能缺少必要的权限或认证信息`);
+      } else if (response.status >= 500) {
+        throw new Error(`服务器错误 (${response.status}) - 请联系系统管理员`);
+      } else {
+        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+      }
     }
     
     // 检查内容类型
