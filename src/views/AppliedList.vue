@@ -1,4 +1,4 @@
-<template>
+<template> 
   <div class="job-center-page">
     <!-- 面包屑 -->
     <div class="breadcrumb">
@@ -29,14 +29,18 @@
     <!-- 列表 -->
     <div class="job-list">
       <div
-  v-for="(item, index) in paged"
-  :key="item.application_id || item.job_id || index"
-  class="job-item"
-  @click="toDetail(item.application_id)"
->
-
+        v-for="(item, index) in paged"
+        :key="item.application_id || item.job_id || index"
+        class="job-item"
+        @click="toDetail(item.application_id)"
+      >
+        <!-- 公司 logo -->
         <div class="job-logo">
-          <img :src="item.logo_url" :alt="item.company_name" />
+          <img
+            :src="item.logo_url"
+            :alt="item.company_name"
+            @error="onLogoError"
+          />
         </div>
 
         <div class="job-left-info">
@@ -52,10 +56,8 @@
           <div class="job-details">
             <span class="salary">{{ item.salary_range }}</span>
             <span class="divider">|</span>
-            <!-- 用 address 当城市显示 -->
             <span class="location">{{ item.address }}</span>
             <span class="divider">|</span>
-            <!-- 用 work_nature 显示 实习 / 全职 -->
             <span class="type-tag">{{ item.work_nature }}</span>
           </div>
         </div>
@@ -106,9 +108,12 @@
 <script>
 import axios from 'axios'
 
+// 后端服务前缀（和你 Postman 里的一样）
+const API_PREFIX = 'http://localhost:8080'
+
 export default {
   name: 'AppliedList',
-  data() {
+  data () {
     return {
       raw: [], // 原始数据（职位列表）
       q: { title: '', company: '' }, // 搜索条件
@@ -116,12 +121,12 @@ export default {
       size: 5 // 每页数据条数
     }
   },
-  created() {
+  created () {
     this.fetchJobs()
   },
   computed: {
     // 根据标题和公司名称进行过滤
-    filtered() {
+    filtered () {
       let arr = this.raw.slice()
 
       if (this.q.title.trim()) {
@@ -137,16 +142,16 @@ export default {
       return arr
     },
     // 计算分页总页数
-    totalPages() {
+    totalPages () {
       return Math.max(1, Math.ceil(this.filtered.length / this.size))
     },
     // 当前页的数据
-    paged() {
+    paged () {
       const start = (this.page - 1) * this.size
       return this.filtered.slice(start, start + this.size)
     },
     // 计算页码范围
-    middlePages() {
+    middlePages () {
       const res = []
       const start = Math.max(2, this.page - 1)
       const end = Math.min(this.totalPages - 1, this.page + 1)
@@ -154,18 +159,23 @@ export default {
       return res
     },
     // 是否需要显示省略号
-    showEllipsis() {
+    showEllipsis () {
       return this.totalPages > 5 && this.page < this.totalPages - 2
     }
   },
   methods: {
-    formatDateTime(str) {
+    formatDateTime (str) {
       if (!str) return ''
       return str.replace('T', ' ').slice(0, 19)
     },
 
+    // logo 加载失败：简单隐藏 broken 图标（也可以换成固定占位图）
+    onLogoError (e) {
+      e.target.style.visibility = 'hidden'
+    },
+
     // 获取职位列表数据
-    async fetchJobs() {
+    async fetchJobs () {
       try {
         const token = localStorage.getItem('token')
         if (!token) {
@@ -180,16 +190,33 @@ export default {
           }
         )
 
-        // 接口：data.jobs 是数组
-        this.raw = (response.data && response.data.data && response.data.data.jobs) || []
-        console.log('列表 jobs:', this.raw)
+        const jobs = (response.data &&
+          response.data.data &&
+          response.data.data.jobs) || []
+
+        // ⭐ 关键：把 /files/... 转成 http://localhost:8080/files/...
+        this.raw = jobs.map(j => {
+          let logo = j.logo_url || ''    // 后端字段名就是 logo_url
+
+          if (logo && !/^https?:\/\//.test(logo)) {
+            // 相对路径：补上后端前缀
+            logo = `${API_PREFIX}${logo.startsWith('/') ? '' : '/'}${logo}`
+          }
+
+          return {
+            ...j,
+            logo_url: logo   // 统一成可以直接 <img> 用的完整 URL
+          }
+        })
+
+        console.log('列表 jobs（统一后的）:', this.raw)
       } catch (error) {
         console.error('获取职位列表失败', error)
       }
     },
 
     // 根据投递状态返回不同的文本（兼容数字码 + 中文）
-    statusText(status) {
+    statusText (status) {
       if (typeof status === 'string' && isNaN(Number(status))) {
         return status
       }
@@ -207,7 +234,7 @@ export default {
     },
 
     // 状态对应的小标签 class
-    statusClass(status) {
+    statusClass (status) {
       if (status === '已投递') return 'submitted'
       if (status === '候选人' || status === '面试邀请') return 'interview'
       if (status === 'Offer' || status === '通过') return 'passed'
@@ -223,29 +250,29 @@ export default {
     },
 
     // 搜索操作，重置页码为1
-    handleSearch() {
+    handleSearch () {
       this.page = 1
     },
 
     // 设置当前页
-    setPage(p) {
+    setPage (p) {
       if (p >= 1 && p <= this.totalPages) {
         this.page = p
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
 
-  // 查看投递详情：使用 application_id 作为路由参数
-  toDetail(applicationId) {
-    if (!applicationId) {
-      console.warn('当前列表项没有 application_id：', applicationId)
-      return
+    // 查看投递详情：使用 application_id 作为路由参数
+    toDetail (applicationId) {
+      if (!applicationId) {
+        console.warn('当前列表项没有 application_id：', applicationId)
+        return
+      }
+      this.$router.push({
+        name: 'AppliedDetail',
+        params: { id: applicationId }   // /applied/:id => /student/applications/{id}
+      })
     }
-    this.$router.push({
-      name: 'AppliedDetail',
-      params: { id: applicationId }   // /applied/:id => /student/applications/{id}
-    })
-  }
   }
 }
 </script>
