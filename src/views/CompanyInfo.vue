@@ -113,9 +113,20 @@
         <!-- 相关链接 -->
         <div class="info-card">
           <h3 class="info-title">相关链接</h3>
-          <a :href="companyInfo.website" target="_blank" class="link-item">
-            企业官网
-          </a>
+          <template v-if="companyInfo.links && companyInfo.links.length > 0">
+            <a 
+              v-for="(link, index) in companyInfo.links" 
+              :key="index"
+              :href="link.link_url" 
+              target="_blank" 
+              class="link-item"
+            >
+              {{ link.link_name }}
+            </a>
+          </template>
+          <div v-else class="no-links">
+            暂无相关链接
+          </div>
         </div>
       </div>
     </div>
@@ -144,7 +155,7 @@ export default {
         scale: '',
         contact: '',
         phone: '',
-        website: '#',
+        links: [], // 存储公司相关链接的数组
         address: '',
         longitude: null,  // 经度（如果后端提供）
         latitude: null,   // 纬度（如果后端提供）
@@ -179,7 +190,7 @@ export default {
           scale: response.company_scale || '',
           contact: response.contact_person_name || '',
           phone: response.contact_person_phone || '',
-          website: response.company_website_url || '#',
+          links: response.company_links || [], // 存储所有相关链接
           address: response.company_address || '',
           longitude: response.longitude || null,  // 经度（如果后端提供）
           latitude: response.latitude || null,   // 纬度（如果后端提供）
@@ -561,7 +572,13 @@ export default {
   text-decoration: underline;
 }
 
-/* 响应式 */
+.no-links {
+  color: #666;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* 鍝嶅簲寮?*/
 @media (max-width: 1024px) {
   .content-wrapper {
     flex-direction: column;

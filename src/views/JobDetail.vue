@@ -140,9 +140,18 @@
         <!-- 相关链接 -->
         <div class="info-card">
           <h3 class="info-title">相关链接</h3>
-          <a :href="companyInfo.website" target="_blank" class="link-item">
-            企业官网
+          <a 
+            v-for="(link, index) in companyInfo.links" 
+            :key="index"
+            :href="link.link_url" 
+            target="_blank" 
+            class="link-item"
+          >
+            {{ link.link_name }}
           </a>
+          <div v-if="!companyInfo.links || companyInfo.links.length === 0" class="no-links">
+            暂无相关链接
+          </div>
         </div>
 
         <!-- 查看企业其他职位 -->
@@ -250,7 +259,7 @@ export default {
         scale: '',
         contact: '',
         phone: '',
-        website: '#'
+        links: [] // 存储公司相关链接的数组
       },
       
       // 简历列表
@@ -352,9 +361,7 @@ async loadJobDetail() {
         scale: response.company_info.company_scale || '',
         contact: response.company_info.contact_person_name || '',
         phone: response.company_info.contact_person_phone || '',
-        website: (response.company_info.company_links && response.company_info.company_links[0]) 
-                ? response.company_info.company_links[0].link_url 
-                : '#'
+        links: response.company_info.company_links || []
       }
     } else {
       console.warn('【无公司信息】')
@@ -367,7 +374,7 @@ async loadJobDetail() {
         scale: '',
         contact: '',
         phone: '',
-        website: '#'
+        links: []
       }
     }
     
@@ -387,7 +394,7 @@ async loadJobDetail() {
       scale: '',
       contact: '',
       phone: '',
-      website: '#'
+      links: []
     }
   } finally {
     this.loading = false
@@ -1149,7 +1156,13 @@ async loadJobDetail() {
   color: #2a5e23;
 }
 
-/* 响应式 */
+.no-links {
+  color: #666;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* 鍝嶅簲寮?*/
 @media (max-width: 1024px) {
   .content-wrapper {
     flex-direction: column;
