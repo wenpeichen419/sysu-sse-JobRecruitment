@@ -39,6 +39,7 @@
             <h3>求职日历</h3>
             <span class="muted">{{ selectedDate }}</span>
           </div>
+          <!-- 注意这里 props 名是 events-map -->
           <StudentCalendar v-model="selectedDate" :events-map="eventsMap" />
         </div>
 
@@ -105,12 +106,19 @@
   </div>
 </template>
 
-
 <script>
 import axios from 'axios'
 import StudentCalendar from '@/components/StudentCalendar.vue'
 import RecruitmentPanel from '@/components/student/RecruitmentPanel.vue'
 import UsefulLinks from '@/components/student/UsefulLinks.vue'
+
+// 本地时间格式化成 YYYY-MM-DD，避免 toISOString 带来的时区问题
+function formatDateLocal (d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 // 本文件内部 axios 实例
 const api = axios.create({
@@ -135,15 +143,16 @@ export default {
     UsefulLinks
   },
   data () {
+    const today = new Date()
     return {
       currentSlide: 0,
       totalSlides: 2,
       timer: null,
 
-      // 日历当前选中的日期（默认：今天）
-      selectedDate: new Date().toISOString().slice(0, 10),
+      // 日历当前选中的日期（默认：今天，本地时间）
+      selectedDate: formatDateLocal(today),
 
-      // 所有 upcoming 活动
+      // 所有 upcoming 活动（主要给“近期活动”用）
       allEvents: [],
       // 求职日历数据：{ 'YYYY-MM-DD': [ { title,time,place,id,date }, ... ] }
       eventsMap: {},
@@ -164,6 +173,7 @@ export default {
   mounted () {
     this.timer = setInterval(this.nextSlide, 4000)
 
+    // 一次性拉：日历 + 近期活动
     this.fetchUpcomingEvents()
     this.fetchRankedJobs()
     this.fetchRecentJobs()
@@ -192,11 +202,51 @@ export default {
 
     /* ---------------- 接口调用 ---------------- */
 
-    // 1. 近期活动 + 日历
+    // 1. 日历 + 近期活动
     async fetchUpcomingEvents () {
       try {
-        const res = await api.get('/events/upcoming')
-        const raw = res.data?.data?.events || []
+        // 同时请求：日历数据（含过去活动）+ 近期活动列表
+        const [calendarRes, upcomingRes] = await Promise.all([
+          api.get('/student/calendar'),
+          api.get('/events/upcoming')
+        ])
+
+        /* ----- 1) 构建日历 eventsMap：用 /student/calendar，包含所有日期 ----- */
+        const calendarData = calendarRes.data?.data || {}
+        const dailyEvents = calendarData.daily_events || []
+
+        const map = {}
+        const allFromCalendar = []
+
+        dailyEvents.forEach(day => {
+          const date = day.event_date // 'YYYY-MM-DD'
+          if (!date) return
+
+          const summaries = day.event_summaries || []
+          if (!summaries.length) return
+
+          const arr = summaries.map((ev, idx) => {
+            const item = {
+              id: ev.event_id || `${date}-${idx}`,
+              // 目前后端把“时间 + 标题”都放在 summary 里，这里直接当 title 用
+              title: ev.summary || '',
+              time: '',
+              place: '',
+              date
+            }
+            allFromCalendar.push(item)
+            return item
+          })
+
+          map[date] = arr
+        })
+
+        this.eventsMap = map
+        // 如果你之后想用，可以把 allFromCalendar 也存起来
+        // this.allEventsFromCalendar = allFromCalendar
+
+        /* ----- 2) 近期活动列表：仍然用 /events/upcoming ----- */
+        const raw = upcomingRes.data?.data?.events || []
 
         const list = raw.map((item) => {
           const title = item.title || item.event_title || ''
@@ -213,25 +263,10 @@ export default {
 
         this.allEvents = list
 
-        // 构建日历数据
-        const map = {}
-        list.forEach((e) => {
-          if (!e.date) return
-          if (!map[e.date]) map[e.date] = []
-          map[e.date].push({
-            title: e.title,
-            time: '',
-            place: e.place,
-            id: e.id,
-            date: e.date
-          })
-        })
-        this.eventsMap = map
-
-        // 默认：今天起后 5 天
+        // 默认：从今天开始往后 5 天的日历活动
         this.buildUpcomingForNextDays()
       } catch (err) {
-        console.error('近期求职活动获取失败', err)
+        console.error('日历 / 近期求职活动获取失败', err)
       }
     },
 
@@ -289,7 +324,7 @@ export default {
 
     /* ---------------- 近期活动展示逻辑 ---------------- */
 
-    // 默认：从今天开始往后 5 天内的所有活动
+    // 默认：从今天开始往后 5 天内的所有“日历活动”
     buildUpcomingForNextDays () {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -298,7 +333,7 @@ export default {
       for (let offset = 0; offset < 5; offset++) {
         const d = new Date(today)
         d.setDate(today.getDate() + offset)
-        const dateStr = d.toISOString().slice(0, 10)
+        const dateStr = formatDateLocal(d) // ✅ 本地日期
         const arr = this.eventsMap[dateStr] || []
         arr.forEach((e) => {
           result.push({
@@ -316,6 +351,7 @@ export default {
     showEventsOfDate (dateStr) {
       const arr = this.eventsMap[dateStr] || []
       if (arr.length === 0) {
+        // 没有当天活动：回到“接下来 5 天”的默认视图
         this.buildUpcomingForNextDays()
         return
       }
@@ -377,7 +413,6 @@ export default {
 }
 
 .section-links {
-  /* 如果还想让常用链接离下面也不那么挤，可以加一点底部间距 */
   margin-bottom: 16px;
 }
 .student-page{
@@ -431,8 +466,6 @@ export default {
   color:#2a5e23;
   text-decoration:underline;
 }
-
-
 .muted{ color:#8aa39a; font-size:14px; }
 .timeline{ list-style:none; padding:0 0 0 18px; margin:0; position:relative; }
 .timeline::before{ content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:#e6f1ea; }
