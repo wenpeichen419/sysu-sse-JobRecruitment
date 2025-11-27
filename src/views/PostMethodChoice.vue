@@ -60,34 +60,56 @@
     <el-dialog
       v-model="uploadDialogVisible"
       title="上传岗位相关文档"
-      width="600px"
+      width="900px"
       :close-on-click-modal="false"
+      class="large-dialog"
     >
       <div class="upload-dialog-content">
-        <el-upload
-          ref="uploadRef"
-          class="upload-area"
-          drag
-          :auto-upload="false"
-          :on-change="handleFileChange"
-          :limit="1"
-          accept=".doc,.docx,.pdf,.txt"
-        >
-          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-          <div class="el-upload__text">
-            将文件拖到此处，或<em>点击上传</em>
-          </div>
-          <template #tip>
-            <div class="el-upload__tip">
-              支持 .doc / .docx / .pdf / .txt 格式文件，大小不超过10MB
-            </div>
-          </template>
-        </el-upload>
+        <!-- 文件类型选择 -->
+        <div class="input-type-selector">
+          <el-form-item label="输入类型" required>
+            <el-select v-model="inputType" placeholder="请选择输入类型" style="width: 100%">
+              <el-option label="文本" value="text" />
+              <el-option label="图片" value="image" />
+            </el-select>
+          </el-form-item>
+        </div>
 
-        <div v-if="uploadedFile" class="file-info">
-          <el-icon class="file-icon"><document /></el-icon>
-          <span class="file-name">{{ uploadedFile.name }}</span>
-          <span class="file-size">{{ formatFileSize(uploadedFile.size) }}</span>
+        <!-- 文本输入区域 -->
+        <div v-if="inputType === 'text'" class="text-input-area">
+          <el-form-item label="上传文本">
+            <el-input
+              v-model="textContent"
+              type="textarea"
+              :rows="8"
+              placeholder="请输入岗位相关的文本内容"
+              :disabled="inputType !== 'text'"
+            />
+          </el-form-item>
+        </div>
+
+        <!-- 图片上传区域 -->
+        <div v-if="inputType === 'image'" class="image-upload-area">
+          <el-form-item label="上传文件">
+            <el-upload
+              class="upload-demo"
+              :action="uploadAction"
+              :on-preview="handlePreview"
+              :on-remove="handleRemove"
+              :on-change="handleImageChange"
+              :on-success="handleImageSuccess"
+              :file-list="fileList"
+              list-type="picture"
+              :disabled="inputType !== 'image'"
+              accept=".jpg,.jpeg,.png,.gif"
+              :auto-upload="false"
+            >
+              <el-button size="large" type="primary">点击上传</el-button>
+              <template #tip>
+                <div class="el-upload__tip">只能上传jpg/png文件，且不超过10MB</div>
+              </template>
+            </el-upload>
+          </el-form-item>
         </div>
 
         <div v-if="isProcessing" class="processing-info">
@@ -98,14 +120,15 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="uploadDialogVisible = false">取消</el-button>
+          <el-button @click="uploadDialogVisible = false" size="large">取消</el-button>
           <el-button 
             type="primary" 
             @click="handleUploadConfirm"
-            :disabled="!uploadedFile || isProcessing"
+            :disabled="!isFormValid || isProcessing"
             :loading="isProcessing"
+            size="large"
           >
-            {{ isProcessing ? '正在解析...' : '确认上传' }}
+            {{ isProcessing ? '正在解析...' : '提交' }}
           </el-button>
         </span>
       </template>
@@ -114,25 +137,38 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { UploadFilled, Document } from '@element-plus/icons-vue'
 
 export default {
   name: 'PostMethodChoice',
-  components: {
-    UploadFilled,
-    Document
-  },
   setup() {
     const router = useRouter()
     const uploadDialogVisible = ref(false)
-    const uploadedFile = ref(null)
-    const uploadRef = ref(null)
     const isProcessing = ref(false)
     const processingProgress = ref(0)
     const processingText = ref('正在上传文件...')
+    
+    // 新增的状态
+    const inputType = ref('')
+    const textContent = ref('')
+    const fileList = ref([])
+    const uploadedFile = ref(null) // 新增：存储上传的文件对象
+    const uploadAction = ref('https://jsonplaceholder.typicode.com/posts/') // 临时地址，实际不会使用
+
+    // 计算表单是否有效 - 修复逻辑
+    const isFormValid = computed(() => {
+      if (!inputType.value) return false
+      
+      if (inputType.value === 'text') {
+        return textContent.value.trim().length > 0
+      } else if (inputType.value === 'image') {
+        return fileList.value.length > 0 || uploadedFile.value !== null
+      }
+      
+      return false
+    })
 
     // 跳转到手动填写表单
     const goToManualForm = () => {
@@ -142,126 +178,150 @@ export default {
     // 显示上传对话框
     const showUploadDialog = () => {
       uploadDialogVisible.value = true
+      // 重置状态
+      inputType.value = ''
+      textContent.value = ''
+      fileList.value = []
       uploadedFile.value = null
       isProcessing.value = false
       processingProgress.value = 0
     }
 
-    // 文件选择变化
-    const handleFileChange = (file) => {
-      // 验证文件大小（10MB）
-      const maxSize = 10 * 1024 * 1024
-      if (file.size > maxSize) {
-        ElMessage.error('文件大小不能超过10MB')
-        return false
+    // 图片预览
+    const handlePreview = (file) => {
+      console.log('Preview file:', file)
+    }
+
+    // 图片移除
+    const handleRemove = (file, fileList) => {
+      console.log('Remove file:', file, fileList)
+      uploadedFile.value = null
+    }
+
+    // 图片变化 - 修复：正确更新文件状态
+    const handleImageChange = (file, files) => {
+      console.log('File changed:', file, files)
+      fileList.value = files
+      if (file.raw) {
+        uploadedFile.value = file.raw
+      } else {
+        uploadedFile.value = file
       }
-      
-      uploadedFile.value = file.raw
     }
 
-    // 格式化文件大小
-    const formatFileSize = (bytes) => {
-      if (bytes === 0) return '0 B'
-      const k = 1024
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    // 图片上传成功
+    const handleImageSuccess = (response, file, fileList) => {
+      console.log('Upload success:', response, file, fileList)
+      uploadedFile.value = file
     }
 
-    // 模拟LLM解析过程
-    const simulateLLMProcessing = () => {
+    // 模拟进度
+    const simulateProcessing = () => {
       return new Promise((resolve) => {
         isProcessing.value = true
         processingProgress.value = 0
-        processingText.value = '正在上传文件...'
+        processingText.value = '正在解析内容...'
 
-        // 模拟上传进度
-        const uploadInterval = setInterval(() => {
+        const interval = setInterval(() => {
           processingProgress.value += 10
-          if (processingProgress.value >= 30) {
-            clearInterval(uploadInterval)
-            processingText.value = 'LLM正在解析文档内容...'
-            
-            // 模拟解析进度
-            const parseInterval = setInterval(() => {
-              processingProgress.value += 5
-              if (processingProgress.value >= 70) {
-                clearInterval(parseInterval)
-                processingText.value = '正在提取关键信息...'
-                
-                // 模拟提取进度
-                const extractInterval = setInterval(() => {
-                  processingProgress.value += 6
-                  if (processingProgress.value >= 100) {
-                    clearInterval(extractInterval)
-                    processingText.value = '解析完成！'
-                    setTimeout(() => {
-                      resolve()
-                    }, 500)
-                  }
-                }, 200)
-              }
-            }, 300)
+          if (processingProgress.value >= 100) {
+            clearInterval(interval)
+            processingText.value = '解析完成！'
+            setTimeout(() => {
+              resolve()
+            }, 500)
           }
-        }, 100)
+        }, 200)
       })
     }
 
     // 确认上传并处理
     const handleUploadConfirm = async () => {
-      if (!uploadedFile.value) {
-        ElMessage.warning('请先选择文件')
+      if (!isFormValid.value) {
+        ElMessage.warning('请完善输入内容')
         return
       }
 
       try {
-        // 模拟LLM处理过程
-        await simulateLLMProcessing()
+        // 模拟处理过程
+        await simulateProcessing()
         
-        ElMessage.success('文档解析成功！即将跳转到表单页面')
+        const token = localStorage.getItem('token')
         
-        // 模拟从LLM提取的数据
-        const extractedData = {
-          positionName: '后端开发工程师',
-          department: '技术部',
-          location: '北京市海淀区',
-          category: '开发',
-          tags: ['Java', 'Spring Boot', '微服务'],
-          recruitCount: 5,
-          deadline: '2025-12-31',
-          description: '负责后端系统的开发与维护，参与系统架构设计，优化系统性能。',
-          requirements: '1. 计算机相关专业本科及以上学历；\n2. 熟练掌握Java编程语言；\n3. 熟悉Spring Boot、MyBatis等主流框架；\n4. 具有良好的团队协作能力。',
-          bonus: '有大型互联网公司实习经验者优先',
-          fromLLM: true // 标记这是从LLM提取的数据
+        // 准备请求数据
+        let requestData = new FormData()
+        requestData.append('input_type', inputType.value)
+        
+        if (inputType.value === 'text') {
+          requestData.append('text', textContent.value)
+        } else if (inputType.value === 'image' && (fileList.value.length > 0 || uploadedFile.value)) {
+          // 使用实际的文件对象
+          const file = uploadedFile.value || (fileList.value[0]?.raw || fileList.value[0])
+          if (file) {
+            requestData.append('image', file)
+          }
         }
 
-        // 延迟一点再跳转，让用户看到成功消息
-        setTimeout(() => {
-          uploadDialogVisible.value = false
-          // 跳转到表单页面，并传递提取的数据
-          router.push({
-            path: '/position-form',
-            query: { data: JSON.stringify(extractedData) }
-          })
-        }, 1000)
+        // 调用解析接口
+        const response = await fetch('http://localhost:8080/api/hr/jobs/parse', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // 注意：使用FormData时不要设置Content-Type，浏览器会自动设置
+          },
+          body: requestData
+        })
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        const data = await response.json()
+        
+        if (data.code === 200) {
+          ElMessage.success('文档解析成功！即将跳转到表单页面')
+          
+          // 处理返回的数据
+          const extractedData = {
+            ...data.data.job_details,
+            fromLLM: true // 标记这是从LLM提取的数据
+          }
+
+          // 延迟一点再跳转，让用户看到成功消息
+          setTimeout(() => {
+            uploadDialogVisible.value = false
+            // 跳转到表单页面，并传递提取的数据
+            router.push({
+              path: '/position-form',
+              query: { data: JSON.stringify(extractedData) }
+            })
+          }, 1000)
+
+        } else {
+          throw new Error(data.message || '解析失败')
+        }
 
       } catch (error) {
-        ElMessage.error('文档解析失败，请重试')
+        console.error('文档解析失败:', error)
+        ElMessage.error('文档解析失败，请重试: ' + error.message)
         isProcessing.value = false
       }
     }
 
     return {
       uploadDialogVisible,
-      uploadedFile,
-      uploadRef,
       isProcessing,
       processingProgress,
       processingText,
+      inputType,
+      textContent,
+      fileList,
+      uploadAction,
+      isFormValid,
       goToManualForm,
       showUploadDialog,
-      handleFileChange,
-      formatFileSize,
+      handlePreview,
+      handleRemove,
+      handleImageChange,
+      handleImageSuccess,
       handleUploadConfirm
     }
   }
@@ -436,49 +496,18 @@ export default {
   padding: 20px 0;
 }
 
-.upload-area {
-  margin-bottom: 20px;
+.input-type-selector {
+  margin-bottom: 30px;
 }
 
-:deep(.el-upload-dragger) {
-  padding: 40px;
-}
-
-:deep(.el-icon--upload) {
-  font-size: 67px;
-  color: #325e21;
-  margin-bottom: 16px;
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 15px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  margin-top: 15px;
-}
-
-.file-icon {
-  font-size: 24px;
-  color: #325e21;
-}
-
-.file-name {
-  flex: 1;
-  color: #333;
-  font-weight: 500;
-}
-
-.file-size {
-  color: #999;
-  font-size: 14px;
+.text-input-area,
+.image-upload-area {
+  margin-top: 30px;
 }
 
 .processing-info {
-  margin-top: 20px;
-  padding: 20px;
+  margin-top: 30px;
+  padding: 30px;
   background: #f0f9ff;
   border-radius: 8px;
 }
@@ -487,8 +516,8 @@ export default {
   text-align: center;
   color: #325e21;
   font-weight: 500;
-  margin-top: 15px;
-  font-size: 16px;
+  margin-top: 20px;
+  font-size: 20px;
 }
 
 /* 响应式设计 */
@@ -517,5 +546,60 @@ export default {
     padding: 30px;
   }
 }
-</style>
 
+/* 放大弹窗字体样式 */
+:deep(.large-dialog .el-dialog__title) {
+  font-size: 32px !important;
+  font-weight: bold;
+}
+
+:deep(.large-dialog .el-form-item__label) {
+  font-size: 24px !important;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+:deep(.large-dialog .el-select .el-input__inner) {
+  font-size: 22px !important;
+  height: 60px !important;
+  line-height: 60px !important;
+  padding: 0 20px !important;
+}
+
+:deep(.large-dialog .el-textarea__inner) {
+  font-size: 22px !important;
+  line-height: 1.6 !important;
+  padding: 20px !important;
+  min-height: 200px !important;
+}
+
+:deep(.large-dialog .el-button) {
+  font-size: 22px !important;
+  height: 60px !important;
+  padding: 0 40px !important;
+}
+
+:deep(.large-dialog .el-upload__tip) {
+  font-size: 18px !important;
+  margin-top: 15px;
+}
+
+:deep(.large-dialog .el-upload-list__item-name) {
+  font-size: 20px !important;
+}
+
+:deep(.large-dialog .el-upload-list__item-status-label) {
+  font-size: 18px !important;
+}
+
+:deep(.large-dialog .el-progress__text) {
+  font-size: 18px !important;
+}
+
+:deep(.large-dialog .el-select-dropdown__item) {
+  font-size: 20px !important;
+  height: 50px !important;
+  line-height: 50px !important;
+}
+</style>
