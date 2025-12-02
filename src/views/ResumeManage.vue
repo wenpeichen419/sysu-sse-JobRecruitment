@@ -61,21 +61,22 @@
       </div>
 
       <div class="field">
-        <label>性别</label>
-        <select v-model="form.profile.gender"
-                :disabled="isLocked('profile.gender') || !editing">
-          <option value="">请选择</option>
-          <option>男</option><option>女</option><option>其他</option>
-        </select>
-      </div>
+  <label>性别</label>
+  <select v-model="form.profile.gender"
+          :disabled="isLocked('profile.gender') || !editing">
+    <option value="">请选择</option>
+    <option>男</option><option>女</option><option>其他</option>
+  </select>
+</div>
 
-      <div class="field">
-        <label>求职状态</label>
-        <select v-model="form.profile.status"
-                :disabled="isLocked('profile.status') || !editing">
-          <option>实习</option><option>校招</option><option>社招</option>
-        </select>
-      </div>
+<div class="field">
+  <label>求职状态</label>
+  <select v-model="form.profile.status"
+          :disabled="isLocked('profile.status') || !editing">
+    <option>实习</option><option>校招</option><option>社招</option>
+  </select>
+</div>
+
 
       <div class="field">
         <label>电话</label>
@@ -94,30 +95,91 @@
               class="textarea" placeholder="编辑个人优势、熟练技术栈等..."></textarea>
   </section>
 
-  <!-- 工作经历 -->
-  <section id="work" ref="work" class="card">
+ <!-- 工作经历 -->
+ <section id="work" ref="work" class="card">
     <div class="card-head">
       <h3 class="section-title">工作经历</h3>
       <button v-if="editing" class="link-add" @click="addWork">+ 添加</button>
     </div>
-    <div v-for="(w,i) in form.work" :key="i" class="block">
+
+    <div
+      v-for="(w,i) in form.work"
+      :key="i"
+      class="block"
+      :class="{ 'block-confirmed': w._confirmed }"
+    >
       <div class="grid-3">
-        <div class="field"><label>公司名称</label><input v-model="w.company" :disabled="!editing"/></div>
-        <div class="field"><label>职位名称</label><input v-model="w.title" :disabled="!editing"/></div>
+        <div class="field">
+          <label>公司名称</label>
+          <input
+            v-model="w.company"
+            :disabled="!editing"
+            @input="w._confirmed = false"
+          />
+        </div>
+
+        <div class="field">
+          <label>职位名称</label>
+          <input
+            v-model="w.title"
+            :disabled="!editing"
+            @input="w._confirmed = false"
+          />
+        </div>
+
         <div class="field">
           <label>在职时间</label>
           <div class="inline">
-            <input v-model="w.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <el-date-picker
+              v-model="w.start"
+              type="month"
+              placeholder="开始年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="w._confirmed = false"
+            />
+
             <span class="to">至</span>
-            <input v-model="w.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
+
+            <el-date-picker
+              v-model="w.end"
+              type="month"
+              placeholder="结束年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="w._confirmed = false"
+            />
           </div>
         </div>
       </div>
+
       <div class="field mt8">
         <label>工作内容</label>
-        <textarea v-model="w.content" :disabled="!editing" class="textarea small"></textarea>
+        <textarea
+          v-model="w.content"
+          :disabled="!editing"
+          class="textarea small"
+          @input="w._confirmed = false"
+        ></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="removeWork(i, w)">删除该经历</button>
+
+      <!-- 底部按钮区域 -->
+      <div v-if="editing" class="block-footer">
+        <button
+          class="pill-btn"
+          :class="{ 'pill-disabled': w._confirmed }"
+          :disabled="w._confirmed"
+          @click="confirmWork(i, w)"
+        >
+          {{ w._confirmed ? '已确认' : '确定' }}
+        </button>
+
+        <button class="pill-btn pill-danger" @click="removeWork(i, w)">
+          删除该经历
+        </button>
+      </div>
     </div>
   </section>
 
@@ -127,23 +189,84 @@
       <h3 class="section-title">项目经历</h3>
       <button v-if="editing" class="link-add" @click="addProject">+ 添加</button>
     </div>
-    <div v-for="(p,i) in form.projects" :key="i" class="block">
+
+    <div
+      v-for="(p,i) in form.projects"
+      :key="i"
+      class="block"
+      :class="{ 'block-confirmed': p._confirmed }"
+    >
       <div class="grid-3">
-        <div class="field"><label>项目名称</label><input v-model="p.name" :disabled="!editing"/></div>
-        <div class="field"><label>项目角色</label><input v-model="p.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>项目名称</label>
+          <input
+            v-model="p.name"
+            :disabled="!editing"
+            @input="p._confirmed = false"
+          />
+        </div>
+
+        <div class="field">
+          <label>项目角色</label>
+          <input
+            v-model="p.role"
+            :disabled="!editing"
+            @input="p._confirmed = false"
+          />
+        </div>
+
         <div class="field">
           <label>项目时间</label>
           <div class="inline">
-            <input v-model="p.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <el-date-picker
+              v-model="p.start"
+              type="month"
+              placeholder="开始年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="p._confirmed = false"
+            />
+
             <span class="to">至</span>
-            <input v-model="p.end" :disabled="!editing" placeholder="YYYY.MM"/>
+
+            <el-date-picker
+              v-model="p.end"
+              type="month"
+              placeholder="结束年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="p._confirmed = false"
+            />
           </div>
         </div>
       </div>
-      <div class="field mt8"><label>项目描述</label>
-        <textarea v-model="p.desc" :disabled="!editing" class="textarea small"></textarea>
+
+      <div class="field mt8">
+        <label>项目描述</label>
+        <textarea
+          v-model="p.desc"
+          :disabled="!editing"
+          class="textarea small"
+          @input="p._confirmed = false"
+        ></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="removeProject(i, p)">删除该项目</button>
+
+      <div v-if="editing" class="block-footer">
+        <button
+          class="pill-btn"
+          :class="{ 'pill-disabled': p._confirmed }"
+          :disabled="p._confirmed"
+          @click="confirmProject(i, p)"
+        >
+          {{ p._confirmed ? '已确认' : '确定' }}
+        </button>
+
+        <button class="pill-btn pill-danger" @click="removeProject(i, p)">
+          删除该项目
+        </button>
+      </div>
     </div>
   </section>
 
@@ -159,61 +282,132 @@
       <div class="grid-3">
         <div class="field">
           <label>学校名称</label>
-          <input v-model="e.school"
-                 :disabled="(i===0 && isLocked('edu.school')) || !editing" />
+          <input v-model="e.school" :disabled="true" />
         </div>
         <div class="field">
           <label>专业</label>
-          <input v-model="e.major"
-                 :disabled="(i===0 && isLocked('edu.major')) || !editing" />
+          <input v-model="e.major" :disabled="true" />
         </div>
         <div class="field">
           <label>专业排名</label>
-          <input v-model="e.rank"
-                 :disabled="(i===0 && isLocked('edu.rank')) || !editing"
-                 placeholder="可选" />
+          <input v-model="e.rank" :disabled="true" placeholder="可选" />
+                
         </div>
       </div>
       <div class="field mt8">
         <label>时间段</label>
         <div class="inline">
-          <input v-model="e.start"
-                 :disabled="(i===0 && isLocked('edu.start')) || !editing"
-                 placeholder="YYYY.MM"/>
-          <span class="to">至</span>
-          <input v-model="e.end"
-                 :disabled="(i===0 && isLocked('edu.end')) || !editing"
-                 placeholder="YYYY.MM/今"/>
-        </div>
+          <el-date-picker
+  v-model="e.start"
+  type="month"
+  placeholder="开始年月"
+  format="YYYY-MM"
+  value-format="YYYY-MM"
+  :disabled="true"
+/>
+
+<span class="to">至</span>
+
+<el-date-picker
+  v-model="e.end"
+  type="month"
+  placeholder="结束年月"
+  format="YYYY-MM"
+  value-format="YYYY-MM"
+  :disabled="true"
+/>
+
+</div>
+
       </div>
-      <!-- 第 1 条（同步来的）不允许删除 -->
-      <button v-if="editing && i>0" class="link-del" @click="form.education.splice(i,1)">删除该教育</button>
+
     </div>
   </section>
 
-  <!-- 社团/组织 -->
-  <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
+ <!-- 社团/组织 -->
+ <section id="orgs" ref="orgs" class="card" v-if="form.orgs?.length || editing">
     <div class="card-head">
       <h3 class="section-title">社团 / 组织经历</h3>
       <button v-if="editing" class="link-add" @click="addOrg">+ 添加</button>
     </div>
-    <div v-for="(o,i) in form.orgs" :key="i" class="block">
+
+    <div
+      v-for="(o,i) in form.orgs"
+      :key="i"
+      class="block"
+      :class="{ 'block-confirmed': o._confirmed }"
+    >
       <div class="grid-3">
-        <div class="field"><label>社团/组织名称</label><input v-model="o.name" :disabled="!editing"/></div>
-        <div class="field"><label>担任角色</label><input v-model="o.role" :disabled="!editing"/></div>
+        <div class="field">
+          <label>社团/组织名称</label>
+          <input
+            v-model="o.name"
+            :disabled="!editing"
+            @input="o._confirmed = false"
+          />
+        </div>
+
+        <div class="field">
+          <label>担任角色</label>
+          <input
+            v-model="o.role"
+            :disabled="!editing"
+            @input="o._confirmed = false"
+          />
+        </div>
+
         <div class="field">
           <label>时间段</label>
           <div class="inline">
-            <input v-model="o.start" :disabled="!editing" placeholder="YYYY.MM"/>
+            <el-date-picker
+              v-model="o.start"
+              type="month"
+              placeholder="开始年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="o._confirmed = false"
+            />
+
             <span class="to">至</span>
-            <input v-model="o.end" :disabled="!editing" placeholder="YYYY.MM/今"/>
+
+            <el-date-picker
+              v-model="o.end"
+              type="month"
+              placeholder="结束年月"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :disabled="!editing"
+              @change="o._confirmed = false"
+            />
           </div>
         </div>
       </div>
-      <div class="field mt8"><label>经历描述</label>
-        <textarea v-model="o.desc" :disabled="!editing" class="textarea small"></textarea>
+
+      <div class="field mt8">
+        <label>经历描述</label>
+        <textarea
+          v-model="o.desc"
+          :disabled="!editing"
+          class="textarea small"
+          @input="o._confirmed = false"
+        ></textarea>
       </div>
-      <button v-if="editing" class="link-del" @click="removeOrg(i, o)">删除该经历</button>
+
+      <div v-if="editing" class="block-footer">
+        <button
+          class="pill-btn"
+          :class="{ 'pill-disabled': o._confirmed }"
+          :disabled="o._confirmed"
+          @click="confirmOrg(i, o)"
+        >
+          {{ o._confirmed ? '已确认' : '确定' }}
+        </button>
+
+        <button class="pill-btn pill-danger" @click="removeOrg(i, o)">
+          删除该经历
+        </button>
+      </div>
     </div>
   </section>
 
@@ -223,14 +417,57 @@
       <h3 class="section-title">竞赛经历</h3>
       <button v-if="editing" class="link-add" @click="addCompetition">+ 添加</button>
     </div>
-    <div v-for="(c,i) in form.competitions" :key="i" class="block">
+
+    <div
+      v-for="(c,i) in form.competitions"
+      :key="i"
+      class="block"
+      :class="{ 'block-confirmed': c._confirmed }"
+    >
       <div class="grid-3">
-        <div class="field"><label>竞赛名称</label><input v-model="c.name" :disabled="!editing"/></div>
-        <div class="field"><label>担任角色</label><input v-model="c.role" :disabled="!editing"/></div>
-        <div class="field"><label>获得奖项</label><input v-model="c.award" :disabled="!editing" placeholder="可选"/></div>
+        <div class="field">
+          <label>竞赛名称</label>
+          <input
+            v-model="c.name"
+            :disabled="!editing"
+            @input="c._confirmed = false"
+          />
+        </div>
+
+        <div class="field">
+          <label>担任角色</label>
+          <input
+            v-model="c.role"
+            :disabled="!editing"
+            @input="c._confirmed = false"
+          />
+        </div>
+
+        <div class="field">
+          <label>获得奖项</label>
+          <input
+            v-model="c.award"
+            :disabled="!editing"
+            placeholder="可选"
+            @input="c._confirmed = false"
+          />
+        </div>
       </div>
-      <div class="field mt8"><label>时间</label><input v-model="c.time" :disabled="!editing" placeholder="YYYY.MM"/></div>
-      <button v-if="editing" class="link-del" @click="removeCompetition(i, c)">删除该竞赛</button>
+
+      <div v-if="editing" class="block-footer">
+        <button
+          class="pill-btn"
+          :class="{ 'pill-disabled': c._confirmed }"
+          :disabled="c._confirmed"
+          @click="confirmCompetition(i, c)"
+        >
+          {{ c._confirmed ? '已确认' : '确定' }}
+        </button>
+
+        <button class="pill-btn pill-danger" @click="removeCompetition(i, c)">
+          删除该竞赛
+        </button>
+      </div>
     </div>
   </section>
 </main>
@@ -305,6 +542,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
+import { ElDatePicker } from 'element-plus'
 
 const STORAGE_KEY = 'resume_data_v1'
 
@@ -356,6 +594,8 @@ function getAuthHeaders () {
 
 export default {
   name: 'ResumeManage',
+  components: { ElDatePicker },
+
   data () {
     return {
       editing: false,
@@ -397,7 +637,7 @@ export default {
   // 1. 加载简历草稿
   await this.fetchResumeDraft()
 
-  // 2. 再从“学生中心档案”里取头像，覆盖掉 form.profile.avatar
+  // 2. **这里必须有这一行**
   await this.fetchStudentAvatar()
 
   // 3. 简历文件列表
@@ -405,11 +645,59 @@ export default {
 
   // 4. 滚动高亮
   this.setupScrollSpy()
-},
+}
+
+,
 
   methods: {
+    confirmWork (index, w) {
+  if (!w.company?.trim() || !w.title?.trim()) {
+    ElMessage.warning('请先填写「公司名称」和「职位名称」')
+    return
+  }
+  w._confirmed = true
+  ElMessage.success('该工作经历已确认')
+},
+
+confirmProject (index, p) {
+  if (!p.name?.trim() || !p.role?.trim()) {
+    ElMessage.warning('请先填写「项目名称」和「项目角色」')
+    return
+  }
+  p._confirmed = true
+  ElMessage.success('该项目经历已确认')
+},
+
+confirmOrg (index, o) {
+  if (!o.name?.trim() || !o.role?.trim()) {
+    ElMessage.warning('请先填写「社团/组织名称」和「担任角色」')
+    return
+  }
+  o._confirmed = true
+  ElMessage.success('该社团/组织经历已确认')
+},
+
+confirmCompetition (index, c) {
+  if (!c.name?.trim() || !c.role?.trim()) {
+    ElMessage.warning('请先填写「竞赛名称」和「担任角色」')
+    return
+  }
+  c._confirmed = true
+  ElMessage.success('该竞赛经历已确认')
+},
+
     // ========= 保存前统一必填校验 =========
     checkRequiredFields () {
+        // 0) 先检查是否有未确认的经历
+        const hasUnconfirmed =
+  [...this.form.work, ...this.form.projects, ...this.form.orgs, ...this.form.competitions]
+    .some(item => item && item._confirmed !== true)
+
+
+  if (hasUnconfirmed) {
+    ElMessage.warning('存在未确认的经历，请先点击每条经历右下角的「确定」或删除')
+    return false
+  }
     // 1) 工作经历：公司名称、职位名称必填
     const workIdxNoCompany = this.form.work.findIndex(
       w => !w.company || !w.company.trim()
@@ -533,14 +821,39 @@ export default {
       const d = res.data.data
       const f = this.getDefaultForm()
 
-      // profile
-      const p = d.profile || {}
-      f.profile.name = p.full_name || ''
-      f.profile.birthday = p.date_of_birth || ''
-      f.profile.email = p.email || ''
-      f.profile.gender = p.gender || ''
-      f.profile.status = p.job_seeking_status || f.profile.status
-      f.profile.phone = p.phone_number || ''
+// profile
+const p = d.profile || {}
+f.profile.name = p.full_name || ''
+
+// 日期直接用原来的（你后面渲染时已经是 YYYY-MM 了）
+f.profile.birthday = p.date_of_birth || ''
+f.profile.email = p.email || ''
+f.profile.phone = p.phone_number || ''
+
+// 1) 性别映射：兼容英文 / 中文
+const genderMap = {
+  male: '男',
+  female: '女',
+  other: '其他',
+  男: '男',
+  女: '女',
+  其他: '其他'
+}
+f.profile.gender = genderMap[p.gender] || ''
+
+// 2) 求职状态映射：各种长句子 → “实习 / 校招 / 社招”
+let js = p.job_seeking_status || ''
+if (js) {
+  if (js.includes('实习')) {
+    js = '实习'
+  } else if (js.includes('校招')) {
+    js = '校招'
+  } else {
+    js = '社招'
+  }
+}
+f.profile.status = js || f.profile.status
+
 
       // ⭐ 先把 avatar_url 拼成完整地址（后面再拉回来转 base64）
       if (p.avatar_url) {
@@ -577,7 +890,8 @@ export default {
         title: w.position_title || '',
         start: w.start_date || '',
         end: w.end_date || '',
-        content: w.description || ''
+        content: w.description || '',
+        _confirmed: true
       }))
 
       // projects
@@ -588,7 +902,8 @@ export default {
         start: pj.start_date || '',
         end: pj.end_date || '',
         desc: pj.description || '',
-        link: pj.project_link || ''
+        link: pj.project_link || '',
+        _confirmed: true
       }))
 
       // organizations
@@ -598,7 +913,8 @@ export default {
         role: o.role || '',
         start: o.start_date || '',
         end: o.end_date || '',
-        desc: o.description || ''
+        desc: o.description || '',
+        _confirmed: true
       }))
 
       // competitions
@@ -607,7 +923,8 @@ export default {
         name: c.competition_name || '',
         role: c.role || '',
         award: c.award || '',
-        time: c.date || ''
+        time: c.date || '',
+        _confirmed: true
       }))
 
       // ⭐ 关键：用带 token 的 axios 把头像拉回来，转成 base64，
@@ -641,34 +958,88 @@ export default {
     }
   },
 
-  /* ========== 从学生中心同步头像 ========== */
-  async fetchStudentAvatar () {
-    try {
-      const res = await axios.get(API_STUDENT_PROFILE, {
-        headers: getAuthHeaders()
-      })
+// ========== 从学生中心档案同步头像 + 基本信息 ==========
+async fetchStudentAvatar () {
+  try {
+    const res = await axios.get(API_STUDENT_PROFILE, {
+      headers: getAuthHeaders()
+    })
 
-      // 根据你给的示例结构：{ code:200, data:{ avatar_url: '...' , basic_info:{...} } }
-      if (res.data && res.data.code === 200 && res.data.data) {
-        const raw = res.data.data.avatar_url
-        if (raw) {
-          // 如果是相对路径，就补上 http://localhost:8080
-          let full = raw
-          if (!/^https?:\/\//.test(raw)) {
-            // 确保只有一个斜杠
-            full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
-          }
+    console.log('【简历页-学生中心接口原始响应】', res.data)
 
-          // 覆盖简历里的头像字段（预览用的就是这个）
-          this.form.profile.avatar = full
-          this.persist() // 顺便存到 localStorage
-        }
-      }
-    } catch (e) {
-      console.error('获取学生中心头像失败：', e)
-      // 不弹错，没头像就继续用默认灰色圆圈
+    if (!res.data || res.data.code !== 200 || !res.data.data) {
+      console.log('【简历页】学生中心接口 code 非 200 或 data 为空，跳过同步')
+      return
     }
-  },
+
+    const data = res.data.data
+    const basic = data.basic_info || {}
+
+    console.log('【简历页】basic_info = ', basic)
+
+    // 1) 头像
+    const raw = data.avatar_url
+    if (raw) {
+      let full = raw
+      if (!/^https?:\/\//.test(raw)) {
+        full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
+      }
+      this.form.profile.avatar = full
+    }
+
+    // 小工具： yyyy-MM-dd -> yyyy-MM
+    const normalizeMonth = (s) => {
+      if (!s) return ''
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0, 7)
+      return s
+    }
+
+    // 2) 如果简历里这些字段还是空，就用学生中心的填上
+    if (!this.form.profile.name && basic.full_name) {
+      this.form.profile.name = basic.full_name
+    }
+    if (!this.form.profile.birthday && basic.date_of_birth) {
+      this.form.profile.birthday = normalizeMonth(basic.date_of_birth)
+    }
+    if (!this.form.profile.email && basic.email) {
+      this.form.profile.email = basic.email
+    }
+    if (!this.form.profile.phone && basic.phone_number) {
+      this.form.profile.phone = basic.phone_number
+    }
+
+    // 3) 性别：后端是“男 / 女 / 其他”，和下拉框里的文案一致
+    if (!this.form.profile.gender && basic.gender) {
+      console.log('【简历页】同步性别：', basic.gender)
+      this.form.profile.gender = basic.gender   // 比如 “男”
+    }
+
+    // 4) 求职状态：学生中心是一句中文，简历这边只有 “实习 / 校招 / 社招”
+    if (!this.form.profile.status && basic.job_seeking_status) {
+      const js = basic.job_seeking_status
+      let mapped = ''
+
+      if (js.includes('实习')) {
+        mapped = '实习'
+      } else if (js.includes('校招')) {
+        mapped = '校招'
+      } else {
+        mapped = '社招'
+      }
+      console.log('【简历页】同步求职状态：', js, '=>', mapped)
+      this.form.profile.status = mapped
+    }
+
+    console.log('【简历页】同步后的 form.profile = ', this.form.profile)
+
+    this.persist()
+  } catch (e) {
+    console.error('【简历页】获取学生中心档案失败：', e)
+  }
+}
+
+
+,
 
 async saveResume () {
       // 手机号校验
@@ -936,15 +1307,21 @@ async saveResume () {
 
     // 新增 / 删除各类经历
     addWork () {
-      this.form.work.push({
-        id: null,
-        company: '',
-        title: '',
-        start: '',
-        end: '',
-        content: ''
-      })
-    },
+  const last = this.form.work[this.form.work.length - 1]
+  if (last && last._confirmed !== true) {
+    ElMessage.warning('请先点击上一条工作经历右下角的「确定」或删除后再新增')
+    return
+  }
+  this.form.work.push({
+    id: null,
+    company: '',
+    title: '',
+    start: '',
+    end: '',
+    content: '',
+    _confirmed: false
+  })
+},
     async removeWork (index, w) {
       if (w.id) {
         try {
@@ -961,16 +1338,22 @@ async saveResume () {
     },
 
     addProject () {
-      this.form.projects.push({
-        id: null,
-        name: '',
-        role: '',
-        start: '',
-        end: '',
-        desc: '',
-        link: ''
-      })
-    },
+  const last = this.form.projects[this.form.projects.length - 1]
+  if (last && last._confirmed !== true) {
+    ElMessage.warning('请先点击上一条项目经历右下角的「确定」或删除后再新增')
+    return
+  }
+  this.form.projects.push({
+    id: null,
+    name: '',
+    role: '',
+    start: '',
+    end: '',
+    desc: '',
+    link: '',
+    _confirmed: false
+  })
+},
     async removeProject (index, p) {
       if (p.id) {
         try {
@@ -1002,15 +1385,21 @@ async saveResume () {
     },
 
     addOrg () {
-      this.form.orgs.push({
-        id: null,
-        name: '',
-        role: '',
-        start: '',
-        end: '',
-        desc: ''
-      })
-    },
+  const last = this.form.orgs[this.form.orgs.length - 1]
+  if (last && last._confirmed !== true) {
+    ElMessage.warning('请先点击上一条社团/组织经历右下角的「确定」或删除后再新增')
+    return
+  }
+  this.form.orgs.push({
+    id: null,
+    name: '',
+    role: '',
+    start: '',
+    end: '',
+    desc: '',
+    _confirmed: false
+  })
+},
     async removeOrg (index, o) {
       if (o.id) {
         try {
@@ -1027,14 +1416,20 @@ async saveResume () {
     },
 
     addCompetition () {
-      this.form.competitions.push({
-        id: null,
-        name: '',
-        role: '',
-        award: '',
-        time: ''
-      })
-    },
+  const last = this.form.competitions[this.form.competitions.length - 1]
+  if (last && last._confirmed !== true) {
+    ElMessage.warning('请先点击上一条竞赛经历右下角的「确定」或删除后再新增')
+    return
+  }
+  this.form.competitions.push({
+    id: null,
+    name: '',
+    role: '',
+    award: '',
+    time: '',
+    _confirmed: false
+  })
+},
     async removeCompetition (index, c) {
       if (c.id) {
         try {
@@ -1361,12 +1756,73 @@ const infoHtml = `
 .textarea{ width:100%; min-height:120px; padding:16px; border:1px solid #d8d8d8; border-radius:8px; font-size:18px; resize:vertical; }
 .textarea.small{ min-height:90px; }
 /* ===== 时间范围输入：更紧凑、同一行、不越界 ===== */
+
+/* 时间范围容器：允许自动换行 */
 .inline{
-  display: grid;
-  grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr); /* 左输入 | “至” | 右输入 */
+  display: flex;
+  flex-wrap: wrap;       /* ★ 允许换行 */
   align-items: center;
-  column-gap: 8px;
-  /* 不自动换行，依靠 minmax 收缩保证不溢出 */
+  gap: 8px;
+}
+
+/* 中间的 “至” */
+.inline .to{
+  white-space: nowrap;
+  padding: 0 4px;
+  color: #666;
+}
+
+/* 两个日期选择器：自适应宽度，宽度不够就掉到下一行 */
+.inline .el-date-editor{
+  flex: 1 1 130px;       /* 基础宽度 130px，能缩能长 */
+  min-width: 0;
+}
+
+/* 保持高度、圆角一致 */
+.inline .el-input__wrapper{
+  box-sizing: border-box;
+  padding: 8px 10px;
+  height: 38px;
+  border-radius: 6px;
+}
+
+.inline .el-input__inner{
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+
+/* 中间的 “至” 不要被压缩、也不要换行 */
+.inline .to{
+  white-space: nowrap;
+  padding: 0 4px;
+  color: #666;
+}
+
+/* 让两个日期选择器自适应缩放，不再用默认 220px 宽度 */
+.inline .el-date-editor{
+  flex: 1 1 0;
+  width: 0;            /* 把宽度交给 flex 计算 */
+}
+
+/* 保持你之前设置的高度和圆角 */
+.inline .el-input__wrapper{
+  box-sizing: border-box;
+  padding: 8px 10px;
+  height: 38px;
+  border-radius: 6px;
+}
+.inline .el-input__inner{
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.inline .el-date-picker,
+.inline .el-input,
+.inline .el-input__wrapper {
+  width: 100%;
+  height: 38px; /* 与你 input 高度一致 */
+  font-size: 16px;
 }
 
 .inline .to{
@@ -1392,7 +1848,74 @@ const infoHtml = `
 }
 
 .mt8{ margin-top:8px; }
-.block{ padding:16px; background:#f8f9fa; border-radius:8px; margin-top:16px; }
+.block{
+  padding:16px;
+  background:#f8f9fa;
+  border-radius:8px;
+  margin-top:16px;
+  border:1px solid transparent;
+}
+
+.block-footer{
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+/* 已确认的 block：淡绿色边框+背景 */
+.block-confirmed{
+  border-color:#cbe6cf;
+  background:#f7fbf8;
+}
+
+/* 已确认按钮：浅绿+灰字，不再 hover */
+.pill-disabled{
+  background:#e9f2ea;
+  color:#6c757d;
+  cursor:default;
+}
+.pill-disabled:hover{
+  background:#e9f2ea;
+}
+
+/* “已确认”小标签 */
+.confirm-tag{
+  margin-right:auto;
+  font-size:13px;
+  color:#2f6a3a;
+  background:#e6f4ea;
+  border-radius:999px;
+  padding:2px 10px;
+}
+
+/* 方角按钮：风格跟右上角 + 添加 一致 */
+.pill-btn{
+  background:#325e21;
+  color:#fff;
+  border:none;
+  padding:6px 16px;
+  border-radius:4px;          /* ← 改成方角 */
+  cursor:pointer;
+  font-size:14px;
+  transition:all .15s ease-out;
+}
+
+.pill-btn:hover{
+  background:#2a4e1b;
+}
+
+/* 删除 = 浅红色边框按钮 */
+.pill-btn.pill-danger{
+  background:#fff5f5;
+  color:#c0392b;
+  border:1px solid #f3c4c4;
+}
+.pill-btn.pill-danger:hover{
+  background:#ffeaea;
+  border-radius:4px;          /* ← 改成方角 */
+}
+
+
 .card, .block{ overflow:hidden; }
 
 /* 时间列稍宽一些 */
@@ -1420,9 +1943,27 @@ const infoHtml = `
   overflow-y:auto;           /* ⭐ 关键：内部滚动 */
   padding-right:4px;         /* 给滚动条留点空间 */
 }
-.file-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+.file-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 0;
+  gap: 12px;                /* 新增一点间距 */
+}
 .file-row + .file-row{ border-top:1px dashed #e6eae6; }
-.file-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.file-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  flex:1;                   /* ★ 左侧占满剩余空间，文字会被截断，而不是把按钮挤下去 */
+}
+/* 按钮区域固定在最右边，不被挤压 */
+.file-actions{
+  display:flex;
+  gap:8px;
+  flex-shrink:0;            /* ★ 不允许变窄、换行 */
+}
 .file-icon{
   flex:0 0 28px; width:28px; height:28px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
@@ -1430,7 +1971,16 @@ const infoHtml = `
   border:1px solid #cfe8d6;
 }
 .file-info{ min-width:0; }
-.file-title{ font-weight:700; font-size:15px; color:#20361f; max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.file-title{
+  font-weight:700;
+  font-size:15px;
+  color:#20361f;
+  max-width: 100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
 .file-meta{ margin-top:2px; color:#6b776b; font-size:12px; }
 
 .btn.light{ background:#f6faf6; color:#2f6a3a; border:1px solid #dfe7df; }
@@ -1459,5 +2009,43 @@ const infoHtml = `
   cursor: not-allowed;
 }
 
+.card{
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 10px rgba(0,0,0,.1);
+  padding:40px;
+  box-sizing:border-box;
+}
+
+/* 新增：卡片里“单独存在的标题”与内容拉开一点 */
+.card > .section-title{
+  margin-bottom: 20px;
+}
+
+/* card-head 里那种标题（工作经历、项目经历…）整体和下面内容也拉开一点 */
+.card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 16px;          /* ★ 原来没有这行，补上 */
+}
+/* 让时间选择器在 .inline 里跟普通 input 对齐、同样大小 */
+.inline .el-date-editor {
+  width: 100%;          /* 填满这一列 */
+}
+
+/* 外层 wrapper：控制高度、圆角、内边距 */
+.inline .el-input__wrapper {
+  box-sizing: border-box;
+  padding: 8px 10px;    /* 和你 .inline input 一样 */
+  height: 38px;         /* 和你 .inline input 一样 */
+  border-radius: 6px;   /* 和其它输入框统一 */
+}
+
+/* 内部文字大小保持一致 */
+.inline .el-input__inner {
+  font-size: 16px;
+  line-height: 1.2;
+}
 
 </style>
