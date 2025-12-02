@@ -282,17 +282,68 @@ export default {
 .breadcrumb{background:#fff;padding:20px 30px;margin-bottom:20px;border-radius:10px;font-size:20px;color:#333;box-shadow:0 2px 10px rgba(0,0,0,.1)}
 .crumb-item{color:#333;font-weight:600}.crumb-item.muted{color:#666;font-weight:500}.crumb-sep{color:#aaa;margin:0 8px}
 
-.search-bar{background:#fff;padding:30px 40px;margin-bottom:20px;border-radius:10px;display:flex;gap:20px;align-items:flex-end;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-.search-group{display:flex;flex-direction:column;gap:8px;min-width:220px}
-.search-group label{font-size:18px;color:#333;font-weight:600}
-.search-input-wrapper{position:relative}
-.search-input{width:100%;padding:10px 14px;border:1px solid #d8d8d8;border-radius:6px;font-size:16px}
-.search-input:focus{border-color:#325e21}
-.search-btn{padding:12px 26px;background:#325e21;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(50,94,33,.3);cursor:pointer}
+/* 搜索区域：整块居中 */
+.search-bar{
+  background:#fff;
+  padding:30px 40px;
+  margin-bottom:20px;
+  border-radius:10px;
+  display:flex;
+  gap:24px;
+  align-items:flex-end;
+  justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
 
+/* 每一组：label + input 同一行 */
+.search-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:280px;
+}
+
+/* label 固定宽度，防止换行 */
+.search-group label{
+  font-size:18px;
+  color:#333;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+/* 输入框占满剩余空间 */
+.search-input-wrapper{
+  position:relative;
+  flex:1;
+}
+
+.search-input{
+  width:100%;
+  padding:10px 14px;
+  border:1px solid #d8d8d8;
+  border-radius:6px;
+  font-size:16px;
+}
+.search-input:focus{border-color:#325e21}
+
+/* 按钮高度跟输入框对齐 */
+.search-btn{
+  height:44px;
+  padding:0 26px;
+  background:#325e21;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(50,94,33,.3);
+  cursor:pointer;
+}
+
+/* ===== 列表样式 ===== */
 .job-list{background:#fff;padding:30px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 15px rgba(0,0,0,.08)}
 .job-item{display:flex;align-items:center;padding:22px 28px;border:1px solid #e8e8e8;border-radius:10px;position:relative;transition:.2s;margin-bottom:15px}
-.job-item:hover{border-color:#325e21;box-shadow:0 4px 16px rgba(50,94,33,.15);transform:translateY(-1px)}
+.job-item:hover{border-color:#325e21;box-shadow:0 4px 16px rgba(0,0,0,.15);transform:translateY(-1px)}
 .job-logo{width:96px;height:96px;margin-right:28px;flex-shrink:0;border:2px solid #eee;border-radius:12px;padding:8px;display:flex;align-items:center;justify-content:center;background:#fff}
 .job-logo img{width:100%;height:100%;object-fit:contain}
 

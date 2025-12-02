@@ -3,7 +3,7 @@
     <!-- 顶部面包屑与操作 -->
     <div class="breadcrumb-wrapper">
       <div class="breadcrumb">
-        <router-link to="/student-home" class="breadcrumb-link">主页</router-link>
+        <router-link to="/student-home" class="breadcrumb-link">首页</router-link>
         <span class="breadcrumb-separator">></span>
         <span class="breadcrumb-current">简历编辑器</span>
 

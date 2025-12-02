@@ -220,35 +220,55 @@ export default {
   font-weight: 600;
 }
 
+/* 顶部工具栏：整体居中 */
 .toolbar {
   background: #fff;
   border-radius: 10px;
-  padding: 16px;
+  padding: 26px 40px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;   /* ⭐ 居中 */
   align-items: center;
   margin-bottom: 16px;
 }
 
+/* 搜索区：横向布局居中 */
 .search {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 20px;       /* ⭐ 与刚刚保持一致 */
 }
+/* label 可选，如果你想加标题可以写 */
+.search label {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 输入框 */
 .search input {
-  width: 260px;
-  padding: 10px 12px;
-  border: 1px solid #e2e2e2;
+  width: 260px;               /* ⭐ 统一宽度 */
+  padding: 10px 14px;
+  border: 1px solid #d8d8d8;
   border-radius: 6px;
   font-size: 16px;
 }
+.search input:focus {
+  border-color: #325e21;
+}
+
+/* 搜索按钮 */
 .search button {
-  padding: 10px 20px;
+  height: 44px;              /* ⭐ 与输入框高度对齐 */
+  padding: 0 26px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #2a5e23;
   color: #fff;
   cursor: pointer;
   font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(42,94,35,.3);
 }
 
 .list {
