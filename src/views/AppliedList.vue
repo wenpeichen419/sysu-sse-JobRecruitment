@@ -1,131 +1,144 @@
 <template> 
   <div class="job-center-page">
-    <!-- 面包屑 -->
-    <div class="breadcrumb">
-      <span class="crumb-item">投递情况</span>
-      <span class="crumb-sep"> / </span>
-      <span class="crumb-item muted">已投递岗位</span>
-    </div>
+    <!-- 面包屑：跟简历页同款 -->
+    <ZyBreadcrumb
+  :items="[
+    { label: '首页', to: '/student-home' },
+    { label: '投递情况', to: '/applied' },
+    { label: '已投递岗位' }
+  ]"
+>
+  <template #actions>
+    <button class="btn" @click="fetchJobs">
+      刷新
+    </button>
+  </template>
+</ZyBreadcrumb>
 
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <div class="search-group">
-        <label>职位名称</label>
-        <div class="search-input-wrapper">
-          <input v-model="q.title" placeholder="输入职位名称" class="search-input" />
+    <!-- ⭐ 内容区域整体包一层，给固定面包屑让出空间 -->
+    <div class="job-center-body">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <div class="search-group">
+          <label>职位名称</label>
+          <div class="search-input-wrapper">
+            <input v-model="q.title" placeholder="输入职位名称" class="search-input" />
+          </div>
         </div>
+
+        <div class="search-group">
+          <label>公司名称</label>
+          <div class="search-input-wrapper">
+            <input v-model="q.company" placeholder="输入公司名称" class="search-input" />
+          </div>
+        </div>
+
+        <button class="search-btn" @click="handleSearch">搜索</button>
       </div>
 
-      <div class="search-group">
-        <label>公司名称</label>
-        <div class="search-input-wrapper">
-          <input v-model="q.company" placeholder="输入公司名称" class="search-input" />
-        </div>
-      </div>
-
-      <button class="search-btn" @click="handleSearch">搜索</button>
-    </div>
-
-    <!-- 列表 -->
-    <div class="job-list">
-      <div
-        v-for="(item, index) in paged"
-        :key="item.application_id || item.job_id || index"
-        class="job-item"
-        @click="toDetail(item.application_id)"
-      >
-        <!-- 公司 logo -->
-        <div class="job-logo">
-          <img
-            :src="item.logo_url"
-            :alt="item.company_name"
-            @error="onLogoError"
-          />
-        </div>
-
-        <div class="job-left-info">
-          <div class="job-title">
-            <span class="link">{{ item.title }}</span>
-            <span
-              class="status-chip"
-              :class="statusClass(item.status)"
-            >
-              {{ statusText(item.status) }}
-            </span>
-          </div>
-          <div class="job-details">
-            <span class="salary">{{ item.salary_range }}</span>
-            <span class="divider">|</span>
-            <span class="location">{{ item.address }}</span>
-            <span class="divider">|</span>
-            <span class="type-tag">{{ item.work_nature }}</span>
-          </div>
-        </div>
-
-        <div class="job-right-info">
-          <div class="company-name">
-            <span class="link">{{ item.company_name }}</span>
-          </div>
-          <div class="company-details">
-            <span class="department">{{ item.department || '—' }}</span>
-            <span class="divider">|</span>
-            <span>投递时间 {{ formatDateTime(item.submitted_at) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="paged.length === 0" class="empty-state">暂无数据</div>
-    </div>
-
-    <!-- 分页 -->
-    <div class="pagination" v-if="totalPages > 1">
-      <span class="page-info">共 {{ filtered.length }} 条数据</span>
-      <div class="page-controls">
-        <button class="page-btn" :disabled="page === 1" @click="setPage(1)">1</button>
-        <button
-          v-for="p in middlePages"
-          :key="p"
-          class="page-btn"
-          :class="{ active: page === p }"
-          @click="setPage(p)"
+      <!-- 列表 -->
+      <div class="job-list">
+        <div
+          v-for="(item, index) in paged"
+          :key="item.application_id || item.job_id || index"
+          class="job-item"
+          @click="toDetail(item.application_id)"
         >
-          {{ p }}
-        </button>
-        <span v-if="showEllipsis" class="ellipsis">…</span>
-        <button
-          class="page-btn"
-          :class="{ active: page === totalPages }"
-          @click="setPage(totalPages)"
-        >
-          {{ totalPages }}
-        </button>
-        <button class="page-next" :disabled="page >= totalPages" @click="setPage(page + 1)">›</button>
+          <!-- 公司 logo -->
+          <div class="job-logo">
+            <img
+              :src="item.logo_url"
+              :alt="item.company_name"
+              @error="onLogoError"
+            />
+          </div>
+
+          <div class="job-left-info">
+            <div class="job-title">
+              <span class="link">{{ item.title }}</span>
+              <span
+                class="status-chip"
+                :class="statusClass(item.status)"
+              >
+                {{ statusText(item.status) }}
+              </span>
+            </div>
+            <div class="job-details">
+              <span class="salary">{{ item.salary_range }}</span>
+              <span class="divider">|</span>
+              <span class="location">{{ item.address }}</span>
+              <span class="divider">|</span>
+              <span class="type-tag">{{ item.work_nature }}</span>
+            </div>
+          </div>
+
+          <div class="job-right-info">
+            <div class="company-name">
+              <span class="link">{{ item.company_name }}</span>
+            </div>
+            <div class="company-details">
+              <span class="department">{{ item.department || '—' }}</span>
+              <span class="divider">|</span>
+              <span>投递时间 {{ formatDateTime(item.submitted_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="paged.length === 0" class="empty-state">暂无数据</div>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pagination" v-if="totalPages > 1">
+        <span class="page-info">共 {{ filtered.length }} 条数据</span>
+        <div class="page-controls">
+          <button class="page-btn" :disabled="page === 1" @click="setPage(1)">1</button>
+          <button
+            v-for="p in middlePages"
+            :key="p"
+            class="page-btn"
+            :class="{ active: page === p }"
+            @click="setPage(p)"
+          >
+            {{ p }}
+          </button>
+          <span v-if="showEllipsis" class="ellipsis">…</span>
+          <button
+            class="page-btn"
+            :class="{ active: page === totalPages }"
+            @click="setPage(totalPages)"
+          >
+            {{ totalPages }}
+          </button>
+          <button class="page-next" :disabled="page >= totalPages" @click="setPage(page + 1)">›</button>
+        </div>
       </div>
     </div>
+    <!-- /job-center-body -->
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 
-// 后端服务前缀（和你 Postman 里的一样）
+// 后端服务前缀
 const API_PREFIX = 'http://localhost:8080'
 
 export default {
   name: 'AppliedList',
+  components: { ZyBreadcrumb },
   data () {
     return {
-      raw: [], // 原始数据（职位列表）
+      raw: [],                // 原始数据（职位列表）
       q: { title: '', company: '' }, // 搜索条件
-      page: 1, // 当前页
-      size: 5 // 每页数据条数
+      page: 1,                // 当前页
+      size: 5                 // 每页数据条数
     }
   },
   created () {
     this.fetchJobs()
   },
   computed: {
-    // 根据标题和公司名称进行过滤
     filtered () {
       let arr = this.raw.slice()
 
@@ -141,16 +154,13 @@ export default {
 
       return arr
     },
-    // 计算分页总页数
     totalPages () {
       return Math.max(1, Math.ceil(this.filtered.length / this.size))
     },
-    // 当前页的数据
     paged () {
       const start = (this.page - 1) * this.size
       return this.filtered.slice(start, start + this.size)
     },
-    // 计算页码范围
     middlePages () {
       const res = []
       const start = Math.max(2, this.page - 1)
@@ -158,7 +168,6 @@ export default {
       for (let i = start; i <= end; i++) res.push(i)
       return res
     },
-    // 是否需要显示省略号
     showEllipsis () {
       return this.totalPages > 5 && this.page < this.totalPages - 2
     }
@@ -168,13 +177,9 @@ export default {
       if (!str) return ''
       return str.replace('T', ' ').slice(0, 19)
     },
-
-    // logo 加载失败：简单隐藏 broken 图标（也可以换成固定占位图）
     onLogoError (e) {
       e.target.style.visibility = 'hidden'
     },
-
-    // 获取职位列表数据
     async fetchJobs () {
       try {
         const token = localStorage.getItem('token')
@@ -184,28 +189,24 @@ export default {
         }
 
         const response = await axios.get(
-          'http://localhost:8080/position-center/delivery/list',
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          `${API_PREFIX}/position-center/delivery/list`,
+          { headers: { Authorization: `Bearer ${token}` } }
         )
 
         const jobs = (response.data &&
           response.data.data &&
           response.data.data.jobs) || []
 
-        // ⭐ 关键：把 /files/... 转成 http://localhost:8080/files/...
         this.raw = jobs.map(j => {
-          let logo = j.logo_url || ''    // 后端字段名就是 logo_url
+          let logo = j.logo_url || ''
 
           if (logo && !/^https?:\/\//.test(logo)) {
-            // 相对路径：补上后端前缀
             logo = `${API_PREFIX}${logo.startsWith('/') ? '' : '/'}${logo}`
           }
 
           return {
             ...j,
-            logo_url: logo   // 统一成可以直接 <img> 用的完整 URL
+            logo_url: logo
           }
         })
 
@@ -214,8 +215,6 @@ export default {
         console.error('获取职位列表失败', error)
       }
     },
-
-    // 根据投递状态返回不同的文本（兼容数字码 + 中文）
     statusText (status) {
       if (typeof status === 'string' && isNaN(Number(status))) {
         return status
@@ -232,8 +231,6 @@ export default {
       const s = Number(status)
       return map[s] || '未知状态'
     },
-
-    // 状态对应的小标签 class
     statusClass (status) {
       if (status === '已投递') return 'submitted'
       if (status === '候选人' || status === '面试邀请') return 'interview'
@@ -248,21 +245,15 @@ export default {
 
       return ''
     },
-
-    // 搜索操作，重置页码为1
     handleSearch () {
       this.page = 1
     },
-
-    // 设置当前页
     setPage (p) {
       if (p >= 1 && p <= this.totalPages) {
         this.page = p
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
-
-    // 查看投递详情：使用 application_id 作为路由参数
     toDetail (applicationId) {
       if (!applicationId) {
         console.warn('当前列表项没有 application_id：', applicationId)
@@ -270,7 +261,7 @@ export default {
       }
       this.$router.push({
         name: 'AppliedDetail',
-        params: { id: applicationId }   // /applied/:id => /student/applications/{id}
+        params: { id: applicationId }
       })
     }
   }
@@ -278,11 +269,17 @@ export default {
 </script>
 
 <style scoped>
-.job-center-page{min-height:100vh;background:#f0f0f0;padding:20px 40px}
-.breadcrumb{background:#fff;padding:20px 30px;margin-bottom:20px;border-radius:10px;font-size:20px;color:#333;box-shadow:0 2px 10px rgba(0,0,0,.1)}
-.crumb-item{color:#333;font-weight:600}.crumb-item.muted{color:#666;font-weight:500}.crumb-sep{color:#aaa;margin:0 8px}
+.job-center-page{
+  min-height:100vh;
+  background:#f5f5f5;   /* 可选：顺便和简历页保持一致 */
+  padding:30px;         /* ⭐ 左右都改成 30px，和面包屑一致 */
+}
 
-/* 搜索区域：整块居中 */
+.job-center-body{
+  padding-top:100px;     /* 留出面包屑高度，这个保持不变 */
+}
+
+/* 下面这些保持不动即可 */
 .search-bar{
   background:#fff;
   padding:30px 40px;
@@ -295,8 +292,7 @@ export default {
   box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
-/* 每一组：label + input 同一行 */
-.search-group{
+.search-group {
   display:flex;
   align-items:center;
   gap:10px;
@@ -341,33 +337,164 @@ export default {
 }
 
 /* ===== 列表样式 ===== */
-.job-list{background:#fff;padding:30px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 15px rgba(0,0,0,.08)}
-.job-item{display:flex;align-items:center;padding:22px 28px;border:1px solid #e8e8e8;border-radius:10px;position:relative;transition:.2s;margin-bottom:15px}
-.job-item:hover{border-color:#325e21;box-shadow:0 4px 16px rgba(0,0,0,.15);transform:translateY(-1px)}
-.job-logo{width:96px;height:96px;margin-right:28px;flex-shrink:0;border:2px solid #eee;border-radius:12px;padding:8px;display:flex;align-items:center;justify-content:center;background:#fff}
-.job-logo img{width:100%;height:100%;object-fit:contain}
+.job-list{
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  margin-bottom:20px;
+  box-shadow:0 2px 15px rgba(0,0,0,.08);
+}
+.job-item{
+  display:flex;
+  align-items:center;
+  padding:22px 28px;
+  border:1px solid #e8e8e8;
+  border-radius:10px;
+  position:relative;
+  transition:.2s;
+  margin-bottom:15px;
+}
+.job-item:hover{
+  border-color:#325e21;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+  transform:translateY(-1px);
+}
+.job-logo{
+  width:96px;
+  height:96px;
+  margin-right:28px;
+  flex-shrink:0;
+  border:2px solid #eee;
+  border-radius:12px;
+  padding:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+}
+.job-logo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
 
-.job-left-info{flex:1;display:flex;flex-direction:column;gap:10px}
-.job-title{font-size:22px;font-weight:700;color:#325e21;display:flex;align-items:center;gap:10px}
-.link{cursor:pointer}
-.status-chip{padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700}
-.status-chip.submitted{background:#eef6ee;color:#2e7d32}
-.status-chip.interview{background:#e6f2e6;color:#2e7d32}
-.status-chip.passed{background:#e8f5e9;color:#1b5e20}
-.status-chip.stopped{background:#fdecea;color:#c62828}
+.job-left-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.job-title{
+  font-size:22px;
+  font-weight:700;
+  color:#325e21;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.link{cursor:pointer;}
+.status-chip{
+  padding:4px 10px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:700;
+}
+.status-chip.submitted{background:#eef6ee;color:#2e7d32;}
+.status-chip.interview{background:#e6f2e6;color:#2e7d32;}
+.status-chip.passed{background:#e8f5e9;color:#1b5e20;}
+.status-chip.stopped{background:#fdecea;color:#c62828;}
 
-.job-details{display:flex;gap:10px;font-size:16px;color:#666}
-.salary{color:#ff6b35;font-weight:700}
-.job-right-info{flex:1;display:flex;flex-direction:column;gap:8px;align-items:flex-end;text-align:right}
-.company-name{font-size:18px;font-weight:700;color:#325e21}
-.company-details{display:flex;gap:12px;font-size:16px;color:#666}
+.job-details{
+  display:flex;
+  gap:10px;
+  font-size:16px;
+  color:#666;
+}
+.salary{
+  color:#ff6b35;
+  font-weight:700;
+}
+.job-right-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  text-align:right;
+}
+.company-name{
+  font-size:18px;
+  font-weight:700;
+  color:#325e21;
+}
+.company-details{
+  display:flex;
+  gap:12px;
+  font-size:16px;
+  color:#666;
+}
 
-.empty-state{text-align:center;color:#999;padding:80px 20px}
+.empty-state{
+  text-align:center;
+  color:#999;
+  padding:80px 20px;
+}
 
-.pagination{background:#fff;padding:18px 24px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-.page-info{font-size:16px;color:#666}
-.page-controls{display:flex;gap:8px}
-.page-btn,.page-next{min-width:40px;height:40px;border:1px solid #d8d8d8;border-radius:6px;background:#fff;cursor:pointer}
-.page-btn.active{background:#325e21;color:#fff;border-color:#325e21}
-.ellipsis{color:#999}
+.pagination{
+  background:#fff;
+  padding:18px 24px;
+  border-radius:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+.page-info{
+  font-size:16px;
+  color:#666;
+}
+.page-controls{
+  display:flex;
+  gap:8px;
+}
+.page-btn,.page-next{
+  min-width:40px;
+  height:40px;
+  border:1px solid #d8d8d8;
+  border-radius:6px;
+  background:#fff;
+  cursor:pointer;
+}
+.page-btn.active{
+  background:#325e21;
+  color:#fff;
+  border-color:#325e21;
+}
+.ellipsis{color:#999;}
+/* ===== 面包屑下方操作条（复刻简历编辑器样式） ===== */
+.breadcrumb-action-bar{
+  position: fixed;
+  top: 105px;            /* 与简历页面 breadcrumb-wrapper 完全一致 */
+  right: 40px;           /* 挨着右侧边缘（你简历页是 30px，可自由调） */
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+}
+
+.btn{
+  background:#325e21;
+  color:#fff;
+  border:none;
+  padding:8px 16px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:16px;
+  font-weight:500;
+  transition:.15s;
+}
+.btn:hover{
+  background:#2a4e1b;
+}
+
+
 </style>

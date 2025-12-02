@@ -1,24 +1,24 @@
 <template>
   <div class="resume-page">
     <!-- 顶部面包屑与操作 -->
-    <div class="breadcrumb-wrapper">
-      <div class="breadcrumb">
-        <router-link to="/student-home" class="breadcrumb-link">首页</router-link>
-        <span class="breadcrumb-separator">></span>
-        <span class="breadcrumb-current">简历编辑器</span>
+    <ZyBreadcrumb
+  :items="[
+    { label: '首页', to: '/student-home' },
+    { label: '简历编辑器' }
+  ]"
+>
+  <template #actions>
+    <button class="btn ghost" @click="clearAll">清空</button>
+    <template v-if="!editing">
+      <button class="btn" @click="startEdit">编辑</button>
+    </template>
+    <template v-else>
+      <button class="btn ghost" @click="cancelEdit">取消</button>
+      <button class="btn primary" @click="saveResume">确认</button>
+    </template>
+  </template>
+</ZyBreadcrumb>
 
-        <div class="edit-actions">
-          <button class="btn ghost" @click="clearAll">清空</button>
-          <template v-if="!editing">
-            <button class="btn" @click="startEdit">编辑</button>
-          </template>
-          <template v-else>
-            <button class="btn ghost" @click="cancelEdit">取消</button>
-            <button class="btn primary" @click="saveResume">确认</button>
-          </template>
-        </div>
-      </div>
-    </div>
 
     <div class="layout">
       <!-- 左侧目录 -->
@@ -543,7 +543,7 @@ import { ElMessage } from 'element-plus'
 import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
 import { ElDatePicker } from 'element-plus'
-
+import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 const STORAGE_KEY = 'resume_data_v1'
 
 // ================= 接口前缀 & 路径 =================
@@ -594,7 +594,7 @@ function getAuthHeaders () {
 
 export default {
   name: 'ResumeManage',
-  components: { ElDatePicker },
+  components: { ZyBreadcrumb,ElDatePicker },
 
   data () {
     return {
@@ -1703,12 +1703,6 @@ const infoHtml = `
 <style scoped>
 /* 页面/面包屑/按钮 */
 .resume-page{ padding:30px; background:#f5f5f5; min-height:calc(100vh - 105px); }
-.breadcrumb-wrapper{ position:fixed; top:105px; left:0; width:100%; background:#f4f4f4; padding:20px 30px; z-index:1000; height:115px; }
-.breadcrumb{ background:#fff; padding:20px 30px; box-shadow:0 2px 10px rgba(0,0,0,.1); font-size:20px; width:97.3%; position:fixed; }
-.breadcrumb-link{ color:#325e21; text-decoration:none; font-weight:500; }
-.breadcrumb-link:hover{text-decoration:underline;}
-.breadcrumb-separator{ margin:0 10px; color:#666; }
-.breadcrumb-current{ color:#666; }
 .edit-actions{ float:right; display:flex; gap:10px; }
 .btn{ background:#325e21; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:16px; }
 .btn:hover{ background:#2a4e1b; }

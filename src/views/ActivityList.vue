@@ -1,80 +1,85 @@
 <template>
   <div class="page">
-    <!-- 面包屑： 首页 / 活动列表 -->
-    <div class="breadcrumb">
-      <router-link :to="{ name: 'StudentHome' }" class="link">首页</router-link>
-      <span class="sep"> / </span>
-      <span class="current">活动列表</span>
-    </div>
+    <!-- 统一面包屑： 首页 > 活动列表 -->
+    <ZyBreadcrumb
+      :items="[
+        { label: '首页', to: '/student-home' },
+        { label: '活动列表' }
+      ]"
+    />
 
-    <!-- 顶部：搜索 -->
-    <div class="toolbar">
-      <div class="search">
-        <input
-          v-model="keyword"
-          placeholder="搜索标题/地点..."
-          @keyup.enter="doSearch"
-        />
-        <button @click="doSearch">搜索</button>
+    <!-- 内容主体：往下错开，避免被固定面包屑挡住 -->
+    <div class="page-body">
+      <!-- 顶部：搜索 -->
+      <div class="toolbar">
+        <div class="search">
+          <input
+            v-model="keyword"
+            placeholder="搜索标题/地点..."
+            @keyup.enter="doSearch"
+          />
+          <button @click="doSearch">搜索</button>
+        </div>
       </div>
-    </div>
 
-    <!-- 列表 -->
-    <div class="list">
+      <!-- 列表 -->
+      <div class="list">
+        <div
+          v-for="a in shown"
+          :key="a.key"
+          class="row"
+          @click="goDetail(a)"
+        >
+          <div class="datebox">
+            <div class="d">{{ split(a.date).day }}</div>
+            <div class="ym">
+              {{ split(a.date).year }}.{{ split(a.date).month }}
+            </div>
+          </div>
+          <div class="body">
+            <div class="title">
+              {{ a.title }}
+            </div>
+            <div class="meta">{{ a.place }}</div>
+            <div class="summary">{{ a.summary }}</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+
+        <div v-if="shown.length === 0" class="empty">暂无相关活动</div>
+      </div>
+
+      <!-- 分页 -->
       <div
-        v-for="a in shown"
-        :key="a.key"
-        class="row"
-        @click="goDetail(a)"
+        v-if="shown.length > 0 && totalPages > 1"
+        class="pagination"
       >
-        <div class="datebox">
-          <div class="d">{{ split(a.date).day }}</div>
-          <div class="ym">
-            {{ split(a.date).year }}.{{ split(a.date).month }}
-          </div>
-        </div>
-        <div class="body">
-          <div class="title">
-            {{ a.title }}
-          </div>
-          <div class="meta">{{ a.place }}</div>
-          <div class="summary">{{ a.summary }}</div>
-        </div>
-        <div class="arrow">›</div>
+        <button
+          :disabled="page === 1"
+          @click="handlePrevPage"
+        >
+          上一页
+        </button>
+
+        <span class="info">
+          第 {{ page }} / {{ totalPages }} 页，
+          共 {{ total }} 条记录
+        </span>
+
+        <button
+          :disabled="page === totalPages"
+          @click="handleNextPage"
+        >
+          下一页
+        </button>
       </div>
-
-      <div v-if="shown.length === 0" class="empty">暂无相关活动</div>
-    </div>
-
-    <!-- 分页 -->
-    <div
-      v-if="shown.length > 0 && totalPages > 1"
-      class="pagination"
-    >
-      <button
-        :disabled="page === 1"
-        @click="handlePrevPage"
-      >
-        上一页
-      </button>
-
-      <span class="info">
-        第 {{ page }} / {{ totalPages }} 页，
-        共 {{ total }} 条记录
-      </span>
-
-      <button
-        :disabled="page === totalPages"
-        @click="handleNextPage"
-      >
-        下一页
-      </button>
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 
 // 单独建一个本文件内部用的 axios 实例，直接打到 8080
 const api = axios.create({
@@ -107,6 +112,7 @@ function splitYMD (str) {
 
 export default {
   name: 'ActivityList',
+  components: { ZyBreadcrumb },
   data () {
     return {
       keyword: this.$route.query.q || '',
@@ -194,175 +200,150 @@ export default {
 </script>
 
 <style scoped>
-.page {
-  padding: 20px 24px;
-  background: #f5f6f7;
-  min-height: 100vh;
-  font-size: 20px; 
+.page{
+  padding:30px;
+  background:#f5f6f7;
+  min-height:100vh;
+  font-size:20px;
 }
 
-.breadcrumb {
-  background: #fff;
-  padding: 14px 18px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-}
-.link {
-  color: #2a5e23;
-  text-decoration: none;
-}
-.sep {
-  color: #999;
-  margin: 0 6px;
-}
-.current {
-  color: #333;
-  font-weight: 600;
+/* 内容主体要往下错开，避免被固定面包屑挡住 */
+.page-body{
+  padding-top:85px;
 }
 
 /* 顶部工具栏：整体居中 */
-.toolbar {
-  background: #fff;
-  border-radius: 10px;
-  padding: 26px 40px;
-  display: flex;
-  justify-content: center;   /* ⭐ 居中 */
-  align-items: center;
-  margin-bottom: 16px;
+.toolbar{
+  background:#fff;
+  border-radius:10px;
+  padding:26px 40px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-bottom:16px;
 }
 
 /* 搜索区：横向布局居中 */
-.search {
-  display: flex;
-  align-items: center;
-  gap: 20px;       /* ⭐ 与刚刚保持一致 */
+.search{
+  display:flex;
+  align-items:center;
+  gap:20px;
 }
-/* label 可选，如果你想加标题可以写 */
-.search label {
-  font-size: 18px;
-  color: #333;
-  font-weight: 600;
-  white-space: nowrap;
+.search input{
+  width:260px;
+  padding:10px 14px;
+  border:1px solid #d8d8d8;
+  border-radius:6px;
+  font-size:16px;
 }
-
-/* 输入框 */
-.search input {
-  width: 260px;               /* ⭐ 统一宽度 */
-  padding: 10px 14px;
-  border: 1px solid #d8d8d8;
-  border-radius: 6px;
-  font-size: 16px;
+.search input:focus{
+  border-color:#325e21;
 }
-.search input:focus {
-  border-color: #325e21;
-}
-
-/* 搜索按钮 */
-.search button {
-  height: 44px;              /* ⭐ 与输入框高度对齐 */
-  padding: 0 26px;
-  border: none;
-  border-radius: 8px;
-  background: #2a5e23;
-  color: #fff;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(42,94,35,.3);
+.search button{
+  height:44px;
+  padding:0 26px;
+  border:none;
+  border-radius:8px;
+  background:#2a5e23;
+  color:#fff;
+  cursor:pointer;
+  font-size:16px;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(42,94,35,.3);
 }
 
-.list {
-  background: #fff;
-  border-radius: 10px;
-  padding: 6px 6px 2px;
+/* 列表 */
+.list{
+  background:#fff;
+  border-radius:10px;
+  padding:6px 6px 2px;
 }
-.row {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  padding: 16px;
-  border-radius: 10px;
-  margin: 8px 0;
-  cursor: pointer;
-  transition: 0.15s;
+.row{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  padding:16px;
+  border-radius:10px;
+  margin:8px 0;
+  cursor:pointer;
+  transition:.15s;
 }
-.row:hover {
-  background: #f8faf9;
+.row:hover{
+  background:#f8faf9;
 }
-.datebox {
-  width: 68px;
-  min-width: 68px;
-  border-right: 1px solid #eee;
-  text-align: center;
-  padding-right: 10px;
-  color: #666;
+.datebox{
+  width:68px;
+  min-width:68px;
+  border-right:1px solid #eee;
+  text-align:center;
+  padding-right:10px;
+  color:#666;
 }
-.datebox .d {
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
+.datebox .d{
+  font-size:22px;
+  font-weight:800;
+  line-height:1;
 }
-.datebox .ym {
-  font-size: 12px;
+.datebox .ym{
+  font-size:12px;
 }
-.body {
-  flex: 1;
-  min-width: 0;
+.body{
+  flex:1;
+  min-width:0;
 }
-.title {
-  font-weight: 700;
-  font-size: 20px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #163a24;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.title{
+  font-weight:700;
+  font-size:20px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#163a24;
+  display:flex;
+  align-items:center;
+  gap:6px;
 }
-.meta {
-  font-size: 13px;
-  color: #8aa39a;
-  margin-top: 4px;
+.meta{
+  font-size:13px;
+  color:#8aa39a;
+  margin-top:4px;
 }
-.summary {
-  font-size: 14px;
-  color: #555;
-  margin-top: 6px;
+.summary{
+  font-size:14px;
+  color:#555;
+  margin-top:6px;
 }
-.arrow {
-  color: #96a0a5;
-  font-size: 22px;
-  padding: 0 6px;
+.arrow{
+  color:#96a0a5;
+  font-size:22px;
+  padding:0 6px;
 }
-.empty {
-  text-align: center;
-  color: #999;
-  padding: 48px 0;
+.empty{
+  text-align:center;
+  color:#999;
+  padding:48px 0;
 }
 
-
-/* 分页样式 */
-.pagination {
-  margin-top: 20px;
-  padding: 10px;
-  text-align: center;
+/* 分页 */
+.pagination{
+  margin-top:20px;
+  padding:10px;
+  text-align:center;
 }
-.pagination button {
-  padding: 8px 14px;
-  margin: 0 8px;
-  border-radius: 6px;
-  border: 1px solid #d3d3d3;
-  background: #fff;
-  cursor: pointer;
-  font-size: 14px;
+.pagination button{
+  padding:8px 14px;
+  margin:0 8px;
+  border-radius:6px;
+  border:1px solid #d3d3d3;
+  background:#fff;
+  cursor:pointer;
+  font-size:14px;
 }
-.pagination button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.pagination button:disabled{
+  cursor:not-allowed;
+  opacity:.5;
 }
-.pagination .info {
-  font-size: 14px;
-  color: #666;
+.pagination .info{
+  font-size:14px;
+  color:#666;
 }
 </style>
