@@ -96,7 +96,10 @@
         </div>
 
         <div class="search-group">
-          <label>薪资范围</label>
+          <label>
+            薪资范围
+            <span class="salary-hint">（单位: 校招年薪:k，实习日薪:元）</span>
+          </label>
           <div class="salary-range-inputs">
             <input 
               v-model.number="minSalary" 
@@ -149,7 +152,7 @@
         <div class="job-left-info">
           <div class="job-title">{{ job.title }}</div>
           <div class="job-details">
-            <span class="salary">{{ formatSalaryRangeToK(job.salary_range) }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(job.salary_range, job.work_nature) }}</span>
             <span class="divider">|</span>
             <span class="location">{{ job.address }}</span>
             <span class="divider">|</span>
@@ -550,25 +553,45 @@ export default {
 
 <style scoped>
 .job-center-page {
-  min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  min-height: calc(100vh - 105px);
+  background: #f5f5f5;
+  padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px;
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 20px;
-  color: #333;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
 }
 
 .crumb-item {
   color: #666;
   font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 搜索筛选栏 */
@@ -581,6 +604,7 @@ export default {
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 85px; /* 为固定面包屑留出空间 */
 }
 
 .search-row {
@@ -614,6 +638,13 @@ export default {
   font-size: 18px;
   color: #333;
   font-weight: 600;
+}
+
+.salary-hint {
+  font-size: 14px;
+  color: #999;
+  font-weight: 400;
+  margin-left: 5px;
 }
 
 .search-input-wrapper {
@@ -697,8 +728,8 @@ export default {
 
 .search-btn {
   padding: 12px 20px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
-  color: white;
+  background: #325e21;
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -709,10 +740,11 @@ export default {
   box-shadow: 0 2px 8px rgba(50, 94, 33, 0.3);
   height: 48px;
   flex: 1;
+  cursor:pointer;
 }
 
 .search-btn:hover {
-  background: linear-gradient(135deg, #4a7c35 0%, #325e21 100%);
+  background: #2a4e1b;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(50, 94, 33, 0.4);
 }
@@ -738,7 +770,7 @@ export default {
 }
 
 .favorite-btn:hover {
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(50, 94, 33, 0.3);
@@ -896,39 +928,31 @@ export default {
 /* 收藏图标 */
 .favorite-icon {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 45px;
-  height: 45px;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 2px solid #dee2e6;
 }
 
 .favorite-icon:hover {
-  transform: translateY(-2px) scale(1.08);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, #fff8e1 0%, #ffe082 100%);
-  border-color: #ffb300;
+  transform: translateY(-50%) scale(1.2);
 }
 
 .star {
-  font-size: 24px;
-  color: #adb5bd;
+  font-size: 40px;
+  color: #d0d0d0;
   transition: all 0.3s ease;
-  filter: none;
   line-height: 1;
 }
 
 .favorite-icon:hover .star {
   color: #ff9800;
+  filter: drop-shadow(0 0 6px rgba(255, 152, 0, 0.4));
 }
 
 .star.active {
@@ -938,18 +962,12 @@ export default {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: starPulse 0.5s ease;
-  filter: drop-shadow(0 0 8px rgba(255, 152, 0, 0.4));
-}
-
-.favorite-icon:has(.star.active) {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border-color: #ff9800;
-  box-shadow: 0 3px 10px rgba(255, 152, 0, 0.3);
+  filter: drop-shadow(0 0 10px rgba(255, 152, 0, 0.6));
 }
 
 @keyframes starPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.25); }
+  50% { transform: scale(1.3); }
 }
 
 /* 加载中状态 */
@@ -1113,12 +1131,11 @@ export default {
   }
 
   .favorite-icon {
-    top: 10px;
     right: 10px;
   }
 
   .star {
-    font-size: 24px;
+    font-size: 36px;
   }
 }
 </style>
