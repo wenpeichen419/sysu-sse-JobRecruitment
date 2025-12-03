@@ -28,7 +28,7 @@
           </div>
           
           <div class="job-meta">
-            <span class="salary">{{ formatSalaryRangeToK(jobInfo.salary) }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(jobInfo.salary, jobInfo.type) }}</span>
             <span class="divider">|</span>
             <span class="location">{{ jobInfo.location }}</span>
             <span class="divider">|</span>
@@ -90,10 +90,10 @@
           <h2 class="section-title">工作地址</h2>
           <div class="address-container-inline">
             <div class="address-text-inline">{{ jobInfo.address }}</div>
-            <button class="btn-view-map-inline" @click="openInAMap">
-              <span class="map-icon">📍</span>
-              在高德地图中查看
-            </button>
+              <button class="btn-view-map-inline" @click="openInAMap">
+                <img src="@/assets/map_logo.png" alt="地图" class="map-logo">
+                <span class="btn-text">点击查看地图</span>
+              </button>
           </div>
         </div>
       </div>
@@ -508,25 +508,16 @@ async loadJobDetail() {
       })
     },
     
-    // 在高德地图中打开
+    // 在百度地图中打开
     openInAMap() {
       if (!this.jobInfo.address) {
         alert('地址信息不完整')
         return
       }
       
-      // 如果有经纬度，使用精确定位（优先）
-      if (this.jobInfo.longitude && this.jobInfo.latitude) {
-        // 使用经纬度打开地图（最精确）
-        const name = encodeURIComponent(this.companyInfo.name || '工作地点')
-        const url = `https://uri.amap.com/marker?position=${this.jobInfo.longitude},${this.jobInfo.latitude}&name=${name}&coordinate=gaode&callnative=1`
-        window.open(url, '_blank')
-      } else {
-        // 使用地址搜索（备选方案）
-        const query = encodeURIComponent(this.jobInfo.address)
-        const url = `https://www.amap.com/search?query=${query}`
-        window.open(url, '_blank')
-      }
+      const address = encodeURIComponent(this.jobInfo.address)
+      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=yourCompanyName`
+      window.open(url, '_blank')
     },
     
     // ✅ 图片加载失败时显示默认图片
@@ -599,39 +590,67 @@ async loadJobDetail() {
 
 <style scoped>
 .job-detail-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 105px);
   background: #f5f5f5;
   padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px;
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
 }
 
 .crumb-item {
-  color: #666;
+  color: #325e21;
   cursor: pointer;
-  transition: color 0.3s;
+  font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .crumb-item:hover {
-  color: #2a5e23;
+  text-decoration: underline;
 }
 
 .crumb-item.current {
-  color: #333;
+  color: #666;
   cursor: default;
 }
 
+.crumb-item.current:hover {
+  text-decoration: none;
+}
+
 .separator {
-  margin: 0 8px;
-  color: #999;
+  margin: 0 10px;
+  color: #666;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 内容布局 */
@@ -639,6 +658,7 @@ async loadJobDetail() {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding-top: 85px; /* 为固定面包屑留出空间 */
 }
 
 .main-content {
@@ -859,7 +879,7 @@ async loadJobDetail() {
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
   border: none;
   border-radius: 8px;
@@ -873,7 +893,7 @@ async loadJobDetail() {
 }
 
 .btn-view-map-inline:hover {
-  background: linear-gradient(135deg, #4a7c35 0%, #325e21 100%);
+  background: #2a4e1b;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(50, 94, 33, 0.4);
 }
@@ -882,8 +902,14 @@ async loadJobDetail() {
   transform: translateY(0);
 }
 
-.map-icon {
-  font-size: 20px;
+.map-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.btn-text {
+  white-space: nowrap;
 }
 
 /* 侧边栏信息卡片 */
@@ -1162,7 +1188,7 @@ async loadJobDetail() {
   padding: 10px 0;
 }
 
-/* 鍝嶅簲寮?*/
+/* 响应式 */
 @media (max-width: 1024px) {
   .content-wrapper {
     flex-direction: column;
