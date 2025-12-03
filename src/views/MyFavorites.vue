@@ -28,7 +28,7 @@
         <div class="job-left-info">
           <div class="job-title">{{ job.title }}</div>
           <div class="job-details">
-            <span class="salary">{{ formatSalaryRangeToK(job.salary) }}</span>
+            <span class="salary">{{ formatSalaryRangeToK(job.salary, job.type) }}</span>
             <span class="divider">|</span>
             <span class="location">{{ job.location }}</span>
             <span class="divider">|</span>
@@ -290,39 +290,67 @@ export default {
 <style scoped>
 /* 复用JobCenter的样式 */
 .my-favorites-page {
-  min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  min-height: calc(100vh - 105px);
+  background: #f5f5f5;
+  padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px;
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 18px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
 }
 
 .crumb-item {
-  color: #666;
+  color: #325e21;
   cursor: pointer;
-  transition: color 0.3s;
+  font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .crumb-item:hover {
-  color: #325e21;
+  text-decoration: underline;
 }
 
 .crumb-item.current {
-  color: #333;
+  color: #666;
   cursor: default;
 }
 
+.crumb-item.current:hover {
+  text-decoration: none;
+}
+
 .separator {
-  margin: 0 8px;
-  color: #999;
+  margin: 0 10px;
+  color: #666;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 岗位列表 */
@@ -332,6 +360,7 @@ export default {
   border-radius: 12px;
   margin-bottom: 20px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  margin-top: 85px; /* 为固定面包屑留出空间 */
 }
 
 .job-item {
@@ -468,32 +497,25 @@ export default {
 /* 收藏图标 */
 .favorite-icon {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 45px;
-  height: 45px;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border: 2px solid #ff9800;
-  box-shadow: 0 3px 10px rgba(255, 152, 0, 0.3);
-  border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 10;
 }
 
 .favorite-icon:hover {
-  transform: translateY(-2px) scale(1.08);
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+  transform: translateY(-50%) scale(1.2);
 }
 
 .star {
-  font-size: 24px;
-  color: #adb5bd;
+  font-size: 40px;
+  color: #ff9800;
   transition: all 0.3s ease;
-  filter: none;
   line-height: 1;
 }
 
@@ -503,7 +525,7 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 8px rgba(255, 152, 0, 0.4));
+  filter: drop-shadow(0 0 10px rgba(255, 152, 0, 0.6));
 }
 
 /* 空状态 */
@@ -621,12 +643,11 @@ export default {
   }
 
   .favorite-icon {
-    top: 10px;
     right: 10px;
   }
 
   .star {
-    font-size: 24px;
+    font-size: 36px;
   }
 }
 </style>
