@@ -1,116 +1,128 @@
 <template>
   <div class="detail-page">
-    <!-- 有数据时的内容 -->
-    <div v-if="job">
-      <!-- 面包屑 -->
-      <div class="breadcrumb">
-        <router-link class="crumb-link" to="/applied">投递情况</router-link>
-        <span class="sep">></span>
-        <span class="muted">{{ companyName }} - {{ jobTitle }}</span>
-      </div>
+    <!-- 统一面包屑：简历同款 -->
+    <ZyBreadcrumb
+      :items="[
+        { label: '首页', to: '/student-home' },
+        { label: '投递情况', to: '/applied' },
+        {
+          label:
+            companyName && jobTitle
+              ? companyName + ' - ' + jobTitle
+              : '投递详情'
+        }
+      ]"
+    />
 
-      <!-- 头部信息栏 -->
-      <div class="meta-card">
-        <div class="row">
-          <div class="meta-item">
-            <span class="label">投递时间：</span>
-            <b>{{ submittedAtText }}</b>
-          </div>
-          <div class="meta-item">
-            <span class="label">状态更新时间：</span>
-            <b>{{ updatedAtText }}</b>
-          </div>
-          <div class="meta-item right">
-            <span class="label">投递岗位：</span>
-            <b>{{ jobTitle }}</b>
-          </div>
-        </div>
-
-        <!-- 状态横幅 -->
-        <div class="state-banner" :class="bannerClass">
-          <div class="state-left">
-            <div class="state-title">
-              当前状态：{{ stateTitle }}
+    <!-- 内容主体：往下错开，避免被固定面包屑挡住 -->
+    <div class="detail-body">
+      <!-- 有数据时的内容 -->
+      <div v-if="job">
+        <!-- 头部信息栏 -->
+        <div class="meta-card">
+          <div class="row">
+            <div class="meta-item">
+              <span class="label">投递时间：</span>
+              <b>{{ submittedAtText }}</b>
             </div>
-            <div class="state-desc">{{ stateDescription }}</div>
+            <div class="meta-item">
+              <span class="label">状态更新时间：</span>
+              <b>{{ updatedAtText }}</b>
+            </div>
+            <div class="meta-item right">
+              <span class="label">投递岗位：</span>
+              <b>{{ jobTitle }}</b>
+            </div>
           </div>
-          <div class="state-icon">
-            <div v-if="normalizedStatus === '已投递'" class="ico paper">📄</div>
-            <div v-else-if="normalizedStatus === '候选人'" class="ico mail">✉️</div>
-            <div v-else-if="normalizedStatus === '邀请面试'" class="ico like">👍</div>
-            <div v-else-if="normalizedStatus === 'Offer'" class="ico check">✅</div>
-            <div v-else-if="normalizedStatus === '拒绝'" class="ico sad">🙁</div>
+
+          <!-- 状态横幅 -->
+          <div class="state-banner" :class="bannerClass">
+            <div class="state-left">
+              <div class="state-title">
+                当前状态：{{ stateTitle }}
+              </div>
+              <div class="state-desc">{{ stateDescription }}</div>
+            </div>
+            <div class="state-icon">
+              <div v-if="normalizedStatus === '已投递'" class="ico paper">📄</div>
+              <div v-else-if="normalizedStatus === '候选人'" class="ico mail">✉️</div>
+              <div v-else-if="normalizedStatus === '邀请面试'" class="ico like">👍</div>
+              <div v-else-if="normalizedStatus === 'Offer'" class="ico check">✅</div>
+              <div v-else-if="normalizedStatus === '拒绝'" class="ico sad">🙁</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="step-card">
+          <div class="step-line">
+            <!-- 第一步：投递岗位 -->
+            <div
+              class="step-node"
+              :class="{ done: step >= 1, danger: normalizedStatus === '拒绝' && step === 1 }"
+            >
+              <span class="check">
+                {{ normalizedStatus === '拒绝' && step === 1 ? '✕' : '✓' }}
+              </span>
+              <div class="label">投递岗位</div>
+            </div>
+
+            <div
+              class="step-bar"
+              :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
+            ></div>
+
+            <!-- 第二步：邀请面试 / 候选人 -->
+            <div
+              class="step-node"
+              :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
+            >
+              <span class="check">
+                {{ normalizedStatus === '拒绝' && step <= 2 ? '✕' : '✓' }}
+              </span>
+              <div class="label">邀请面试</div>
+            </div>
+
+            <div class="step-bar" :class="{ done: step === 3 }"></div>
+
+            <!-- 第三步：Offer -->
+            <div class="step-node" :class="{ done: step === 3 }">
+              <span class="check">✓</span>
+              <div class="label">Offer</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 进度条 -->
-      <div class="step-card">
-        <div class="step-line">
-          <!-- 第一步：投递岗位 -->
-          <div
-            class="step-node"
-            :class="{ done: step >= 1, danger: normalizedStatus === '拒绝' && step === 1 }"
-          >
-            <span class="check">
-              {{ normalizedStatus === '拒绝' && step === 1 ? '✕' : '✓' }}
-            </span>
-            <div class="label">投递岗位</div>
-          </div>
-
-          <div
-            class="step-bar"
-            :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
-          ></div>
-
-          <!-- 第二步：邀请面试 / 候选人 -->
-          <div
-            class="step-node"
-            :class="{ done: step >= 2, danger: normalizedStatus === '拒绝' && step <= 2 }"
-          >
-            <span class="check">
-              {{ normalizedStatus === '拒绝' && step <= 2 ? '✕' : '✓' }}
-            </span>
-            <div class="label">邀请面试</div>
-          </div>
-
-          <div class="step-bar" :class="{ done: step === 3 }"></div>
-
-          <!-- 第三步：Offer -->
-          <div class="step-node" :class="{ done: step === 3 }">
-            <span class="check">✓</span>
-            <div class="label">Offer</div>
-          </div>
-        </div>
+      <!-- 没数据时的兜底提示 -->
+      <div v-else class="empty">
+        暂未查询到该投递记录，请返回列表重试。
       </div>
-    </div>
-
-    <!-- 没数据时的兜底提示 -->
-    <div v-else class="empty">
-      暂未查询到该投递记录，请返回列表重试。
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 
 export default {
   name: 'AppliedDetail',
   props: { id: [String, Number] },
-  data() {
+  components: { ZyBreadcrumb },
+  data () {
     return {
       job: null
     }
   },
-  created() {
+  created () {
     const id = this.$route.params.id || this.id
     this.getJobDetail(id)
   },
   computed: {
     // 把后端各种状态统一成逻辑状态：
     // "面试邀请"/"邀请面试" -> "邀请面试"，"通过" -> "Offer"
-    normalizedStatus() {
+    normalizedStatus () {
       if (!this.job || !this.job.status) return ''
       const s = this.job.status
       if (s === '面试邀请' || s === '邀请面试') return '邀请面试'
@@ -119,7 +131,7 @@ export default {
     },
 
     // 公司名称
-    companyName() {
+    companyName () {
       if (!this.job) return ''
       return (
         this.job.company_name ||
@@ -129,7 +141,7 @@ export default {
     },
 
     // 职位名称
-    jobTitle() {
+    jobTitle () {
       if (!this.job) return ''
       return (
         this.job.title ||
@@ -139,7 +151,7 @@ export default {
     },
 
     // 进度条所在步骤：1/2/3
-    step() {
+    step () {
       if (!this.job) return 1
       const s = this.normalizedStatus
       if (s === '已投递') return 1
@@ -150,12 +162,12 @@ export default {
     },
 
     // 状态标题：保留后端原始文案（面试邀请 / 通过 等）
-    stateTitle() {
+    stateTitle () {
       return this.job ? this.job.status : ''
     },
 
     // 状态描述：逻辑上用 normalizedStatus
-    stateDescription() {
+    stateDescription () {
       if (!this.job) return ''
       if (this.job.status_detail) return this.job.status_detail
 
@@ -175,7 +187,7 @@ export default {
     },
 
     // 横幅颜色 class 映射
-    bannerClass() {
+    bannerClass () {
       if (!this.job) return ''
       const s = this.normalizedStatus
       if (s === '已投递') return 'submitted'
@@ -186,18 +198,18 @@ export default {
     },
 
     // 格式化后的时间
-    submittedAtText() {
+    submittedAtText () {
       if (!this.job || !this.job.submitted_at) return ''
       return this.formatDateTime(this.job.submitted_at)
     },
-    updatedAtText() {
+    updatedAtText () {
       if (!this.job || !this.job.updated_at) return ''
       return this.formatDateTime(this.job.updated_at)
     }
   },
   methods: {
     // 直接用 /student/applications/{id} 详情接口
-    async getJobDetail(id) {
+    async getJobDetail (id) {
       try {
         const token = localStorage.getItem('token')
         if (!token) {
@@ -221,7 +233,7 @@ export default {
     },
 
     // 时间格式化：兼容 "2025-11-25T21:55:42" 和 "2025-11-25 21:55:42"
-    formatDateTime(str) {
+    formatDateTime (str) {
       if (!str) return ''
       return str.replace('T', ' ').slice(0, 19)
     }
@@ -230,192 +242,153 @@ export default {
 </script>
 
 <style scoped>
-.detail-page {
-  min-height: calc(100vh - 120px);
-  background: #f0f0f0;
-  padding: 20px 40px;
+.detail-page{
+  min-height:calc(100vh - 120px);
+  background:#f0f0f0;
+  padding:30px;
 }
 
-.breadcrumb {
-  background: #fff;
-  padding: 18px 24px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  font-size: 18px;
+/* 内容主体：让出面包屑的高度 */
+.detail-body{
+  padding-top:85px;
 }
 
-.crumb-link {
-  color: #325e21;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.sep {
-  margin: 0 8px;
-  color: #aaa;
-}
-
-.muted {
-  color: #666;
-}
-
-.meta-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 22px 26px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+.meta-card{
+  background:#fff;
+  border-radius:10px;
+  padding:22px 26px;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
 }
 
 /* 头部信息：自动换行，不会太挤 */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 32px;
-  align-items: center;
-  color: #555;
-  margin-bottom: 16px;
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 32px;
+  align-items:center;
+  color:#555;
+  margin-bottom:16px;
 }
 
-.meta-item {
-  font-size: 15px;
-  display: flex;
-  align-items: center;
+.meta-item{
+  font-size:15px;
+  display:flex;
+  align-items:center;
 }
-
-.meta-item .label {
-  color: #666;
+.meta-item .label{
+  color:#666;
 }
-
-.meta-item b {
-  font-weight: 600;
+.meta-item b{
+  font-weight:600;
 }
-
-.meta-item.right {
-  margin-left: auto;
+.meta-item.right{
+  margin-left:auto;
 }
 
 /* 状态横幅 */
-.state-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 8px;
-  padding: 22px 26px;
-  background: #eaf7e7;
-  border: 1px solid #dbeed8;
+.state-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-radius:8px;
+  padding:22px 26px;
+  background:#eaf7e7;
+  border:1px solid #dbeed8;
 }
-
-.state-banner.submitted {
-  background: #eaf7e7;
+.state-banner.submitted{
+  background:#eaf7e7;
 }
-
-.state-banner.interview {
-  background: #eaf7e7;
+.state-banner.interview{
+  background:#eaf7e7;
 }
-
-.state-banner.passed {
-  background: #eaf7e7;
+.state-banner.passed{
+  background:#eaf7e7;
 }
-
-.state-banner.stopped {
-  background: #fdeaea;
-  border-color: #f2cdcd;
+.state-banner.stopped{
+  background:#fdeaea;
+  border-color:#f2cdcd;
 }
-
-.state-title {
-  font-size: 26px;
-  color: #2e7d32;
-  font-weight: 800;
-  margin-bottom: 8px;
+.state-title{
+  font-size:26px;
+  color:#2e7d32;
+  font-weight:800;
+  margin-bottom:8px;
 }
-
-.state-banner.stopped .state-title {
-  color: #c62828;
+.state-banner.stopped .state-title{
+  color:#c62828;
 }
-
-.state-desc {
-  color: #555;
-  font-size: 16px;
+.state-desc{
+  color:#555;
+  font-size:16px;
 }
-
-.state-icon .ico {
-  font-size: 56px;
-  opacity: 0.85;
+.state-icon .ico{
+  font-size:56px;
+  opacity:.85;
 }
 
 /* 进度条 */
-.step-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 28px;
-  margin-top: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+.step-card{
+  background:#fff;
+  border-radius:10px;
+  padding:28px;
+  margin-top:16px;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+.step-line{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin:40px 0;
+}
+.step-node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.step-node .check{
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:6px solid #d8ead3;
+  background:#fff;
+  font-size:30px;
+  color:#2e7d32;
+  font-weight:700;
+}
+.step-node.done .check{
+  border-color:#2e7d32;
+}
+.step-node.danger .check{
+  border-color:#e57373;
+  color:#c62828;
+}
+.step-node .label{
+  margin-top:6px;
+  color:#333;
+  font-weight:600;
+}
+.step-bar{
+  flex:1;
+  height:10px;
+  border-radius:5px;
+  background:#e9ecef;
+  margin:0 16px;
+}
+.step-bar.done{
+  background:#2e7d32;
+}
+.step-bar.danger{
+  background:linear-gradient(90deg,#c62828 0%,#e57373 100%);
 }
 
-.step-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 40px 0;
-}
-
-.step-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.step-node .check {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 6px solid #d8ead3;
-  background: #fff;
-  font-size: 30px;
-  color: #2e7d32;
-  font-weight: 700;
-}
-
-.step-node.done .check {
-  border-color: #2e7d32;
-}
-
-.step-node.danger .check {
-  border-color: #e57373;
-  color: #c62828;
-}
-
-.step-node .label {
-  margin-top: 6px;
-  color: #333;
-  font-weight: 600;
-}
-
-.step-bar {
-  flex: 1;
-  height: 10px;
-  border-radius: 5px;
-  background: #e9ecef;
-  margin: 0 16px;
-}
-
-.step-bar.done {
-  background: #2e7d32;
-}
-
-.step-bar.danger {
-  background: linear-gradient(90deg, #c62828 0%, #e57373 100%);
-}
-
-.empty {
-  margin-top: 40px;
-  text-align: center;
-  color: #888;
-  font-size: 16px;
+.empty{
+  margin-top:40px;
+  text-align:center;
+  color:#888;
+  font-size:16px;
 }
 </style>

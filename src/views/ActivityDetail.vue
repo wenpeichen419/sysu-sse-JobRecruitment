@@ -1,45 +1,48 @@
 <template>
   <div class="page">
-    <!-- 面包屑： 首页 / 活动列表 / 活动详情 -->
-    <div class="breadcrumb">
-      <router-link :to="{ name: 'StudentHome' }" class="link">首页</router-link>
-      <span class="sep"> / </span>
-      <router-link :to="{ name: 'ActivityList' }" class="link">活动列表</router-link>
-      <span class="sep"> / </span>
-      <span class="current">活动详情</span>
-    </div>
+    <!-- 统一面包屑： 首页 / 活动列表 / 活动详情 -->
+    <ZyBreadcrumb
+      :items="[
+        { label: '首页', to: '/student-home' },
+        { label: '活动列表', to: { name: 'ActivityList' } },
+        { label: '活动详情' }
+      ]"
+    />
 
-    <div class="card">
-      <div v-if="loading">正在加载活动信息...</div>
+    <!-- 内容主体：让出面包屑的高度 -->
+    <div class="page-body">
+      <div class="card">
+        <div v-if="loading">正在加载活动信息...</div>
 
-      <div v-else>
-        <!-- 标题 -->
-        <h1 class="title">{{ activity.title }}</h1>
+        <div v-else>
+          <!-- 标题 -->
+          <h1 class="title">{{ activity.title }}</h1>
 
-        <!-- 时间 / 地点 / 面向对象 -->
-        <div
-          class="meta"
-          v-if="activity.date || activity.place || activity.targetAudience"
-        >
-          <span v-if="activity.date">
-            {{ split(activity.date).year }}-{{ split(activity.date).month }}-{{ split(activity.date).day }}
-          </span>
+          <!-- 时间 / 地点 / 面向对象 -->
+          <div
+            class="meta"
+            v-if="activity.date || activity.place || activity.targetAudience"
+          >
+            <span v-if="activity.date">
+              {{ split(activity.date).year }}-{{ split(activity.date).month }}-{{ split(activity.date).day }}
+            </span>
 
-          <span class="dot" v-if="activity.date && activity.place">·</span>
-          <span v-if="activity.place">{{ activity.place }}</span>
+            <span class="dot" v-if="activity.date && activity.place">·</span>
+            <span v-if="activity.place">{{ activity.place }}</span>
 
-          <span class="dot" v-if="activity.targetAudience">·</span>
-          <span v-if="activity.targetAudience">
-            面向：{{ activity.targetAudience }}
-          </span>
-        </div>
+            <span class="dot" v-if="activity.targetAudience">·</span>
+            <span v-if="activity.targetAudience">
+              面向：{{ activity.targetAudience }}
+            </span>
+          </div>
 
-        <!-- 内容（这里用 event_summary） -->
-        <div class="content">
-          <p v-for="(line, i) in activity.content" :key="i">
-            {{ line }}
-          </p>
-          <p v-if="!activity.content.length">暂无详细介绍</p>
+          <!-- 内容（这里用 event_summary） -->
+          <div class="content">
+            <p v-for="(line, i) in activity.content" :key="i">
+              {{ line }}
+            </p>
+            <p v-if="!activity.content.length">暂无详细介绍</p>
+          </div>
         </div>
       </div>
     </div>
@@ -48,6 +51,7 @@
 
 <script>
 import axios from 'axios'
+import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 
 // 带 baseURL + token 的 axios 实例
 const api = axios.create({
@@ -66,6 +70,7 @@ api.interceptors.request.use(
 
 export default {
   name: 'ActivityDetail',
+  components: { ZyBreadcrumb },
   // 路由里用 :id 传过来的
   props: {
     id: {
@@ -124,27 +129,14 @@ export default {
 
 <style scoped>
 .page{
-  padding:20px 24px;
+  padding:30px;
   background:#f5f6f7;
   min-height:100vh;
 }
-.breadcrumb{
-  background:#fff;
-  padding:14px 18px;
-  border-radius:10px;
-  margin-bottom:16px;
-}
-.link{
-  color:#2a5e23;
-  text-decoration:none;
-}
-.sep{
-  color:#999;
-  margin:0 6px;
-}
-.current{
-  color:#333;
-  font-weight:600;
+
+/* 把内容整体往下挪，避免被固定面包屑挡住 */
+.page-body{
+  padding-top:85px;
 }
 
 .card{
