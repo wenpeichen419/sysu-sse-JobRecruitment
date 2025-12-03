@@ -30,9 +30,10 @@ export function formatSalaryToK(salary) {
  * - "30及以上" → "30k及以上"
  * - "面议" → "面议"
  * @param {string} salaryRange 薪资范围字符串
+ * @param {string} workNature 工作性质（"校招"或"实习"），可选参数
  * @returns {string} 以k为单位的薪资范围字符串
  */
-export function formatSalaryRangeToK(salaryRange) {
+export function formatSalaryRangeToK(salaryRange, workNature = '') {
   // 处理空值、null、undefined、"0"、"0-0"
   if (!salaryRange || salaryRange === '' || salaryRange === '0' || salaryRange === '0-0') {
     return '面议';
@@ -47,7 +48,12 @@ export function formatSalaryRangeToK(salaryRange) {
   if (salaryRange.includes('及以上')) {
     const salary = parseInt(salaryRange);
     if (!isNaN(salary) && salary > 0) {
-      return formatSalaryToK(salary) + '及以上';
+      // 实习岗位不加k，校招加k
+      if (workNature === '实习') {
+        return salary + '及以上';
+      } else {
+        return formatSalaryToK(salary) + '及以上';
+      }
     }
     return '面议';
   }
@@ -58,15 +64,32 @@ export function formatSalaryRangeToK(salaryRange) {
     const minSalary = parseInt(parts[0].trim());
     const maxSalary = parseInt(parts[1].trim());
     
+    // 如果都是0，显示面议
+    if (minSalary === 0 && maxSalary === 0) {
+      return '面议';
+    }
+    
     // 确保都是有效数字且大于0
     if (!isNaN(minSalary) && !isNaN(maxSalary) && minSalary > 0 && maxSalary > 0) {
-      return formatSalaryToK(minSalary) + '-' + formatSalaryToK(maxSalary);
+      // 实习岗位：直接显示数字（日薪）
+      if (workNature === '实习') {
+        return minSalary + '-' + maxSalary;
+      }
+      // 校招岗位：加k单位（年薪）
+      else {
+        return formatSalaryToK(minSalary) + '-' + formatSalaryToK(maxSalary);
+      }
     }
   } else if (parts.length === 1) {
     // 处理单个薪资数字（如"30"）
     const salary = parseInt(parts[0].trim());
     if (!isNaN(salary) && salary > 0) {
-      return formatSalaryToK(salary);
+      // 实习岗位不加k，校招加k
+      if (workNature === '实习') {
+        return String(salary);
+      } else {
+        return formatSalaryToK(salary);
+      }
     }
   }
   
