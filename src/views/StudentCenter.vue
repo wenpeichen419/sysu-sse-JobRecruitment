@@ -70,13 +70,13 @@
       </div>
     </div>
 
-    <!-- 企业侧简历预览和功能按钮区 -->
+    <!-- 企业侧信息预览和功能按钮区 -->
     <div class="main-content-area">
-      <!-- 企业侧简历预览 -->
+      <!-- 企业侧信息预览 -->
       <div class="resume-preview-card">
         <div class="preview-header">
-          <h3 class="preview-title">企业侧简历预览</h3>
-          <span class="preview-subtitle">您的简历在企业HR眼中的展示如下</span>
+          <h3 class="preview-title">企业侧信息预览</h3>
+          <span class="preview-subtitle">您的信息在企业HR眼中的展示如下</span>
         </div>
         
         <div class="resume-content">
@@ -438,20 +438,59 @@ export default {
 
 <style scoped>
 .student-center-page {
-  min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  min-height: calc(100vh - 105px);
+  background: #f5f5f5;
+  padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px;
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 18px;
-  color: #666;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
+}
+
+.crumb-item {
+  color: #325e21;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.crumb-item:hover {
+  text-decoration: underline;
+}
+
+.crumb-item.current {
+  color: #666;
+  cursor: default;
+}
+
+.crumb-item.current:hover {
+  text-decoration: none;
 }
 
 /* 欢迎信息框 */
@@ -462,6 +501,7 @@ export default {
   margin-bottom: 30px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
   position: relative;
+  margin-top: 85px; /* 为固定面包屑留出空间 */
 }
 
 .welcome-left {
@@ -566,7 +606,7 @@ export default {
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
   border-radius: 20px;
   font-size: 16px;
@@ -616,7 +656,7 @@ export default {
 }
 
 .action-btn.edit-info {
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
 }
 
@@ -656,7 +696,7 @@ export default {
   align-items: stretch;
 }
 
-/* 企业侧简历预览 */
+/* 企业侧信息预览 */
 .resume-preview-card {
   background: white;
   padding: 30px;
@@ -982,7 +1022,7 @@ export default {
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
 }
 
