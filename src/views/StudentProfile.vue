@@ -10,7 +10,8 @@
     <div class="profile-container">
       <!-- 左侧导航栏 -->
       <div class="sidebar">
-        <h3 class="sidebar-title">编辑信息</h3>
+        <div class="sidebar-title">编辑信息</div>
+        <div class="title-divider"></div>
         <ul class="nav-list">
           <li 
             v-for="nav in navItems" 
@@ -603,39 +604,67 @@ export default {
 
 <style scoped>
 .profile-page {
-  min-height: 100vh;
-  background: #f0f0f0;
-  padding: 20px 40px;
+  min-height: calc(100vh - 105px);
+  background: #f5f5f5;
+  padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px; /* 上 右 下 左：增加左边距，让文字往右移动 */
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 18px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
 }
 
 .crumb-item {
-  color: #666;
+  color: #325e21;
   cursor: pointer;
-  transition: color 0.3s;
+  font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .crumb-item:hover {
-  color: #325e21;
+  text-decoration: underline;
 }
 
 .crumb-item.current {
-  color: #333;
+  color: #666;
   cursor: default;
 }
 
+.crumb-item.current:hover {
+  text-decoration: none;
+}
+
 .separator {
-  margin: 0 8px;
-  color: #999;
+  margin: 0 10px;
+  color: #666;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 主容器 */
@@ -643,24 +672,37 @@ export default {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding-top: 85px;
+  width: 100%;
+  position: relative;
 }
 
-/* 左侧导航栏 */
+/* 左侧导航栏 - 固定定位 */
 .sidebar {
-  width: 220px;
+  position: fixed;
+  top: 220px;
+  left: 30px;
+  width: 280px;
   background: white;
-  border-radius: 12px;
-  padding: 25px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  position: sticky;
-  top: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  height: auto;
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
 }
 
 .sidebar-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #325e21;
-  margin: 0 0 20px 25px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.title-divider {
+  height: 1px;
+  background: #d8d8d8;
+  margin-bottom: 20px;
 }
 
 .nav-list {
@@ -673,51 +715,53 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 15px 25px;
+  padding: 15px 0;
   cursor: pointer;
-  transition: all 0.3s;
-  font-size: 16px;
+  font-size: 22px;
   color: #666;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s;
 }
 
 .nav-list li:hover {
-  background: #f8fdf8;
   color: #325e21;
+  background: #f8f9fa;
 }
 
 .nav-list li.active {
-  background: linear-gradient(90deg, #eef5ee 0%, #d4e7d4 100%);
   color: #325e21;
-  font-weight: 600;
-  border-left: 4px solid #325e21;
+  font-weight: bold;
+  background: #f0f7f0;
 }
 
 .nav-icon {
-  font-size: 20px;
+  display: none;
 }
 
 /* 右侧内容区 */
 .content-area {
   flex: 1;
   min-width: 0;
+  margin-left: 320px;
 }
 
 .section-card {
   background: white;
-  padding: 35px;
-  border-radius: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  box-sizing: border-box;
   margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   scroll-margin-top: 20px;
 }
 
 .section-title {
-  font-size: 24px;
-  font-weight: 700;
   color: #325e21;
+  font-size: 30px;
+  font-weight: bold;
+  border-left: 4px solid #325e21;
+  padding-left: 12px;
   margin: 0 0 25px 0;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
 }
 
 /* 头像上传 */
@@ -764,7 +808,7 @@ export default {
   justify-content: center;
   gap: 10px;
   padding: 20px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
   border: none;
   border-radius: 50%;
@@ -810,7 +854,7 @@ export default {
 }
 
 .form-item label {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #666;
 }
@@ -818,9 +862,9 @@ export default {
 .form-item input,
 .form-item select {
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 16px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  font-size: 18px;
   transition: all 0.3s;
 }
 
@@ -828,7 +872,7 @@ export default {
 .form-item select:focus {
   outline: none;
   border-color: #325e21;
-  background: #f8fdf8;
+  background: #fff;
 }
 
 /* 标签选择器 */
@@ -841,9 +885,9 @@ export default {
 .tag-select {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 16px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  font-size: 18px;
   cursor: pointer;
   transition: all 0.3s;
   background: white;
@@ -910,16 +954,16 @@ export default {
   display: flex;
   justify-content: flex-end;
   gap: 15px;
-  padding: 30px 35px;
+  padding: 40px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .btn-cancel,
 .btn-submit {
-  padding: 14px 40px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -928,33 +972,44 @@ export default {
 }
 
 .btn-cancel {
-  background: #f5f5f5;
-  color: #666;
+  background: #6c757d;
+  color: #fff;
 }
 
 .btn-cancel:hover {
-  background: #e8e8e8;
+  background: #5a6268;
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
 }
 
 .btn-submit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(50, 94, 33, 0.3);
+  background: #2a4e1b;
 }
 
 /* 响应式 */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .content-area {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 992px) {
   .profile-container {
     flex-direction: column;
   }
   
   .sidebar {
-    width: 100%;
     position: static;
+    width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+  }
+  
+  .content-area {
+    margin-left: 0;
   }
   
   .nav-list {
