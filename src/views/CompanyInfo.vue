@@ -33,7 +33,7 @@
                 <span class="stat-label">简历处理率</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ companyInfo.daysAgo }}天前</span>
+                <span class="stat-value">{{ companyInfo.recentActivity }}</span>
                 <span class="stat-label">单位最近登录</span>
               </div>
             </div>
@@ -60,15 +60,15 @@
               </div>
               <button class="view-map-btn" @click="openInAMap">
                 <img src="@/assets/map_logo.png" alt="地图" class="map-logo">
-                <span class="btn-text">在高德地图中查看</span>
+                <span class="btn-text">点击查看地图</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 职位列表 -->
+        <!-- 该企业的其他在招岗位 -->
         <div class="section-card">
-          <h2 class="section-title">职位名称</h2>
+          <h2 class="section-title">该企业的其他在招岗位</h2>
           <div class="job-list">
             <div 
               class="job-row" 
@@ -78,6 +78,9 @@
             >
               <span class="job-name">{{ job.name }}</span>
               <span class="job-date">{{ job.publishDate }}</span>
+            </div>
+            <div v-if="companyInfo.positions.length === 0" class="no-jobs">
+              暂无其他在招岗位
             </div>
           </div>
         </div>
@@ -135,6 +138,7 @@
 
 <script>
 import { getCompanyDetail } from '@/api/company'
+import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 
 export default {
   name: 'CompanyInfo',
@@ -142,6 +146,8 @@ export default {
     return {
       companyId: null,
       loading: false,
+      baseURL: 'http://localhost:8080',
+      blobUrls: [],
       
       // 企业信息
       companyInfo: {
@@ -149,7 +155,7 @@ export default {
         logo: require('@/assets/BDance_logo.png'),
         openPositions: 0,
         progressRate: 0,
-        daysAgo: 0,
+        recentActivity: '',
         nature: '',
         industry: '',
         scale: '',
@@ -171,20 +177,48 @@ export default {
     // 加载企业信息
     this.loadCompanyInfo()
   },
+  beforeUnmount() {
+    // ✅ 释放 blob URLs，避免内存泄漏
+    revokeBlobUrls(this.blobUrls)
+    this.blobUrls = []
+  },
   methods: {
     // 加载企业信息
     async loadCompanyInfo() {
       try {
         this.loading = true
+        
+        // 清理之前的 blob URLs
+        revokeBlobUrls(this.blobUrls)
+        this.blobUrls = []
+        
         const response = await getCompanyDetail(this.companyId)
+        
+        console.log('【企业详情API响应】', response)
+        
+        // ✅ 加载企业logo（使用正确的字段名 company_logo_url）
+        let logoUrl = require('@/assets/BDance_logo.png')
+        if (response.company_logo_url) {
+          try {
+            const loadedLogoUrl = await loadImageWithAuth(response.company_logo_url, this.baseURL)
+            if (loadedLogoUrl) {
+              logoUrl = loadedLogoUrl
+              if (logoUrl.startsWith('blob:')) {
+                this.blobUrls.push(logoUrl)
+              }
+            }
+          } catch (error) {
+            console.error('【加载企业logo失败】', error)
+          }
+        }
         
         // 映射接口数据到页面
         this.companyInfo = {
           name: response.company_name || '',
-          logo: response.logo_url || require('@/assets/BDance_logo.png'),
+          logo: logoUrl,
           openPositions: response.statistics?.active_positions || 0,
           progressRate: parseInt(response.statistics?.resume_process_rate) || 0,
-          daysAgo: this.calculateDaysAgo(response.statistics?.recent_activity),
+          recentActivity: response.statistics?.recent_activity || '暂无记录',
           nature: response.company_nature || '',
           industry: response.company_industry || '',
           scale: response.company_scale || '',
@@ -195,7 +229,7 @@ export default {
           longitude: response.longitude || null,  // 经度（如果后端提供）
           latitude: response.latitude || null,   // 纬度（如果后端提供）
           introduction: this.parseIntroduction(response.description),
-          positions: (response.other_jobs || []).map(job => ({
+          positions: (response.jobs || []).map(job => ({
             id: job.job_id,
             name: job.job_title,
             publishDate: job.posted_at || ''
@@ -222,13 +256,6 @@ export default {
       return []
     },
     
-    // 计算最近活动的天数
-    calculateDaysAgo(activityStr) {
-      if (!activityStr) return 0
-      // 如果接口返回的是 "2天前" 这样的字符串，提取数字
-      const match = activityStr.match(/(\d+)/)
-      return match ? parseInt(match[1]) : 0
-    },
     
     // 返回求职中心
     goToJobCenter() {
@@ -245,27 +272,16 @@ export default {
       this.$router.push({ name: 'JobDetail', params: { id: jobId } })
     },
     
-    // 在高德地图中打开
+    // 在百度地图中打开
     openInAMap() {
       if (!this.companyInfo.address) {
         alert('地址信息不完整')
         return
       }
       
-      // 如果有经纬度，使用精确定位（优先）
-      if (this.companyInfo.longitude && this.companyInfo.latitude) {
-        // 使用经纬度打开地图（最精确）
-        const name = encodeURIComponent(this.companyInfo.name || '企业地址')
-        const url = `https://uri.amap.com/marker?position=${this.companyInfo.longitude},${this.companyInfo.latitude}&name=${name}&coordinate=gaode&callnative=1`
-        console.log('【高德地图跳转】使用经纬度:', url)
-        window.open(url, '_blank')
-      } else {
-        // 使用地址搜索（备选方案）
-        const query = encodeURIComponent(this.companyInfo.address)
-        const url = `https://www.amap.com/search?query=${query}`
-        console.log('【高德地图跳转】使用地址搜索:', url)
-        window.open(url, '_blank')
-      }
+      const address = encodeURIComponent(this.companyInfo.address)
+      const url = `https://api.map.baidu.com/geocoder?address=${address}&output=html&src=yourCompanyName`
+      window.open(url, '_blank')
     },
     
     // ✅ 图片加载失败时显示默认图片
@@ -278,39 +294,67 @@ export default {
 
 <style scoped>
 .company-info-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 105px);
   background: #f5f5f5;
   padding: 30px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - 固定定位 */
 .breadcrumb {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px 20px 60px;
+  z-index: 1000;
+  height: 115px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  right: 30px;
+  bottom: 20px;
   background: white;
-  padding: 20px 30px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: -1;
+  border-radius: 0;
 }
 
 .crumb-item {
-  color: #666;
+  color: #325e21;
   cursor: pointer;
-  transition: color 0.3s;
+  font-weight: 500;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .crumb-item:hover {
-  color: #2a5e23;
+  text-decoration: underline;
 }
 
 .crumb-item.current {
-  color: #333;
+  color: #666;
   cursor: default;
 }
 
+.crumb-item.current:hover {
+  text-decoration: none;
+}
+
 .separator {
-  margin: 0 8px;
-  color: #999;
+  margin: 0 10px;
+  color: #666;
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 内容布局 */
@@ -318,6 +362,7 @@ export default {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding-top: 85px; /* 为固定面包屑留出空间 */
 }
 
 .main-content {
@@ -457,7 +502,7 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #325e21 0%, #4a7c35 100%);
+  background: #325e21;
   color: white;
   border: none;
   border-radius: 8px;
@@ -470,7 +515,7 @@ export default {
 }
 
 .view-map-btn:hover {
-  background: linear-gradient(135deg, #4a7c35 0%, #325e21 100%);
+  background: #2a4e1b;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(50, 94, 33, 0.4);
 }
@@ -578,7 +623,15 @@ export default {
   padding: 10px 0;
 }
 
-/* 鍝嶅簲寮?*/
+.no-jobs {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 30px 0;
+  font-size: 16px;
+}
+
+/* 响应式 */
 @media (max-width: 1024px) {
   .content-wrapper {
     flex-direction: column;
