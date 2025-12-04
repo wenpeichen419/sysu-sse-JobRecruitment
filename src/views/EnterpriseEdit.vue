@@ -164,48 +164,63 @@
         </div>
 
         <!-- 相关链接 -->
-        <div class="edit-section full-width-section" id="links-section" ref="linksSection">
-          <div class="section-header">
-            <h3 class="section-title">相关链接</h3>
-          </div>
-          <div class="links-edit">
-            <div class="existing-links">
-              <div 
-                v-for="(link, index) in enterpriseInfo.external_links"
-                :key="index"
-                class="link-item"
-              >
-                <span class="link-label">{{ link.link_name }}</span>
-                <span class="link-url">{{ link.link_url }}</span>
-                <button class="edit-link-btn" @click="editLink(index)">编辑</button>
-                <button class="delete-link-btn" @click="deleteLink(index)">删除</button>
-              </div>
-            </div>
-            <div class="add-link">
-              <button 
-                class="add-link-btn"
-                :class="{ confirm: isAddingLink }"
-                @click="toggleAddLink"
-              >
-                {{ isAddingLink ? '确认' : '+ 新增' }}
-              </button>
-              <div v-if="isAddingLink" class="link-inputs">
-                <input 
-                  type="text"
-                  v-model="newLink.link_name"
-                  placeholder="链接标识"
-                  class="link-label-input"
-                >
-                <input 
-                  type="text"
-                  v-model="newLink.link_url"
-                  placeholder="链接网址"
-                  class="link-url-input"
-                >
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 相关链接 -->
+<div class="edit-section full-width-section" id="links-section" ref="linksSection">
+  <div class="section-header">
+    <h3 class="section-title">相关链接</h3>
+  </div>
+  <div class="links-edit">
+    <div class="existing-links">
+      <div 
+        v-for="(link, index) in enterpriseInfo.external_links"
+        :key="index"
+        class="link-item"
+      >
+        <span class="link-label">{{ link.link_name }}</span>
+        <span class="link-url">{{ link.link_url }}</span>
+        <button class="edit-link-btn" @click="editLink(index)">编辑</button>
+        <button class="delete-link-btn" @click="deleteLink(index)">删除</button>
+      </div>
+    </div>
+    <div class="add-link">
+      <button 
+        v-if="!isAddingLink"
+        class="add-link-btn"
+        @click="toggleAddLink"
+      >
+        + 新增
+      </button>
+      <div v-if="isAddingLink" class="link-inputs">
+        <input 
+          type="text"
+          v-model="newLink.link_name"
+          placeholder="链接标识"
+          class="link-label-input"
+        >
+        <input 
+          type="text"
+          v-model="newLink.link_url"
+          placeholder="链接网址"
+          class="link-url-input"
+        >
+      </div>
+      <div v-if="isAddingLink" class="link-action-buttons">
+        <button 
+          class="confirm-link-btn"
+          @click="confirmAddLink"
+        >
+          确定
+        </button>
+        <button 
+          class="cancel-link-btn"
+          @click="cancelAddLink"
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
         <!-- 操作按钮 -->
         <div class="edit-section full-width-section action-section">
@@ -504,13 +519,9 @@ handleAvatarSuccess(res, file) {
     },
     
     toggleAddLink() {
-      if (this.isAddingLink) {
-        this.confirmAddLink();
-      } else {
-        this.isAddingLink = true;
-        this.newLink = { link_name: '', link_url: '' };
-        this.editingLinkIndex = -1;
-      }
+      this.isAddingLink = true;
+      this.newLink = { link_name: '', link_url: '' };
+      this.editingLinkIndex = -1;
     },
     
     confirmAddLink() {
@@ -525,7 +536,15 @@ handleAvatarSuccess(res, file) {
         this.isAddingLink = false;
         this.newLink = { link_name: '', link_url: '' };
         this.editingLinkIndex = -1;
+      } else {
+        ElMessage.warning('请填写链接标识和链接网址');
       }
+    },
+    
+    cancelAddLink() {
+      this.isAddingLink = false;
+      this.newLink = { link_name: '', link_url: '' };
+      this.editingLinkIndex = -1;
     },
     
     editLink(index) {
@@ -535,12 +554,8 @@ handleAvatarSuccess(res, file) {
     },
     
     deleteLink(index) {
-      this.enterpriseInfo.external_links.splice(index, 1);
-    },
-    
-    cancelEdit() {
-      if (confirm('确定要取消修改吗？所有未保存的更改将会丢失。')) {
-        this.$router.push('/enterprise-info');
+      if (confirm('确定要删除这个链接吗？')) {
+        this.enterpriseInfo.external_links.splice(index, 1);
       }
     },
     
@@ -985,7 +1000,7 @@ handleAvatarSuccess(res, file) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  font-size:18px;
+  font-size: 18px;
 }
 
 .existing-links {
@@ -1001,7 +1016,7 @@ handleAvatarSuccess(res, file) {
   padding: 15px;
   background: #f8f9fa;
   border-radius: 6px;
-  font-size:20px;
+  font-size: 20px;
 }
 
 .link-label {
@@ -1014,7 +1029,7 @@ handleAvatarSuccess(res, file) {
   flex: 1;
   color: #666;
   word-break: break-all;
-  font-size:20px;
+  font-size: 20px;
 }
 
 .edit-link-btn,
@@ -1061,18 +1076,11 @@ handleAvatarSuccess(res, file) {
   background: #2a4e1b;
 }
 
-.add-link-btn.confirm {
-  background: #28a745;
-}
-
-.add-link-btn.confirm:hover {
-  background: #218838;
-}
-
 .link-inputs {
   display: flex;
   gap: 15px;
   margin-top: 15px;
+  margin-bottom: 15px;
 }
 
 .link-label-input,
@@ -1081,7 +1089,7 @@ handleAvatarSuccess(res, file) {
   padding: 12px 16px;
   border: 1px solid #d8d8d8;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 20px;
   box-sizing: border-box;
 }
 
@@ -1089,6 +1097,40 @@ handleAvatarSuccess(res, file) {
 .link-url-input:focus {
   outline: none;
   border-color: #325e21;
+}
+
+.link-action-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.confirm-link-btn,
+.cancel-link-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.confirm-link-btn {
+  background: #28a745;
+  color: white;
+}
+
+.confirm-link-btn:hover {
+  background: #218838;
+}
+
+.cancel-link-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.cancel-link-btn:hover {
+  background: #5a6268;
 }
 
 /* 操作按钮 */
