@@ -198,6 +198,7 @@ export default {
     return {
       currentSection: 'avatar',
       avatarUrl: '',  // 这里存储的是 blob URL
+      pendingAvatarFile: null,  // 待上传的头像文件
       loading: false,
       baseURL: 'http://localhost:8080',
       
@@ -294,6 +295,9 @@ export default {
     if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
       revokeBlobUrls([this.avatarUrl])
     }
+    
+    // 清空待上传的头像文件
+    this.pendingAvatarFile = null
   },
   watch: {
     // ✅ 监听新标签选择
@@ -459,8 +463,8 @@ export default {
       this.$refs.avatarInput.click()
     },
     
-    // ✅ 处理头像文件变化（调用真实API）
-    async onAvatarChange(event) {
+    // ✅ 处理头像文件变化（只做本地预览，不上传）
+    onAvatarChange(event) {
       const file = event.target.files[0]
       if (file) {
         // 验证文件类型
@@ -475,28 +479,17 @@ export default {
           return
         }
         
-        try {
-          // ✅ 调用API上传头像
-          const formData = new FormData()
-          formData.append('avatar_file', file)
-          
-          const data = await uploadAvatar(formData)
-          
-          console.log('【头像上传成功】', data.new_avatar_url)
-          
-          // ✅ 释放旧的 blob URL
-          if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(this.avatarUrl)
-          }
-          
-          // 更新头像预览（带token加载新头像）
-          this.avatarUrl = await loadImageWithAuth(data.new_avatar_url, this.baseURL)
-          alert('头像上传成功！')
-          
-        } catch (error) {
-          console.error('【头像上传失败】', error)
-          alert('头像上传失败，请重试')
+        // 保存待上传的文件
+        this.pendingAvatarFile = file
+        
+        // ✅ 释放旧的 blob URL
+        if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(this.avatarUrl)
         }
+        
+        // 创建本地预览
+        this.avatarUrl = URL.createObjectURL(file)
+        console.log('【头像已选择，等待提交】')
         
         // 清空input，允许重复选择同一文件
         event.target.value = ''
@@ -539,6 +532,8 @@ export default {
     
     // 取消编辑
     cancelEdit() {
+      // 清空待上传的头像文件
+      this.pendingAvatarFile = null
       this.$router.push({ name: 'StudentCenter' })
     },
     
@@ -546,6 +541,26 @@ export default {
     async submitForm() {
       try {
         this.loading = true
+        
+        // ✅ 如果有待上传的头像，先上传头像
+        if (this.pendingAvatarFile) {
+          try {
+            console.log('【开始上传头像】')
+            const formData = new FormData()
+            formData.append('avatar_file', this.pendingAvatarFile)
+            
+            const data = await uploadAvatar(formData)
+            console.log('【头像上传成功】', data.new_avatar_url)
+            
+            // 清空待上传的文件
+            this.pendingAvatarFile = null
+          } catch (error) {
+            console.error('【头像上传失败】', error)
+            alert('头像上传失败，请重试')
+            this.loading = false
+            return
+          }
+        }
         
         // ✅ 处理日期格式：如果后端需要 yyyy-MM 格式，则截取前7位
         const formatDateForSubmit = (dateStr) => {
@@ -687,9 +702,7 @@ export default {
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 30px;
-  height: auto;
-  max-height: calc(100vh - 240px);
-  overflow-y: auto;
+  height: 1000px;
 }
 
 .sidebar-title {
