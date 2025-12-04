@@ -59,78 +59,212 @@
     <!-- 文件上传对话框 -->
     <el-dialog
       v-model="uploadDialogVisible"
-      title="上传岗位相关文档"
+      title="上传岗位文档"
       width="900px"
       :close-on-click-modal="false"
-      class="large-dialog"
+      class="upload-dialog-custom"
     >
-      <div class="upload-dialog-content">
-        <!-- 文件类型选择 -->
-        <div class="input-type-selector">
-          <el-form-item label="输入类型" required>
-            <el-select v-model="inputType" placeholder="请选择输入类型" style="width: 100%">
-              <el-option label="文本" value="text" />
-              <el-option label="图片" value="image" />
-            </el-select>
-          </el-form-item>
+      <!-- 对话框内容 -->
+      <div class="dialog-container">
+        <!-- 对话框头部装饰 -->
+        <div class="dialog-header-decor">
+          <div class="decor-line"></div>
+          <div class="decor-icon">
+            <i class="el-icon-upload"></i>
+          </div>
+          <div class="decor-line"></div>
         </div>
 
-        <!-- 文本输入区域 -->
-        <div v-if="inputType === 'text'" class="text-input-area">
-          <el-form-item label="上传文本">
-            <el-input
-              v-model="textContent"
-              type="textarea"
-              :rows="8"
-              placeholder="请输入岗位相关的文本内容"
-              :disabled="inputType !== 'text'"
-            />
-          </el-form-item>
-        </div>
+        <!-- 主要内容区域 -->
+        <div class="dialog-main-content">
+          <!-- 输入类型选择卡片 -->
+          <div class="input-type-section">
+            <h3 class="section-title">
+              <i class="el-icon-document"></i>
+              选择输入类型
+            </h3>
+            <div class="type-cards">
+              <div 
+                class="type-card" 
+                :class="{ 'active': inputType === 'text' }"
+                @click="inputType = 'text'"
+              >
+                <div class="card-icon">
+                  <i class="el-icon-document"></i>
+                </div>
+                <h4>文本输入</h4>
+                <p>直接粘贴岗位描述文本</p>
+              </div>
+              <div 
+                class="type-card" 
+                :class="{ 'active': inputType === 'image' }"
+                @click="inputType = 'image'"
+              >
+                <div class="card-icon">
+                  <i class="el-icon-picture"></i>
+                </div>
+                <h4>图片上传</h4>
+                <p>上传岗位相关图片</p>
+              </div>
+            </div>
+          </div>
 
-        <!-- 图片上传区域 -->
-        <div v-if="inputType === 'image'" class="image-upload-area">
-          <el-form-item label="上传文件">
-            <el-upload
-              class="upload-demo"
-              :action="uploadAction"
-              :on-preview="handlePreview"
-              :on-remove="handleRemove"
-              :on-change="handleImageChange"
-              :on-success="handleImageSuccess"
-              :file-list="fileList"
-              list-type="picture"
-              :disabled="inputType !== 'image'"
-              accept=".jpg,.jpeg,.png,.gif"
-              :auto-upload="false"
-            >
-              <el-button size="large" type="primary">点击上传</el-button>
-              <template #tip>
-                <div class="el-upload__tip">只能上传jpg/png文件，且不超过10MB</div>
-              </template>
-            </el-upload>
-          </el-form-item>
-        </div>
+          <!-- 输入内容区域 -->
+          <div class="input-content-section">
+            <!-- 文本输入区域 -->
+            <div v-if="inputType === 'text'" class="text-input-section">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <i class="el-icon-edit"></i>
+                  输入岗位文本
+                </h3>
+                <el-button 
+                  type="text" 
+                  @click="textContent = ''"
+                  :disabled="!textContent"
+                >
+                  清空
+                </el-button>
+              </div>
+              <div class="textarea-container">
+                <el-input
+                  v-model="textContent"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="请粘贴岗位描述、要求等相关文本内容..."
+                  :maxlength="2000"
+                  show-word-limit
+                  class="custom-textarea"
+                />
+              </div>
+              <div class="tips">
+                <i class="el-icon-info"></i>
+                支持纯文本格式，建议提供完整的岗位描述信息
+              </div>
+            </div>
 
-        <div v-if="isProcessing" class="processing-info">
-          <el-progress :percentage="processingProgress" :stroke-width="8" />
-          <p class="processing-text">{{ processingText }}</p>
+            <!-- 图片上传区域 -->
+            <div v-if="inputType === 'image'" class="image-upload-section">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <i class="el-icon-upload"></i>
+                  上传岗位图片
+                </h3>
+                <el-button 
+                  type="text" 
+                  @click="clearFileList"
+                  :disabled="fileList.length === 0"
+                >
+                  清空
+                </el-button>
+              </div>
+              
+              <div class="upload-area" @click="triggerFileUpload">
+                <el-upload
+                  ref="uploadRef"
+                  class="upload-demo"
+                  :action="uploadAction"
+                  :on-preview="handlePreview"
+                  :on-remove="handleRemove"
+                  :on-change="handleImageChange"
+                  :on-success="handleImageSuccess"
+                  :file-list="fileList"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  accept=".jpg,.jpeg,.png,.gif,.pdf"
+                >
+                  <div class="upload-placeholder">
+                    <div class="upload-icon">
+                      <i class="el-icon-upload"></i>
+                    </div>
+                    <div class="upload-text">
+                      <p class="main-text">点击或拖拽文件到此区域</p>
+                      <p class="sub-text">支持 JPG、PNG、PDF 格式，文件大小不超过 10MB</p>
+                    </div>
+                  </div>
+                </el-upload>
+              </div>
+
+              <!-- 文件列表 -->
+              <div v-if="fileList.length > 0" class="file-list">
+                <div v-for="(file, index) in fileList" :key="index" class="file-item">
+                  <div class="file-icon">
+                    <i class="el-icon-document"></i>
+                  </div>
+                  <div class="file-info">
+                    <div class="file-name">{{ file.name }}</div>
+                    <div class="file-size">{{ formatFileSize(file.size) }}</div>
+                  </div>
+                  <div class="file-actions">
+                    <el-button 
+                      type="text" 
+                      @click="handleRemove(file)"
+                      class="remove-btn"
+                    >
+                      <i class="el-icon-delete"></i>
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tips">
+                <i class="el-icon-info"></i>
+                系统将自动识别图片中的文字信息并提取岗位相关内容
+              </div>
+            </div>
+          </div>
+
+          <!-- 处理进度 -->
+          <div v-if="isProcessing" class="processing-section">
+            <div class="progress-header">
+              <h3 class="section-title">
+                <i class="el-icon-loading"></i>
+                正在解析文档
+              </h3>
+            </div>
+            <div class="progress-container">
+              <el-progress 
+                :percentage="processingProgress" 
+                :stroke-width="8"
+                :show-text="false"
+                class="custom-progress"
+              />
+              <div class="progress-info">
+                <span class="progress-text">{{ processingText }}</span>
+                <span class="progress-percent">{{ processingProgress }}%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="uploadDialogVisible = false" size="large">取消</el-button>
+        <div class="dialog-footer">
+          <el-button 
+            @click="uploadDialogVisible = false"
+            size="large"
+            class="cancel-btn"
+          >
+            取消
+          </el-button>
           <el-button 
             type="primary" 
             @click="handleUploadConfirm"
             :disabled="!isFormValid || isProcessing"
             :loading="isProcessing"
             size="large"
+            class="submit-btn"
           >
-            {{ isProcessing ? '正在解析...' : '提交' }}
+            <template v-if="isProcessing">
+              <i class="el-icon-loading"></i>
+              解析中...
+            </template>
+            <template v-else>
+              <i class="el-icon-check"></i>
+              提交解析
+            </template>
           </el-button>
-        </span>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -154,10 +288,11 @@ export default {
     const inputType = ref('')
     const textContent = ref('')
     const fileList = ref([])
-    const uploadedFile = ref(null) // 新增：存储上传的文件对象
-    const uploadAction = ref('https://jsonplaceholder.typicode.com/posts/') // 临时地址，实际不会使用
+    const uploadedFile = ref(null)
+    const uploadAction = ref('https://jsonplaceholder.typicode.com/posts/')
+    const uploadRef = ref(null)
 
-    // 计算表单是否有效 - 修复逻辑
+    // 计算表单是否有效
     const isFormValid = computed(() => {
       if (!inputType.value) return false
       
@@ -187,18 +322,45 @@ export default {
       processingProgress.value = 0
     }
 
+    // 格式化文件大小
+    const formatFileSize = (bytes) => {
+      if (bytes === 0 || !bytes) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    // 触发文件上传
+    const triggerFileUpload = () => {
+      if (uploadRef.value) {
+        uploadRef.value.$el.querySelector('input[type="file"]')?.click()
+      }
+    }
+
+    // 清空文件列表
+    const clearFileList = () => {
+      fileList.value = []
+      uploadedFile.value = null
+    }
+
     // 图片预览
     const handlePreview = (file) => {
       console.log('Preview file:', file)
     }
 
     // 图片移除
-    const handleRemove = (file, fileList) => {
-      console.log('Remove file:', file, fileList)
-      uploadedFile.value = null
+    const handleRemove = (file) => {
+      const index = fileList.value.findIndex(f => f.uid === file.uid)
+      if (index > -1) {
+        fileList.value.splice(index, 1)
+      }
+      if (fileList.value.length === 0) {
+        uploadedFile.value = null
+      }
     }
 
-    // 图片变化 - 修复：正确更新文件状态
+    // 图片变化
     const handleImageChange = (file, files) => {
       console.log('File changed:', file, files)
       fileList.value = files
@@ -210,9 +372,10 @@ export default {
     }
 
     // 图片上传成功
-    const handleImageSuccess = (response, file, fileList) => {
-      console.log('Upload success:', response, file, fileList)
+    const handleImageSuccess = (response, file, files) => {
+      console.log('Upload success:', response, file, files)
       uploadedFile.value = file
+      fileList.value = files
     }
 
     // 模拟进度
@@ -255,7 +418,6 @@ export default {
         if (inputType.value === 'text') {
           requestData.append('text', textContent.value)
         } else if (inputType.value === 'image' && (fileList.value.length > 0 || uploadedFile.value)) {
-          // 使用实际的文件对象
           const file = uploadedFile.value || (fileList.value[0]?.raw || fileList.value[0])
           if (file) {
             requestData.append('image', file)
@@ -267,7 +429,6 @@ export default {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            // 注意：使用FormData时不要设置Content-Type，浏览器会自动设置
           },
           body: requestData
         })
@@ -282,7 +443,7 @@ export default {
           // 处理返回的数据
           const extractedData = {
             ...data.data.job_details,
-            fromLLM: true // 标记这是从LLM提取的数据
+            fromLLM: true
           }
 
           // 延迟一点再跳转，让用户看到成功消息
@@ -315,9 +476,13 @@ export default {
       textContent,
       fileList,
       uploadAction,
+      uploadRef,
       isFormValid,
+      formatFileSize,
       goToManualForm,
       showUploadDialog,
+      triggerFileUpload,
+      clearFileList,
       handlePreview,
       handleRemove,
       handleImageChange,
@@ -329,6 +494,7 @@ export default {
 </script>
 
 <style scoped>
+/* 原有样式保持不变 */
 .post-method-choice-page {
   padding: 30px;
   background: #f5f5f5;
@@ -478,7 +644,7 @@ export default {
 }
 
 .ai-overlay {
-  background: rgba(153, 197, 210, 0.7);;
+  background: rgba(153, 197, 210, 0.7);
 }
 
 .choice-card:hover .card-hover-overlay {
@@ -491,36 +657,462 @@ export default {
   font-weight: bold;
 }
 
-/* 上传对话框样式 */
-.upload-dialog-content {
-  padding: 20px 0;
+/* 新对话框样式 - 绿色主题 */
+/* 对话框整体样式 */
+:deep(.upload-dialog-custom .el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-.input-type-selector {
-  margin-bottom: 30px;
+:deep(.upload-dialog-custom .el-dialog__header) {
+  padding: 30px 40px 20px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  margin-right: 0;
 }
 
-.text-input-area,
-.image-upload-area {
-  margin-top: 30px;
-}
-
-.processing-info {
-  margin-top: 30px;
-  padding: 30px;
-  background: #f0f9ff;
-  border-radius: 8px;
-}
-
-.processing-text {
+:deep(.upload-dialog-custom .el-dialog__title) {
+  color: white;
+  font-size: 28px;
+  font-weight: 600;
   text-align: center;
+  display: block;
+}
+
+:deep(.upload-dialog-custom .el-dialog__headerbtn) {
+  top: 30px;
+  right: 30px;
+}
+
+:deep(.upload-dialog-custom .el-dialog__headerbtn .el-dialog__close) {
+  color: white;
+  font-size: 24px;
+}
+
+:deep(.upload-dialog-custom .el-dialog__body) {
+  padding: 0;
+}
+
+:deep(.upload-dialog-custom .el-dialog__footer) {
+  padding: 30px 40px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.dialog-container {
+  padding: 0 40px;
+}
+
+/* 头部装饰 */
+.dialog-header-decor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 30px;
+}
+
+.decor-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #325e21, transparent);
+}
+
+.decor-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 20px;
+}
+
+.decor-icon i {
+  color: white;
+  font-size: 24px;
+}
+
+/* 主要内容 */
+.dialog-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* 输入类型选择 */
+.input-type-section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
   color: #325e21;
-  font-weight: 500;
-  margin-top: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title i {
+  color: #325e21;
+}
+
+.type-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.type-card {
+  padding: 25px 20px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.type-card:hover {
+  transform: translateY(-2px);
+  border-color: #325e21;
+  box-shadow: 0 8px 25px rgba(50, 94, 33, 0.1);
+}
+
+.type-card.active {
+  background: linear-gradient(135deg, rgba(50, 94, 33, 0.05) 0%, rgba(74, 140, 42, 0.05) 100%);
+  border-color: #325e21;
+}
+
+.type-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 15px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon i {
+  color: white;
+  font-size: 28px;
+}
+
+.type-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.type-card p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+/* 输入内容区域 */
+.input-content-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* 文本输入 */
+.textarea-container {
+  margin-bottom: 15px;
+}
+
+:deep(.custom-textarea .el-textarea__inner) {
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  resize: vertical;
+}
+
+:deep(.custom-textarea .el-textarea__inner:focus) {
+  border-color: #325e21;
+  box-shadow: 0 0 0 2px rgba(50, 94, 33, 0.1);
+}
+
+:deep(.custom-textarea .el-input__count) {
+  background: transparent;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 图片上传区域 */
+.upload-area {
+  border: 2px dashed #e9ecef;
+  border-radius: 12px;
+  padding: 40px 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  text-align: center;
+}
+
+.upload-area:hover {
+  border-color: #325e21;
+  background: rgba(50, 94, 33, 0.02);
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-icon i {
+  color: white;
+  font-size: 28px;
+}
+
+.upload-text {
+  text-align: center;
+  width: 100%;
+}
+
+.main-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.sub-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+/* 文件列表 */
+.file-list {
+  margin-bottom: 20px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.file-item:hover {
+  background: #e9ecef;
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  background: #325e21;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+}
+
+.file-icon i {
+  color: white;
   font-size: 20px;
 }
 
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 3px;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #666;
+}
+
+.remove-btn {
+  color: #ff4757;
+}
+
+.remove-btn:hover {
+  color: #ff6b81;
+}
+
+/* 提示信息 */
+.tips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-top: 15px;
+}
+
+.tips i {
+  color: #325e21;
+}
+
+/* 处理进度 */
+.processing-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.progress-container {
+  margin-top: 15px;
+}
+
+:deep(.custom-progress .el-progress-bar__outer) {
+  background-color: #e9ecef;
+  border-radius: 10px;
+}
+
+:deep(.custom-progress .el-progress-bar__inner) {
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  border-radius: 10px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.progress-text {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.progress-percent {
+  font-size: 16px;
+  font-weight: 600;
+  color: #325e21;
+}
+
+/* 对话框底部 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+:deep(.cancel-btn) {
+  padding: 0 30px;
+  border: 2px solid #e9ecef;
+  color: #666;
+  font-weight: 500;
+}
+
+:deep(.cancel-btn:hover) {
+  border-color: #325e21;
+  color: #325e21;
+  background: transparent;
+}
+
+:deep(.submit-btn) {
+  padding: 0 40px;
+  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
+  border: none;
+  font-weight: 500;
+}
+
+:deep(.submit-btn:hover) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(50, 94, 33, 0.4);
+}
+
+:deep(.submit-btn.is-disabled) {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
 /* 响应式设计 */
+@media (max-width: 768px) {
+  .dialog-container {
+    padding: 0 20px;
+  }
+  
+  :deep(.upload-dialog-custom .el-dialog) {
+    width: 95% !important;
+    margin: 20px auto;
+  }
+  
+  :deep(.upload-dialog-custom .el-dialog__header),
+  :deep(.upload-dialog-custom .el-dialog__footer) {
+    padding: 20px;
+  }
+  
+  .type-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .input-content-section {
+    padding: 20px;
+  }
+}
+
+/* 原有响应式设计 */
 @media (max-width: 1200px) {
   .choice-container {
     flex-direction: column;
@@ -545,61 +1137,5 @@ export default {
   .choice-card {
     padding: 30px;
   }
-}
-
-/* 放大弹窗字体样式 */
-:deep(.large-dialog .el-dialog__title) {
-  font-size: 32px !important;
-  font-weight: bold;
-}
-
-:deep(.large-dialog .el-form-item__label) {
-  font-size: 24px !important;
-  font-weight: 600;
-  line-height: 1.5;
-  margin-bottom: 10px;
-}
-
-:deep(.large-dialog .el-select .el-input__inner) {
-  font-size: 22px !important;
-  height: 60px !important;
-  line-height: 60px !important;
-  padding: 0 20px !important;
-}
-
-:deep(.large-dialog .el-textarea__inner) {
-  font-size: 22px !important;
-  line-height: 1.6 !important;
-  padding: 20px !important;
-  min-height: 200px !important;
-}
-
-:deep(.large-dialog .el-button) {
-  font-size: 22px !important;
-  height: 60px !important;
-  padding: 0 40px !important;
-}
-
-:deep(.large-dialog .el-upload__tip) {
-  font-size: 18px !important;
-  margin-top: 15px;
-}
-
-:deep(.large-dialog .el-upload-list__item-name) {
-  font-size: 20px !important;
-}
-
-:deep(.large-dialog .el-upload-list__item-status-label) {
-  font-size: 18px !important;
-}
-
-:deep(.large-dialog .el-progress__text) {
-  font-size: 18px !important;
-}
-
-:deep(.large-dialog .el-select-dropdown__item) {
-  font-size: 20px !important;
-  height: 50px !important;
-  line-height: 50px !important;
 }
 </style>
