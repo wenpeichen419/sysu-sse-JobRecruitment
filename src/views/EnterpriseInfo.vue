@@ -1,10 +1,12 @@
 <template>
   <div class="enterprise-info-page">
-    <!-- 面包屑导航 -->
-    <div class="breadcrumb">
-      <router-link to="/" class="breadcrumb-link">主页</router-link>
-      <span class="breadcrumb-separator">></span>
-      <span class="breadcrumb-current">企业信息管理</span>
+   <!-- 面包屑导航 - 添加矩形背景 -->
+    <div class="breadcrumb-wrapper">
+      <div class="breadcrumb">
+        <router-link to="/" class="breadcrumb-link">主页</router-link>
+        <span class="breadcrumb-separator">></span>
+        <span class="breadcrumb-current">企业信息管理</span>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -268,23 +270,28 @@ export default {
       }
     },
 
-    formatLastLogin(lastLoginAt) {
-      if (!lastLoginAt) return '暂无记录'
-      
-      const loginDate = new Date(lastLoginAt)
-      const now = new Date()
-      const diffTime = Math.abs(now - loginDate)
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      if (diffDays === 1) return '1天前'
-      if (diffDays <= 7) return `${diffDays}天前`
-      if (diffDays <= 30) return `${Math.floor(diffDays / 7)}周前`
-      return `${Math.floor(diffDays / 30)}月前`
-    },
-
-    goToEditProfile() {
-      this.$router.push('/enterprise-edit')
-    },
+  formatLastLogin() {
+  const lastLoginAt = this.companyInfo.last_login_at;
+  if (!lastLoginAt) return '暂无记录';
+  
+  const loginDate = new Date(lastLoginAt);
+  const now = new Date();
+  const diffMs = Math.abs(now - loginDate);
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  
+  if (diffSeconds < 60) {
+    return '刚刚';
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}分钟前`;
+  } else if (diffMinutes < 1440) {
+    const diffHours = Math.floor(diffMinutes / 60);
+    return `${diffHours}小时前`;
+  } else {
+    const diffDays = Math.floor(diffMinutes / 1440);
+    return `${diffDays}天前`;
+  }
+},
 
     openBaiduMap() {
       const address = encodeURIComponent(this.companyInfo.company_address || '河北省秦皇岛市经济技术开发区龙海道185号')
@@ -382,14 +389,26 @@ export default {
 }
 
 /* 面包屑导航 */
+.breadcrumb-wrapper {
+  position: fixed;
+  top: 105px;
+  left: 0;
+  width: 100%;
+  background: #f4f4f4;
+  padding: 20px 30px;
+  z-index: 1000;
+  height: 115px;
+}
+
 .breadcrumb {
   background: white;
   padding: 20px 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   font-size: 20px;
+  box-sizing: border-box;
+  width: 97.3%;
   position: fixed;
-  width:97.2%
 }
 
 .breadcrumb-link {
@@ -409,6 +428,29 @@ export default {
 
 .breadcrumb-current {
   color: #666;
+}
+
+/* 修改企业头部信息卡片的上边距，避免与面包屑重叠 */
+.enterprise-header-card {
+  margin-top: 140px; /* 增加上边距以避开固定面包屑 */
+}
+
+/* 修改响应式设计中的位置调整 */
+@media (max-width: 768px) {
+  .breadcrumb {
+    width: calc(100% - 60px);
+    position: static;
+  }
+  
+  .breadcrumb-wrapper {
+    position: static;
+    height: auto;
+    padding: 0;
+  }
+  
+  .enterprise-header-card {
+    margin-top: 20px;
+  }
 }
 
 /* 通用信息卡片样式 */
