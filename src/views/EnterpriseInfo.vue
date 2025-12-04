@@ -199,6 +199,11 @@ export default {
     }
   },
   methods: {
+    
+  goToEditProfile() {
+    this.$router.push('/enterprise-edit');
+  },
+
     async fetchCompanyProfile() {
       try {
         this.loading = true

@@ -215,53 +215,42 @@
               </el-form-item>
             </div>
 
-            <!-- 标签信息部分 -->
-            <div class="form-section" id="tags-section" ref="tagsSection">
-              <h3 class="section-title">标签信息</h3>
-              
-              <!-- 标签类别选择 -->
-              <el-form-item label="标签类别" prop="selectedTagCategory">
-                <el-select 
-                  v-model="selectedTagCategory" 
-                  placeholder="请选择标签类别"
-                  @change="handleTagCategoryChange"
-                  style="width: 500px;"
-                >
-                  <el-option 
-                    v-for="category in tagCategories" 
-                    :key="category.category_id"
-                    :label="category.category_name"
-                    :value="category.category_id"
-                  />
-                </el-select>
-              </el-form-item>
-
+    
               <!-- 岗位标签 -->
-              <el-form-item label="岗位标签" prop="tags">
-                <div class="tags-input-container">
-                  <el-select
-                    v-model="formData.tags"
-                    multiple
-                    filterable
-                    placeholder="请选择标签"
-                    style="width: 500px;"
-                  >
-                    <el-option 
-                      v-for="tag in currentTags" 
-                      :key="tag.tag_id"
-                      :label="tag.tag_name"
-                      :value="tag.tag_id"
-                    />
-                  </el-select>
-                  <el-button class="add-tag-btn" type="success" @click="showCustomTagDialog">
-                    + 自定义标签
-                  </el-button>
-                </div>
-                <div class="tags-hint">
-                  已选择 {{ formData.tags.length }} 个标签
-                </div>
-              </el-form-item>
+        <div class="form-section" id="tags-section" ref="tagsSection">
+          <h3 class="section-title">岗位标签</h3>
+          <div class="tags-selector">
+            <select v-model="selectedCategory" class="tag-select" @change="onCategoryChange">
+              <option value="">选择标签分类</option>
+              <option v-for="category in tagCategories" :key="category.category_id" :value="category.category_id">
+                {{ category.category_name }}
+              </option>
+            </select>
+            <select v-model="newTag" class="tag-select" :disabled="!selectedCategory">
+              <option value="">选择具体标签</option>
+              <option v-for="tag in currentCategoryTags" :key="tag.tag_id" :value="tag.tag_id">
+                {{ tag.tag_name }}
+              </option>
+            </select>
+            <button class="add-tag-btn" type="button" @click="showCustomTagDialog">
+                + 自定义标签
+            </button>
+          </div>
+          <div class="selected-tags">
+            <span class="tag-label">已选择标签:</span>
+            <div class="tags-list">
+              <span 
+                v-for="(tagId, index) in formData.tags" 
+                :key="index" 
+                class="tag"
+              >
+                {{ getTagName(tagId)  }}
+                <span class="tag-remove" @click="removeTag(index)">×</span>
+              </span>
             </div>
+          </div>
+        </div>
+           
 
             <!-- 详细描述部分 -->
             <div class="form-section" id="description-section" ref="descriptionSection">
@@ -329,39 +318,73 @@
       </div>
     </div>
 
-    <!-- 自定义标签对话框 -->
-    <el-dialog
-      v-model="customTagDialogVisible"
-      title="自定义标签"
-      width="500px"
-    >
-      <el-form :model="customTagForm" :rules="customTagRules" ref="customTagFormRef">
-        <el-form-item label="标签名称" prop="name" required>
-          <el-input v-model="customTagForm.name" placeholder="请输入标签名称" />
-        </el-form-item>
-        <el-form-item label="标签类别" prop="category_id" required>
-          <el-select v-model="customTagForm.category_id" placeholder="请选择标签类别">
-            <el-option 
-              v-for="category in tagCategories" 
-              :key="category.category_id"
-              :label="category.category_name"
-              :value="category.category_id"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="customTagDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateCustomTag" :loading="creatingTag">
-          创建
-        </el-button>
-      </template>
-    </el-dialog>
+    <!-- 自定义标签对话框 - 美化版 -->
+    <div class="custom-tag-dialog" v-if="customTagDialogVisible">
+      <div class="dialog-overlay" @click="customTagDialogVisible = false"></div>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3 class="dialog-title">创建自定义标签</h3>
+          <button class="dialog-close" @click="customTagDialogVisible = false">×</button>
+        </div>
+        <div class="dialog-body">
+          <form @submit.prevent="handleCreateCustomTag" class="custom-tag-form">
+            <div class="form-group">
+              <label for="tag-name">标签名称</label>
+              <input 
+                type="text" 
+                id="tag-name" 
+                v-model="customTagForm.name" 
+                placeholder="请输入标签名称"
+                required
+                maxlength="20"
+              />
+              <div class="form-hint">标签名称长度在1到20个字符</div>
+            </div>
+            <div class="form-group">
+              <label for="tag-category">标签类别</label>
+              <select 
+                id="tag-category" 
+                v-model="customTagForm.category_id" 
+                required
+                class="category-select"
+              >
+                <option value="">请选择标签类别</option>
+                <option 
+                  v-for="category in tagCategories" 
+                  :key="category.category_id"
+                  :value="category.category_id"
+                >
+                  {{ category.category_name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn-cancel" 
+                @click="customTagDialogVisible = false"
+                :disabled="creatingTag"
+              >
+                取消
+              </button>
+              <button 
+                type="submit" 
+                class="btn-submit" 
+                :disabled="creatingTag"
+              >
+                <span v-if="creatingTag">创建中...</span>
+                <span v-else>创建标签</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, Edit } from '@element-plus/icons-vue'
@@ -376,7 +399,6 @@ export default {
     const router = useRouter()
     const route = useRoute()
     const formRef = ref(null)
-    const customTagFormRef = ref(null)
     const submitting = ref(false)
     const creatingTag = ref(false)
     const isFromLLM = ref(false)
@@ -384,6 +406,11 @@ export default {
     const currentPositionId = ref(null)
     const activeSection = ref('basic')
     const customTagDialogVisible = ref(false)
+    
+    // 新增的标签选择相关变量
+    const selectedCategory = ref('')
+    const newTag = ref('')
+    const currentCategoryTags = ref([])
 
     const sections = [
       { id: 'basic', name: '基本信息' },
@@ -461,6 +488,22 @@ export default {
     const tagCategories = ref([])
     const currentTags = ref([])
     const selectedTagCategory = ref(null)
+    
+    // 获取标签名称
+    const getTagName = (tagId) => {
+      for (const category of tagCategories.value) {
+        if (category.tags) {
+          const tag = category.tags.find(t => t.tag_id === tagId)
+          if (tag) return tag.tag_name
+        }
+      }
+      return '未命名标签'
+    }
+    
+    // 移除标签
+    const removeTag = (index) => {
+      formData.value.tags.splice(index, 1)
+    }
 
     // 检查表单是否完整（用于启用提交申请按钮）
     const isFormComplete = computed(() => {
@@ -664,6 +707,20 @@ const handleTagCategoryChange = (categoryId) => {
   // 只更新当前可选的标签，不影响已选择的标签
   currentTags.value = category ? category.tags : []
 }
+    
+    // 分类变化时更新可选标签
+    const onCategoryChange = () => {
+      console.log('【选择的分类ID】', selectedCategory.value)
+      console.log('【所有分类】', tagCategories.value)
+      
+      const category = tagCategories.value.find(cat => cat.category_id === selectedCategory.value)
+      console.log('【找到的分类】', category)
+      
+      currentCategoryTags.value = category ? category.tags : []
+      console.log('【当前分类下的标签】', currentCategoryTags.value)
+      
+      newTag.value = ''
+    }
 
     // 显示自定义标签对话框
     const showCustomTagDialog = () => {
@@ -673,46 +730,51 @@ const handleTagCategoryChange = (categoryId) => {
 
     // 创建自定义标签
     const handleCreateCustomTag = async () => {
-      if (!customTagFormRef.value) return
+      // 验证必填字段
+      if (!customTagForm.value.name || !customTagForm.value.category_id) {
+        ElMessage.error('请填写标签名称并选择标签类别')
+        return
+      }
+      
+      if (customTagForm.value.name.length < 1 || customTagForm.value.name.length > 20) {
+        ElMessage.error('标签名称长度在 1 到 20 个字符')
+        return
+      }
 
-      customTagFormRef.value.validate(async (valid) => {
-        if (valid) {
-          creatingTag.value = true
-          try {
-            const token = localStorage.getItem('token')
-            
-            const response = await fetch('http://localhost:8080/api/tags', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(customTagForm.value)
-            })
-            
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-            
-            const data = await response.json()
-            if (data.code === 201) {
-              ElMessage.success('自定义标签创建成功')
-              customTagDialogVisible.value = false
-              
-              // 重新获取标签数据
-              await fetchTags()
-              
-              // 如果当前选择了对应的类别，自动选择新创建的标签
-              if (selectedTagCategory.value === customTagForm.value.category_id) {
-                formData.value.tags.push(data.data.tag_id)
-              }
-            }
-          } catch (error) {
-            console.error('创建自定义标签失败:', error)
-            ElMessage.error('创建自定义标签失败')
-          } finally {
-            creatingTag.value = false
+      creatingTag.value = true
+      try {
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch('http://localhost:8080/api/tags', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(customTagForm.value)
+        })
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        const data = await response.json()
+        if (data.code === 201) {
+          ElMessage.success('自定义标签创建成功')
+          customTagDialogVisible.value = false
+          
+          // 重新获取标签数据
+          await fetchTags()
+          
+          // 如果当前选择了对应的类别，自动选择新创建的标签
+          if (selectedCategory.value === customTagForm.value.category_id) {
+            formData.value.tags.push(data.data.tag_id)
           }
         }
-      })
+      } catch (error) {
+        console.error('创建自定义标签失败:', error)
+        ElMessage.error('创建自定义标签失败')
+      } finally {
+        creatingTag.value = false
+      }
     }
 
     // 滚动到指定区域
@@ -912,11 +974,42 @@ const handleTagCategoryChange = (categoryId) => {
       setupScrollSpy()
       fetchLocations()
       fetchTags()
+      
+      // 监听新标签选择
+      const unwatch = watch(newTag, (tagId) => {
+        console.log('【选择了标签ID】', tagId)
+        
+        if (tagId) {
+          // 检查是否已经添加
+          if (formData.value.tags.some(existingTagId => existingTagId === tagId)) {
+            console.log('【标签已存在，跳过】')
+            newTag.value = ''
+            return
+          }
+          
+          // 找到标签名称
+          console.log('【从以下标签中查找】', currentCategoryTags.value)
+          const tag = currentCategoryTags.value.find(t => t.tag_id === tagId)
+          console.log('【找到的标签】', tag)
+          
+          if (tag) {
+            console.log('【添加标签ID】', tagId)
+            formData.value.tags.push(tagId)
+            console.log('【当前所有标签】', formData.value.tags)
+          }
+          
+          newTag.value = ''
+        }
+      })
+      
+      // 在组件卸载时取消监听
+      onUnmounted(() => {
+        unwatch()
+      })
     })
 
     return {
       formRef,
-      customTagFormRef,
       formData,
       formRules,
       customTagForm,
@@ -940,7 +1033,13 @@ const handleTagCategoryChange = (categoryId) => {
       showCustomTagDialog,
       handleCreateCustomTag,
       handleSubmit,
-      handleCancel
+      handleCancel,
+      selectedCategory,
+      newTag,
+      currentCategoryTags,
+      onCategoryChange,
+      removeTag,
+      getTagName
     }
   }
 }
@@ -1134,18 +1233,18 @@ const handleTagCategoryChange = (categoryId) => {
   word-break: break-all;
 }
 
-/* 修改输入框行高和间距 */
+/* 修改输入框行高和间距 - 统一高度 */
 :deep(.el-input__inner) {
   font-size: 22px !important;
-  height: 50px !important;
-  line-height: 50px !important;
+  height: 60px !important;
+  line-height: 60px !important;
   padding: 0 15px !important;
 }
 
 :deep(.el-input__inner::placeholder) {
   font-size: 22px !important;
   color: #999;
-  line-height: 50px !important;
+  line-height: 60px !important;
 }
 
 /* 修改文本域行高和间距 */
@@ -1183,44 +1282,37 @@ const handleTagCategoryChange = (categoryId) => {
 }
 
 :deep(.el-input-number .el-input__inner) {
-  height: 50px !important;
-  line-height: 50px !important;
+  height: 60px !important;
+  line-height: 60px !important;
 }
 
 :deep(.el-input-number__decrease),
 :deep(.el-input-number__increase) {
-  height: 24px !important;
-  line-height: 24px !important;
+  height: 29px !important;
+  line-height: 29px !important;
 }
 
-/* 修改选择框字号和高度 */
-/* 修改学历、省份、城市、标签类别下拉框的高度 */
+/* 修改所有下拉框高度 - 统一为60px */
 :deep(.el-select .el-input__inner) {
   font-size: 22px !important;
-  height: 100px !important; /* 从50px增加到60px */
-  line-height:100px !important;
+  height: 60px !important;
+  line-height: 60px !important;
   padding: 0 15px !important;
 }
 
 /* 修改下拉选项的高度 */
 :deep(.el-select-dropdown__item) {
   font-size: 22px !important;
-  height: 65px !important; /* 从45px增加到55px */
+  height: 55px !important;
   line-height: 55px !important;
   padding: 0 20px !important;
-}
-
-/* 专门针对学历、省份、城市、标签类别选择器 */
-:deep(.el-form-item .el-select .el-input__inner) {
-  height: 70px !important;
-  line-height: 70px !important;
 }
 
 /* 修改日期选择器字号和高度 */
 :deep(.el-date-editor .el-input__inner) {
   font-size: 22px !important;
-  height: 50px !important;
-  line-height: 50px !important;
+  height: 60px !important;
+  line-height: 60px !important;
 }
 
 /* 修改按钮字号 */
@@ -1243,105 +1335,15 @@ const handleTagCategoryChange = (categoryId) => {
   margin: 4px 6px 4px 0 !important;
 }
 
-/* 修改多选选择框的高度 */
-:deep(.el-select .el-input__inner) {
-  font-size: 22px !important;
-  height: 80px !important; /* 增加高度 */
-  line-height: 80px !important; /* 调整行高匹配高度 */
-  padding: 0 15px !important;
+/* 专门针对学历、省份、城市、标签类别选择器 - 统一高度 */
+:deep(.el-form-item .el-select .el-input__inner) {
+  height: 60px !important;
+  line-height: 60px !important;
 }
 
-/* 修改多选选择框的标签容器 */
-:deep(.el-select .el-select__tags) {
-  height: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  padding: 10px 0 !important; /* 添加内边距 */
-}
-
-/* 修改标签的样式以适应更高容器 */
-:deep(.el-select .el-tag) {
-  font-size: 20px !important;
-  height: 40px !important; /* 增加标签高度 */
-  line-height: 40px !important; /* 调整标签行高 */
-  margin: 5px 8px 5px 0 !important; /* 调整标签边距 */
-  padding: 0 12px !important;
-}
-
-/* 修改输入框在标签模式下的样式 */
-:deep(.el-select .el-select__input) {
-  height: 40px !important;
-  line-height: 40px !important;
-  margin: 5px 0 !important;
-  font-size: 22px !important;
-}
-
-/* 修改下拉面板的样式，使其与更高的输入框匹配 */
+/* 修改下拉面板的样式 */
 :deep(.el-select-dropdown) {
-  max-height: 400px !important; /* 增加下拉面板最大高度 */
-}
-
-:deep(.el-select-dropdown__item) {
-  font-size: 22px !important;
-  height: 50px !important; /* 增加下拉项高度 */
-  line-height: 50px !important; /* 调整下拉项行高 */
-  padding: 0 20px !important;
-}
-
-/* 专门针对多选选择框的占位文字 */
-:deep(.el-select__placeholder) {
-  font-size: 22px !important;
-  color: #999 !important;
-  line-height: 80px !important;
-  position: absolute !important;
-  top: 50% !important; /* 改为垂直居中 */
-  left: 15px !important;
-  transform: translateY(-50%) !important; /* 垂直居中 */
-  margin: 0 !important;
-  padding: 0 !important;
-  z-index: 1 !important;
-  width: calc(100% - 30px) !important; /* 限制宽度 */
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-/* 针对岗位标签选择器的专门调整 */
-:deep(.tags-input-container .el-select__placeholder) {
-  font-size: 22px !important;
-  color: #999 !important;
-  line-height: normal !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 15px !important;
-  transform: translateY(-50%) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  z-index: 1 !important;
-}
-
-/* 确保选择框容器有正确的定位上下文 */
-:deep(.el-select .el-input__inner) {
-  position: relative !important;
-  font-size: 22px !important;
-  height: 80px !important;
-  line-height: 80px !important;
-  padding: 0 15px !important;
-}
-
-/* 调整标签容器，为占位文字留出空间 */
-:deep(.el-select .el-select__tags) {
-  position: relative !important;
-  min-height: 80px !important;
-  padding: 10px 40px 10px 15px !important; /* 调整内边距 */
-  align-items: center !important;
-  flex-wrap: wrap !important;
-}
-
-/* 当有标签时隐藏占位文字 */
-:deep(.el-select .el-select__tags:not(:empty) ~ .el-select__placeholder) {
-  display: none !important;
+  max-height: 400px !important;
 }
 
 :deep(.el-form-item.is-required:not(.is-no-asterisk) .el-form-item__label::before) {
@@ -1363,22 +1365,120 @@ const handleTagCategoryChange = (categoryId) => {
   margin: 0 10px;
 }
 
-/* 标签输入区域 */
-.tags-input-container {
+/* 标签选择器样式 - 参考StudentProfile */
+/* 标签选择器 */
+.tags-selector {
+  margin-bottom: 20px;
   display: flex;
   gap: 15px;
-  align-items: flex-start;
+  align-items: center; /* 添加垂直居中 */
 }
 
-.add-tag-btn {
-  flex-shrink: 0;
-  height: 50px !important;
-}
-
-.tags-hint {
-  margin-top: 10px;
-  color: #999;
+.tag-select {
+  flex: 0.8; /* 从原来的1改为0.8，缩小宽度 */
+  padding: 12px 16px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
   font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+  height: 50px; /* 添加固定高度 */
+  box-sizing: border-box;
+}
+
+/* 新增自定义标签按钮样式 */
+.add-tag-btn {
+  flex: 0.2; /* 占据剩余空间 */
+  padding: 12px 16px;
+  background: #325e21;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  height: 50px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-tag-btn:hover {
+  background: #2a4e1b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(50, 94, 33, 0.3);
+}
+
+.tag-select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.tag-select:focus {
+  outline: none;
+  border-color: #325e21;
+}
+
+/* 已选择标签区域固定高度 */
+.selected-tags {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 15px;
+  max-height: 150px; /* 固定最大高度 */
+  overflow-y: auto; /* 超出时滚动 */
+  border: 1px solid #e8e8e8;
+}
+
+.tag-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tag {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #eef5ee 0%, #d4e7d4 100%);
+  color: #325e21;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid #c3d6c0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-remove {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+  color: #999;
+  transition: color 0.3s;
+}
+
+.tag-remove:hover {
+  color: #f44336;
+}
+
+/* 当没有标签时的提示样式 */
+.selected-tags:empty::before {
+  content: '暂无选择的标签';
+  color: #999;
+  font-size: 16px;
 }
 
 /* 提交区域 */
@@ -1430,6 +1530,200 @@ const handleTagCategoryChange = (categoryId) => {
   margin-right: 8px;
 }
 
+/* 自定义标签对话框 - 美化版 */
+.custom-tag-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.dialog-content {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 500px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: dialogSlideIn 0.3s ease-out;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    transform: translateY(-50px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.dialog-header {
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #325e21 0%, #2a4e1b 100%);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.dialog-body {
+  padding: 30px;
+}
+
+.custom-tag-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group label::after {
+  content: '*';
+  color: #f56c6c;
+  font-size: 16px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 14px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 18px;
+  transition: all 0.3s;
+  background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #325e21;
+  box-shadow: 0 0 0 3px rgba(50, 94, 33, 0.1);
+}
+
+.category-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 20px;
+  padding-right: 50px;
+  cursor: pointer;
+}
+
+.form-hint {
+  font-size: 14px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.btn-cancel,
+.btn-submit {
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  min-width: 120px;
+}
+
+.btn-cancel {
+  background: #6c757d;
+  color: #fff;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.btn-submit {
+  background: #325e21;
+  color: white;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #2a4e1b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(50, 94, 33, 0.3);
+}
+
+.btn-cancel:disabled,
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .form-layout {
@@ -1465,8 +1759,9 @@ const handleTagCategoryChange = (categoryId) => {
     margin-left: 0 !important;
   }
 
-  .tags-input-container {
+  .tags-selector {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .add-tag-btn {
@@ -1486,6 +1781,28 @@ const handleTagCategoryChange = (categoryId) => {
 
   .salary-separator {
     margin: 10px 0;
+  }
+  
+  .dialog-content {
+    width: 90%;
+    margin: 20px;
+  }
+  
+  .dialog-header {
+    padding: 20px;
+  }
+  
+  .dialog-body {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
   }
 }
 </style>
