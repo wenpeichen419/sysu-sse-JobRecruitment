@@ -224,7 +224,7 @@
 
 <script>
 // ✅ 导入API方法(替代mock数据)
-import { getJobList, favoriteJob, unfavoriteJob, getFavoriteJobs } from '@/api/job'
+import { getJobList, favoriteJob, unfavoriteJob, getFavoriteJobs, searchFavoriteJobs } from '@/api/job'
 import { getLocations } from '@/api/location'
 import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
@@ -394,10 +394,27 @@ export default {
         // 根据是否查看收藏调用不同的API
         let response
         if (this.showFavoriteOnly) {
-          response = await getFavoriteJobs({
-            page: params.page,
-            size: params.page_size
-          })
+          // ✅ 检查是否有任何筛选条件
+          const hasFilters = this.searchJobTitle || this.searchCompanyName || 
+                            this.selectedProvince || this.selectedCity || 
+                            this.selectedCategory || this.selectedType || 
+                            this.selectedCompanyNature || this.minSalary || this.maxSalary
+          
+          if (hasFilters) {
+            // 如果有筛选条件，调用搜索接口
+            console.log('【收藏模式-带筛选】调用 searchFavoriteJobs，参数:', params)
+            response = await searchFavoriteJobs(params)
+          } else {
+            // 如果没有筛选条件，调用基础收藏列表接口
+            console.log('【收藏模式-无筛选】调用 getFavoriteJobs，参数:', {
+              page: params.page,
+              size: params.page_size
+            })
+            response = await getFavoriteJobs({
+              page: params.page,
+              size: params.page_size
+            })
+          }
         } else {
           response = await getJobList(params)
         }
