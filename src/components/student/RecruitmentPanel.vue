@@ -71,7 +71,8 @@ export default {
     /** 所有招聘岗位跳转岗位详情页 */
     onClick(item) {
       if (!item || !item.id) return
-      window.location.href = `http://localhost:5306/job-detail/${item.id}`
+      // 使用 Vue Router 进行 SPA 内部跳转
+      this.$router.push({ name: 'JobDetail', params: { id: item.id } })
     }
   }
 }
