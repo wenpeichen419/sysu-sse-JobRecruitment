@@ -140,7 +140,7 @@
             <!-- 拒绝原因行 - 自适应高度 -->
             <div class="table-row reason-row">
               <div class="table-cell label-cell">
-                <span class="label-text">审核备注/拒绝原因</span>
+                <span class="label-text">审核未通过原因</span>
               </div>
               <div class="table-cell value-cell reason-cell">
                 <div class="reason-content">{{ auditDetail.remark || '暂无原因' }}</div>
