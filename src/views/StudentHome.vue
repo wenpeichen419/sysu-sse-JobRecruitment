@@ -384,7 +384,8 @@ export default {
     },
     goActivity (id) {
       if (!id) return
-      window.location.href = `http://localhost:5306/activities/${id}`
+      // 使用 Vue Router 进行 SPA 内部跳转（假设路由名称为 ActivityDetail）
+      this.$router.push({ name: 'ActivityDetail', params: { id: id } })
     },
     goRecruitMore () {
       this.$router.push({ name: 'ActivityList', query: { tab: 'recruit' } })
