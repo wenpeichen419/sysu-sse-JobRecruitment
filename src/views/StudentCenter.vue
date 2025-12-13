@@ -17,24 +17,20 @@
           </div>
           <div class="user-details-grid">
             <div class="info-item">
-              <span class="info-label">学校:</span>
-              <span class="info-value">{{ studentInfo.school }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">专业:</span>
-              <span class="info-value">{{ studentInfo.major }}</span>
+              <span class="info-label">学号:</span>
+              <span class="info-value" :class="{ 'empty-value': !studentInfo.studentId }">{{ displayValue(studentInfo.studentId) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">手机:</span>
-              <span class="info-value">{{ studentInfo.phone }}</span>
+              <span class="info-value" :class="{ 'empty-value': !studentInfo.phone }">{{ displayValue(studentInfo.phone) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">邮箱:</span>
-              <span class="info-value">{{ studentInfo.email }}</span>
+              <span class="info-value" :class="{ 'empty-value': !studentInfo.email }">{{ displayValue(studentInfo.email) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">上次登录:</span>
-              <span class="info-value">{{ studentInfo.lastLogin }}</span>
+              <span class="info-value">{{ displayValue(studentInfo.lastLogin) }}</span>
             </div>
           </div>
         </div>
@@ -45,12 +41,16 @@
           <span class="tags-label">能力标签:</span>
           <div class="tags-content">
             <span 
+              v-if="displayTags.length === 0" 
+              class="empty-tag"
+            >待完善</span>
+            <span 
               v-for="(tag, index) in displayTags" 
               :key="index" 
               class="tag"
             >{{ tag }}</span>
             <a class="more-link" @click="goToTags">
-              <span class="more-text">查看全部</span>
+              <span class="more-text">{{ displayTags.length === 0 ? '去添加' : '查看全部' }}</span>
               <span class="more-arrow">›</span>
             </a>
           </div>
@@ -83,13 +83,20 @@
           <div class="resume-left">
             <div class="resume-avatar-section">
               <img :src="studentInfo.avatar" alt="简历照片" class="resume-avatar" />
-              <h2 class="resume-name">{{ studentInfo.name }}</h2>
+              <h2 class="resume-name" :class="{ 'empty-value': !studentInfo.name }">{{ displayValue(studentInfo.name) }}</h2>
+              
+              <!-- 求职状态徽章 -->
+              <div class="job-status-badge" :class="getJobStatusClass()">
+                <span class="status-icon">{{ getJobStatusIcon() }}</span>
+                <span class="status-text">{{ getJobStatusText() }}</span>
+              </div>
+              
               <div class="resume-basic-info">
-                <span class="info-tag">{{ studentInfo.gender }}</span>
+                <span class="info-tag" :class="{ 'empty-value': !studentInfo.gender }">{{ displayValue(studentInfo.gender) }}</span>
                 <span class="info-separator">|</span>
-                <span class="info-tag">{{ calculateAge(studentInfo.birthday) }}岁</span>
+                <span class="info-tag" :class="{ 'empty-value': calculateAge(studentInfo.birthday) === '--' }">{{ displayValue(calculateAge(studentInfo.birthday), '待完善') }}{{ calculateAge(studentInfo.birthday) !== '--' && calculateAge(studentInfo.birthday) !== '待完善' ? '岁' : '' }}</span>
                 <span class="info-separator">|</span>
-                <span class="info-tag">{{ studentInfo.degree }}</span>
+                <span class="info-tag" :class="{ 'empty-value': !studentInfo.degree }">{{ displayValue(studentInfo.degree) }}</span>
               </div>
             </div>
             
@@ -98,11 +105,11 @@
               <div class="resume-text">
                 <div class="text-item">
                   <span class="item-label">岗位:</span>
-                  <span class="item-value">{{ studentInfo.desiredPosition }}</span>
+                  <span class="item-value" :class="{ 'empty-value': !studentInfo.desiredPosition }">{{ displayValue(studentInfo.desiredPosition) }}</span>
                 </div>
                 <div class="text-item">
                   <span class="item-label">期望薪资:</span>
-                  <span class="item-value">{{ formatSalary(studentInfo.expectedSalary) }}</span>
+                  <span class="item-value" :class="{ 'empty-value': !studentInfo.expectedMinSalary && !studentInfo.expectedMaxSalary }">{{ formatSalary() }}</span>
                 </div>
               </div>
             </div>
@@ -111,22 +118,38 @@
           <div class="resume-right">
             <div class="resume-section">
               <h4 class="resume-section-title">教育经历</h4>
-              <div class="education-item">
-                <div class="edu-school">{{ studentInfo.school }}</div>
-                <div class="edu-time">{{ studentInfo.admissionDate }} 至 {{ studentInfo.graduationDate }}</div>
-                <div class="edu-details">
-                  <span class="edu-major">{{ studentInfo.major }}</span>
-                  <span class="info-separator">|</span>
-                  <span class="edu-degree">{{ studentInfo.degree }}</span>
-                  <span class="info-separator">|</span>
-                  <span class="edu-rank">专业排名: {{ studentInfo.ranking }}</span>
+              <div 
+                v-for="(edu, index) in studentInfo.educations" 
+                :key="index"
+                class="education-item"
+                :class="{ 'not-first': index > 0 }"
+              >
+                <div class="edu-school" :class="{ 'empty-value': !edu.school }">{{ displayValue(edu.school) }}</div>
+                <div class="edu-time">
+                  <span :class="{ 'empty-value': !edu.startDate }">{{ displayValue(edu.startDate) }}</span>
+                   至 
+                  <span :class="{ 'empty-value': !edu.endDate }">{{ displayValue(edu.endDate) }}</span>
                 </div>
+                <div class="edu-details">
+                  <span class="edu-major" :class="{ 'empty-value': !edu.major }">{{ displayValue(edu.major) }}</span>
+                  <span class="info-separator">|</span>
+                  <span class="edu-degree" :class="{ 'empty-value': !edu.degree }">{{ displayValue(edu.degree) }}</span>
+                  <span class="info-separator">|</span>
+                  <span class="edu-rank" :class="{ 'empty-value': !edu.ranking }">专业排名: {{ displayValue(edu.ranking) }}</span>
+                </div>
+              </div>
+              <div v-if="!studentInfo.educations || studentInfo.educations.length === 0" class="education-item">
+                <div class="edu-school empty-value">待完善</div>
               </div>
             </div>
             
             <div class="resume-section">
               <h4 class="resume-section-title">技能标签</h4>
               <div class="resume-tags">
+                <span 
+                  v-if="!studentInfo.tags || studentInfo.tags.length === 0" 
+                  class="empty-resume-tag"
+                >待完善</span>
                 <span 
                   v-for="(tag, index) in studentInfo.tags.slice(0, 6)" 
                   :key="index" 
@@ -213,8 +236,9 @@
 <script>
 // ✅ 导入API方法
 import { getWelcomeInfo, getResumePreview, changePassword } from '@/api'
-import { formatSalaryRangeToK } from '@/utils/salaryFormatter'
 import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
+// ✅ 导入默认头像
+import defaultAvatar from '@/assets/default-avatar.png'
 
 export default {
   name: 'StudentCenter',
@@ -223,8 +247,9 @@ export default {
       showPasswordDialog: false,
       // ✅ 学生信息(从API获取,初始为空对象)
       studentInfo: {
-        avatar: '',  // 这里存储的是 blob URL
+        avatar: defaultAvatar,  // 初始使用默认头像
         name: '',
+        studentId: '',
         school: '',
         major: '',
         phone: '',
@@ -235,10 +260,10 @@ export default {
         birthday: '',
         degree: '',
         desiredPosition: '',
-        expectedSalary: '',
-        admissionDate: '',
-        graduationDate: '',
-        ranking: ''
+        expectedMinSalary: 0,
+        expectedMaxSalary: 0,
+        jobSeekingStatus: 0,
+        educations: [] // 教育经历数组
       },
       // 密码表单
       passwordForm: {
@@ -269,7 +294,34 @@ export default {
     }
   },
   methods: {
+    // ✅ 辅助方法：处理空值显示
+    displayValue(value, defaultText = '待完善') {
+      // 处理各种空值情况
+      if (value === null || value === undefined || value === '') {
+        return defaultText
+      }
+      // 处理字符串类型的空白
+      if (typeof value === 'string' && value.trim() === '') {
+        return defaultText
+      }
+      return value
+    },
     
+    // ✅ 新增：将后端返回的求职状态字符串转换为数字
+    convertJobStatusToNumber(statusString) {
+      const statusMap = {
+        '在校-暂不考虑': 0,
+        '在校-寻求实习': 1,
+        '应届-寻求实习': 2,
+        '应届-寻求校招': 3
+      }
+      // 如果已经是数字，直接返回
+      if (typeof statusString === 'number') {
+        return statusString
+      }
+      // 转换字符串为数字，如果找不到匹配则返回0
+      return statusMap[statusString] || 0
+    },
     
     // ✅ 新增:加载学生信息
     async loadStudentInfo() {
@@ -286,13 +338,86 @@ export default {
         console.log('【简历预览】', resumeData)
         console.log('【头像路径】', resumeData.avatar_url)
         
-        // ✅ 加载头像（带token验证）
-        const avatarBlobUrl = await loadImageWithAuth(resumeData.avatar_url, this.baseURL)
+        // ✅ 加载头像（带token验证），如果没有头像URL则使用默认头像
+        let avatarBlobUrl = defaultAvatar // 默认使用本地默认头像
+        if (resumeData.avatar_url) {
+          try {
+            avatarBlobUrl = await loadImageWithAuth(resumeData.avatar_url, this.baseURL)
+          } catch (error) {
+            console.warn('【头像加载失败，使用默认头像】', error)
+            avatarBlobUrl = defaultAvatar
+          }
+        }
+        
+        // 处理教育经历数组（支持单个对象或数组）
+        let educations = []
+        
+        // 检查多种可能的字段名称，兼容不同的接口返回格式
+        if (resumeData.education_list && Array.isArray(resumeData.education_list)) {
+          // 如果有 education_list 数组
+          educations = resumeData.education_list.map(edu => ({
+            school: edu.school_name || '',
+            degree: edu.degree_level || '',
+            major: edu.major || '',
+            startDate: edu.start_date || '',
+            endDate: edu.end_date || '',
+            ranking: edu.major_rank || ''
+          }))
+        } else if (resumeData.educations && Array.isArray(resumeData.educations)) {
+          // 如果有 educations 数组
+          educations = resumeData.educations.map(edu => ({
+            school: edu.school_name || '',
+            degree: edu.degree_level || '',
+            major: edu.major || '',
+            startDate: edu.start_date || '',
+            endDate: edu.end_date || '',
+            ranking: edu.major_rank || ''
+          }))
+        } else if (resumeData.primary_education) {
+          // 如果只有 primary_education，判断是数组还是对象
+          if (Array.isArray(resumeData.primary_education)) {
+            // 如果是数组
+            educations = resumeData.primary_education.map(edu => ({
+              school: edu.school_name || '',
+              degree: edu.degree_level || '',
+              major: edu.major || '',
+              startDate: edu.start_date || '',
+              endDate: edu.end_date || '',
+              ranking: edu.major_rank || ''
+            }))
+          } else {
+            // 如果是对象，转换为单元素数组
+            educations = [{
+              school: resumeData.primary_education.school_name || '',
+              degree: resumeData.primary_education.degree_level || '',
+              major: resumeData.primary_education.major || '',
+              startDate: resumeData.primary_education.start_date || '',
+              endDate: resumeData.primary_education.end_date || '',
+              ranking: resumeData.primary_education.major_rank || ''
+            }]
+          }
+        }
+        
+        console.log('【教育经历数组】', educations)
+        
+        // 获取最高学历（数组最后一条）
+        const highestDegree = educations.length > 0 ? educations[educations.length - 1].degree : ''
+        console.log('【最高学历】', highestDegree)
+        
+        // 获取求职状态和薪资信息
+        const jobSeekingStatusRaw = resumeData.basic_info.job_seeking_status || 0
+        const jobSeekingStatus = this.convertJobStatusToNumber(jobSeekingStatusRaw)
+        const minSalary = resumeData.expected_job.expected_min_salary || 0
+        const maxSalary = resumeData.expected_job.expected_max_salary || 0
+        console.log('【求职状态（原始）】', jobSeekingStatusRaw)
+        console.log('【求职状态（转换后）】', jobSeekingStatus)
+        console.log('【期望薪资】', minSalary, '-', maxSalary)
         
         // 合并数据到 studentInfo
         this.studentInfo = {
           // 从欢迎信息接口获取
           name: welcomeData.full_name,
+          studentId: welcomeData.student_id,
           school: welcomeData.school_name,
           phone: welcomeData.phone_number,
           email: welcomeData.email,
@@ -304,17 +429,16 @@ export default {
           gender: resumeData.basic_info.gender,
           birthday: '', // 接口不返回生日，使用 age 字段
           age: resumeData.basic_info.age,
-          degree: resumeData.basic_info.degree_level,
+          degree: highestDegree, // 使用教育经历数组最后一条的学历
+          jobSeekingStatus: jobSeekingStatus,
           
-          // 教育信息
-          major: resumeData.primary_education.major,
-          admissionDate: resumeData.primary_education.start_date,
-          graduationDate: resumeData.primary_education.end_date,
-          ranking: resumeData.primary_education.major_rank,
+          // 教育信息数组
+          educations: educations,
           
           // 期望职位
           desiredPosition: resumeData.expected_job.expected_position,
-          expectedSalary: resumeData.expected_job.expected_salary
+          expectedMinSalary: minSalary,
+          expectedMaxSalary: maxSalary
         }
         
         console.log('【加载学生信息成功】', this.studentInfo)
@@ -357,8 +481,64 @@ export default {
     },
     
     // 格式化薪资显示
-    formatSalary(salary) {
-      return formatSalaryRangeToK(salary);
+    formatSalary() {
+      const minSalary = this.studentInfo.expectedMinSalary
+      const maxSalary = this.studentInfo.expectedMaxSalary
+      const status = this.studentInfo.jobSeekingStatus
+      
+      // 如果没有薪资数据
+      if (!minSalary && !maxSalary) {
+        return '待完善'
+      }
+      
+      // 求职状态：1=在校-寻求实习, 2=应届-寻求实习 -> 不加k
+      // 求职状态：3=应届-寻求校招 -> 加k（用户填的就是k值，直接加后缀即可）
+      const shouldAddK = status === 3
+      
+      if (shouldAddK) {
+        // 校招：直接加k后缀
+        return `${minSalary || 0}k-${maxSalary || 0}k`
+      } else {
+        // 实习：不加k，直接显示数字
+        return `${minSalary || 0}-${maxSalary || 0}`
+      }
+    },
+    
+    // 获取求职状态文本
+    getJobStatusText() {
+      const status = this.studentInfo.jobSeekingStatus
+      const statusMap = {
+        0: '在校 · 暂不考虑',
+        1: '在校 · 寻求实习',
+        2: '应届 · 寻求实习',
+        3: '应届 · 寻求校招'
+      }
+      return statusMap[status] || '待完善'
+    },
+    
+    // 获取求职状态图标
+    getJobStatusIcon() {
+      const status = this.studentInfo.jobSeekingStatus
+      const iconMap = {
+        0: '',
+        1: '',
+        2: '',
+        3: ''
+      }
+      return iconMap[status] || ''
+    },
+    
+    // 获取求职状态样式类名
+    getJobStatusClass() {
+      const status = this.studentInfo.jobSeekingStatus
+      // 所有状态统一使用绿色样式
+      const classMap = {
+        0: 'status-active',
+        1: 'status-active',
+        2: 'status-active',
+        3: 'status-active'
+      }
+      return classMap[status] || 'status-incomplete'
     },
     
     // 跳转到标签编辑（定位到能力标签部分）
@@ -566,6 +746,11 @@ export default {
   font-weight: 600;
 }
 
+.info-value.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
 /* 标签区域 */
 .tags-section {
   padding-top: 25px;
@@ -599,6 +784,16 @@ export default {
   font-size: 16px;
   font-weight: 500;
   border: 1px solid #c3d6c0;
+}
+
+.empty-tag {
+  padding: 10px 20px;
+  background: #fff3e0;
+  color: #ff9800;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px dashed #ffb74d;
 }
 
 .more-link {
@@ -766,6 +961,75 @@ export default {
   margin: 0 0 10px 0;
 }
 
+.resume-name.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
+/* 求职状态徽章 */
+.job-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 12px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.job-status-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.status-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.status-text {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* 在校-寻求实习 */
+.status-internship-student {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1976d2;
+  border: 1px solid #90caf9;
+}
+
+/* 应届-寻求实习 */
+.status-internship-graduate {
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+
+/* 应届-寻求校招 */
+.status-campus-recruit {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+/* 统一的激活状态 - 绿色 */
+.status-active {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+/* 待完善状态 */
+.status-incomplete {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  color: #f57c00;
+  border: 1px dashed #ffb74d;
+}
+
 .resume-basic-info {
   display: flex;
   align-items: center;
@@ -776,6 +1040,11 @@ export default {
 
 .info-tag {
   color: #666;
+}
+
+.info-tag.empty-value {
+  color: #ff9800;
+  font-style: italic;
 }
 
 .info-separator {
@@ -826,10 +1095,21 @@ export default {
   font-weight: 500;
 }
 
+.item-value.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
 .education-item {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.education-item.not-first {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed #ddd;
 }
 
 .edu-school {
@@ -838,10 +1118,20 @@ export default {
   color: #333;
 }
 
+.edu-school.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
 .edu-time {
   font-size: 17px;
   color: #666;
   font-weight: 500;
+}
+
+.edu-time .empty-value {
+  color: #ff9800;
+  font-style: italic;
 }
 
 .edu-details {
@@ -856,12 +1146,27 @@ export default {
   font-weight: 600;
 }
 
+.edu-major.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
 .edu-degree {
   color: #666;
 }
 
+.edu-degree.empty-value {
+  color: #ff9800;
+  font-style: italic;
+}
+
 .edu-rank {
   color: #666;
+}
+
+.edu-rank.empty-value {
+  color: #ff9800;
+  font-style: italic;
 }
 
 .resume-tags {
@@ -878,6 +1183,16 @@ export default {
   font-size: 14px;
   font-weight: 500;
   border: 1px solid #c3d6c0;
+}
+
+.empty-resume-tag {
+  padding: 8px 16px;
+  background: #fff3e0;
+  color: #ff9800;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px dashed #ffb74d;
 }
 
 /* 功能卡片区 - 右侧垂直排列 */

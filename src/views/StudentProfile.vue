@@ -57,15 +57,19 @@
           <h3 class="section-title">基本信息</h3>
           <div class="form-grid">
             <div class="form-item">
-              <label>姓名</label>
-              <input type="text" v-model="formData.name" />
+              <label><span class="required-star">*</span>姓名</label>
+              <input type="text" v-model="formData.name" placeholder="请输入姓名" />
             </div>
             <div class="form-item">
-              <label>出生年月</label>
+              <label><span class="required-star">*</span>学号</label>
+              <input type="text" v-model="formData.studentId" placeholder="请输入学号" />
+            </div>
+            <div class="form-item">
+              <label><span class="required-star">*</span>出生年月</label>
               <input type="date" v-model="formData.birthday" />
             </div>
             <div class="form-item">
-              <label>性别</label>
+              <label><span class="required-star">*</span>性别</label>
               <select v-model.number="formData.gender">
                 <option :value="null">请选择</option>
                 <option :value="0">男</option>
@@ -73,58 +77,81 @@
               </select>
             </div>
             <div class="form-item">
-              <label>求职状态</label>
-              <select v-model.number="formData.jobStatus">
+              <label><span class="required-star">*</span>求职状态</label>
+              <select v-model="formData.jobStatus">
                 <option :value="null">请选择</option>
-                <option :value="0">在校-暂不考虑</option>
-                <option :value="1">在校-寻求实习</option>
-                <option :value="2">应届-寻求实习</option>
-                <option :value="3">应届-寻求校招</option>
+                <option value="在校-暂不考虑">在校-暂不考虑</option>
+                <option value="在校-寻求实习">在校-寻求实习</option>
+                <option value="应届-寻求实习">应届-寻求实习</option>
+                <option value="应届-寻求校招">应届-寻求校招</option>
               </select>
             </div>
             <div class="form-item">
               <label>邮箱</label>
-              <input type="email" v-model="formData.email" />
+              <input type="email" v-model="formData.email" placeholder="请输入邮箱" />
             </div>
             <div class="form-item">
-              <label>电话</label>
-              <input type="tel" v-model="formData.phone" />
+              <label><span class="required-star">*</span>电话</label>
+              <input type="tel" v-model="formData.phone" placeholder="请输入电话" />
             </div>
           </div>
         </div>
 
         <!-- 教育经历 -->
         <div class="section-card" id="education">
-          <h3 class="section-title">教育经历</h3>
-          <div class="form-grid">
-            <div class="form-item">
-              <label>学校名称</label>
-              <input type="text" v-model="formData.school" />
+          <div class="section-header">
+            <h3 class="section-title">教育经历</h3>
+            <button class="btn-add-education" @click="addEducation">
+              <span class="add-icon">+</span> 添加教育经历
+            </button>
+          </div>
+          
+          <div 
+            v-for="(edu, index) in formData.educations" 
+            :key="index"
+            class="education-block"
+          >
+            <div class="education-header">
+              <span class="education-number">教育经历 {{ index + 1 }}</span>
+              <button 
+                v-if="formData.educations.length > 1" 
+                class="btn-remove-education" 
+                @click="removeEducation(index)"
+              >
+                删除
+              </button>
             </div>
-            <div class="form-item">
-              <label>层次</label>
-              <select v-model.number="formData.degree">
-                <option :value="null">请选择</option>
-                <option :value="0">本科</option>
-                <option :value="1">硕士</option>
-                <option :value="2">博士</option>
-              </select>
-            </div>
-            <div class="form-item">
-              <label>入学日期</label>
-              <input type="date" v-model="formData.admissionDate" />
-            </div>
-            <div class="form-item">
-              <label>毕业日期</label>
-              <input type="date" v-model="formData.graduationDate" />
-            </div>
-            <div class="form-item">
-              <label>专业</label>
-              <input type="text" v-model="formData.major" />
-            </div>
-            <div class="form-item">
-              <label>专业排名</label>
-              <input type="text" v-model="formData.ranking" />
+            
+            <div class="form-grid">
+              <div class="form-item">
+                <label>学校名称</label>
+                <input type="text" v-model="edu.school" placeholder="请输入学校名称" />
+              </div>
+              <div class="form-item">
+                <label>层次</label>
+                <select v-model="edu.degree">
+                  <option value="">请选择</option>
+                  <option value="本科">本科</option>
+                  <option value="硕士">硕士</option>
+                  <option value="博士">博士</option>
+                </select>
+              </div>
+              <div class="form-item">
+                <label>入学日期</label>
+                <input type="date" v-model="edu.startDate" />
+              </div>
+              <div class="form-item">
+                <label>毕业日期</label>
+                <input type="date" v-model="edu.endDate" />
+              </div>
+              <div class="form-item">
+                <label>专业</label>
+                <input type="text" v-model="edu.major" placeholder="请输入专业" />
+              </div>
+              <div class="form-item">
+                <label>专业排名</label>
+                <input type="text" v-model="edu.ranking" placeholder="如：Top 5%" />
+              </div>
             </div>
           </div>
         </div>
@@ -133,13 +160,27 @@
         <div class="section-card" id="job">
           <h3 class="section-title">期望岗位</h3>
           <div class="form-grid">
-            <div class="form-item">
+            <div class="form-item full-width">
               <label>期望岗位</label>
-              <input type="text" v-model="formData.desiredPosition" />
+              <input type="text" v-model="formData.desiredPosition" placeholder="请输入期望岗位" />
             </div>
             <div class="form-item">
-              <label>期望薪资</label>
-              <input type="text" v-model="formData.expectedSalary" />
+              <label>期望最低薪资</label>
+              <input 
+                type="number" 
+                v-model.number="formData.expectedMinSalary" 
+                placeholder="请输入最低薪资"
+              />
+              <span class="salary-hint">校招 k/月 | 实习 元/天</span>
+            </div>
+            <div class="form-item">
+              <label>期望最高薪资</label>
+              <input 
+                type="number" 
+                v-model.number="formData.expectedMaxSalary" 
+                placeholder="请输入最高薪资"
+              />
+              <span class="salary-hint">校招 k/月 | 实习 元/天</span>
             </div>
           </div>
         </div>
@@ -191,13 +232,15 @@
 import { getEditProfile, updateProfile, uploadAvatar } from '@/api'
 import { getAvailableTags } from '@/api/tags'
 import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
+// ✅ 导入默认头像
+import defaultAvatar from '@/assets/default-avatar.png'
 
 export default {
   name: 'StudentProfile',
   data() {
     return {
       currentSection: 'avatar',
-      avatarUrl: '',  // 这里存储的是 blob URL
+      avatarUrl: defaultAvatar,  // 初始使用默认头像
       pendingAvatarFile: null,  // 待上传的头像文件
       loading: false,
       baseURL: 'http://localhost:8080',
@@ -249,19 +292,25 @@ export default {
       // ✅ 表单数据（从API获取）
       formData: {
         name: '',
+        studentId: '',
         birthday: '',
         gender: null,
         jobStatus: null,
         email: '',
         phone: '',
-        school: '',
-        degree: null,
-        admissionDate: '',
-        graduationDate: '',
-        major: '',
-        ranking: '',
+        educations: [
+          {
+            school: '',
+            degree: '',
+            startDate: '',
+            endDate: '',
+            major: '',
+            ranking: ''
+          }
+        ],
         desiredPosition: '',
-        expectedSalary: '',
+        expectedMinSalary: 0,
+        expectedMaxSalary: 0,
         tags: []  // 改为存储对象数组 { id, name }
       },
       
@@ -343,13 +392,23 @@ export default {
         console.log('【加载个人档案】', data)
         
         // 映射数据到表单
-        // ✅ 加载头像（带token验证）
-        this.avatarUrl = await loadImageWithAuth(data.avatar_url, this.baseURL)
+        // ✅ 加载头像（带token验证），如果没有头像URL则使用默认头像
+        if (data.avatar_url) {
+          try {
+            this.avatarUrl = await loadImageWithAuth(data.avatar_url, this.baseURL)
+          } catch (error) {
+            console.warn('【头像加载失败，使用默认头像】', error)
+            this.avatarUrl = defaultAvatar
+          }
+        } else {
+          this.avatarUrl = defaultAvatar
+        }
         
-        // ✅ 处理枚举字段：中文字符串 → 数字
+        // ✅ 处理枚举字段
+        // 性别：中文字符串 → 数字（用于前端下拉框）
         const gender = data.basic_info?.gender != null ? this.genderMap[data.basic_info.gender] ?? null : null
-        const jobStatus = data.basic_info?.job_seeking_status != null ? this.jobStatusMap[data.basic_info.job_seeking_status] ?? null : null
-        const degree = data.primary_education?.degree_level != null ? this.degreeMap[data.primary_education.degree_level] ?? null : null
+        // 求职状态：后端返回的已经是字符串，直接使用
+        const jobStatus = data.basic_info?.job_seeking_status || null
         
         // ✅ 处理日期格式：如果是 "yyyy-MM" 格式，补充 "-01"
         const formatDate = (dateStr) => {
@@ -361,24 +420,48 @@ export default {
           return dateStr
         }
         
+        // ✅ 处理教育经历数组
+        let educations = []
+        if (data.primary_education && Array.isArray(data.primary_education) && data.primary_education.length > 0) {
+          educations = data.primary_education.map(edu => ({
+            id: edu.id || null, // 保存教育经历ID（后端新增）
+            school: edu.school_name || '',
+            degree: edu.degree_level || '',
+            startDate: formatDate(edu.start_date),
+            endDate: formatDate(edu.end_date),
+            major: edu.major || '',
+            ranking: edu.major_rank || ''
+          }))
+        } else {
+          // 如果没有教育经历，提供一个空模板
+          educations = [{
+            id: null, // 新增的没有ID
+            school: '',
+            degree: '',
+            startDate: '',
+            endDate: '',
+            major: '',
+            ranking: ''
+          }]
+        }
+        
+        console.log('【教育经历数组】', educations)
+        
         // ✅ 打印标签原始数据
         console.log('【原始标签数据】', data.personal_tags)
         
         this.formData = {
           name: data.basic_info?.full_name || '',
+          studentId: data.basic_info?.student_id || '',
           birthday: formatDate(data.basic_info?.date_of_birth),
           gender: gender,
           jobStatus: jobStatus,
           email: data.basic_info?.email || '',
           phone: data.basic_info?.phone_number || '',
-          school: data.primary_education?.school_name || '',
-          degree: degree,
-          admissionDate: formatDate(data.primary_education?.start_date),
-          graduationDate: formatDate(data.primary_education?.end_date),
-          major: data.primary_education?.major || '',
-          ranking: data.primary_education?.major_rank || '',
+          educations: educations,
           desiredPosition: data.expected_job?.expected_position || '',
-          expectedSalary: data.expected_job?.expected_salary || '',
+          expectedMinSalary: data.expected_job?.expected_min_salary || 0,
+          expectedMaxSalary: data.expected_job?.expected_max_salary || 0,
           tags: (data.personal_tags || []).map(tag => {
             console.log('【处理标签】', tag)
             return {
@@ -525,6 +608,76 @@ export default {
       this.formData.tags.splice(index, 1)
     },
     
+    // ✅ 添加教育经历
+    addEducation() {
+      this.formData.educations.push({
+        id: null, // 新增的教育经历没有ID
+        school: '',
+        degree: '',
+        startDate: '',
+        endDate: '',
+        major: '',
+        ranking: ''
+      })
+    },
+    
+    // ✅ 删除教育经历
+    removeEducation(index) {
+      if (this.formData.educations.length > 1) {
+        this.formData.educations.splice(index, 1)
+      } else {
+        alert('至少需要保留一条教育经历')
+      }
+    },
+    
+    // ✅ 验证必填字段
+    validateForm() {
+      // 验证姓名
+      if (!this.formData.name || !this.formData.name.trim()) {
+        alert('请填写姓名')
+        return false
+      }
+      
+      // 验证学号
+      if (!this.formData.studentId || !this.formData.studentId.trim()) {
+        alert('请填写学号')
+        return false
+      }
+      
+      // 验证出生日期
+      if (!this.formData.birthday) {
+        alert('请选择出生日期')
+        return false
+      }
+      
+      // 验证性别
+      if (this.formData.gender === null || this.formData.gender === undefined) {
+        alert('请选择性别')
+        return false
+      }
+      
+      // 验证求职状态
+      if (this.formData.jobStatus === null || this.formData.jobStatus === undefined) {
+        alert('请选择求职状态')
+        return false
+      }
+      
+      // 验证电话
+      if (!this.formData.phone || !this.formData.phone.trim()) {
+        alert('请填写电话')
+        return false
+      }
+      
+      // 验证电话格式
+      const phoneRegex = /^1[3-9]\d{9}$/
+      if (!phoneRegex.test(this.formData.phone)) {
+        alert('请输入正确的手机号码')
+        return false
+      }
+      
+      return true
+    },
+    
     // 返回
     goBack() {
       this.$router.push({ name: 'StudentCenter' })
@@ -539,6 +692,11 @@ export default {
     
     // ✅ 提交表单（调用真实API）
     async submitForm() {
+      // ✅ 先验证必填字段
+      if (!this.validateForm()) {
+        return
+      }
+      
       try {
         this.loading = true
         
@@ -562,42 +720,52 @@ export default {
           }
         }
         
-        // ✅ 处理日期格式：如果后端需要 yyyy-MM 格式，则截取前7位
+        // ✅ 处理日期格式：所有日期都使用完整的 yyyy-MM-dd 格式提交
         const formatDateForSubmit = (dateStr) => {
           if (!dateStr) return ''
-          // 如果是完整日期 yyyy-MM-dd，截取前7位得到 yyyy-MM
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            return dateStr.substring(0, 7)
-          }
+          // 直接返回完整格式，后端需要 yyyy-MM-dd 格式
           return dateStr
         }
         
-        // ✅ 组织成后端需要的数据格式（数字 → 中文字符串）
+        // ✅ 组织成后端需要的数据格式
         const payload = {
           basic_info: {
             full_name: this.formData.name,
             gender: this.formData.gender != null ? this.genderReverseMap[this.formData.gender] : '',
-            date_of_birth: formatDateForSubmit(this.formData.birthday),
-            job_seeking_status: this.formData.jobStatus != null ? this.jobStatusReverseMap[this.formData.jobStatus] : '',
-            email: this.formData.email,
-            phone_number: this.formData.phone
+            date_of_birth: formatDateForSubmit(this.formData.birthday), // 生日使用完整格式 yyyy-MM-dd
+            job_seeking_status: this.formData.jobStatus || '', // 求职状态直接使用字符串
+            email: this.formData.email || '',
+            phone_number: this.formData.phone,
+            student_id: this.formData.studentId
           },
-          primary_education: {
-            school_name: this.formData.school,
-            degree_level: this.formData.degree != null ? this.degreeReverseMap[this.formData.degree] : '',
-            major: this.formData.major,
-            start_date: formatDateForSubmit(this.formData.admissionDate),
-            end_date: formatDateForSubmit(this.formData.graduationDate),
-            major_rank: this.formData.ranking
-          },
+          primary_education: this.formData.educations.map(edu => {
+            const eduData = {
+              school_name: edu.school || '',
+              degree_level: edu.degree || '',
+              major: edu.major || '',
+              start_date: formatDateForSubmit(edu.startDate) || '',
+              end_date: formatDateForSubmit(edu.endDate) || '',
+              major_rank: edu.ranking || ''
+            }
+            // 如果有ID，说明是更新现有记录
+            if (edu.id) {
+              eduData.id = edu.id
+            }
+            return eduData
+          }),
           expected_job: {
-            expected_position: this.formData.desiredPosition,
-            expected_salary: this.formData.expectedSalary
+            expected_position: this.formData.desiredPosition || '',
+            expected_min_salary: parseInt(this.formData.expectedMinSalary) || 0,
+            expected_max_salary: parseInt(this.formData.expectedMaxSalary) || 0
           },
           personal_tag_ids: this.formData.tags.map(tag => tag.id)
         }
         
-        console.log('【提交个人档案】', payload)
+        console.log('【提交个人档案 - 完整数据】', JSON.stringify(payload, null, 2))
+        console.log('【基本信息】', payload.basic_info)
+        console.log('【教育经历】', payload.primary_education)
+        console.log('【期望岗位】', payload.expected_job)
+        console.log('【标签IDs】', payload.personal_tag_ids)
         
         // ✅ 调用API更新档案
         await updateProfile(payload)
@@ -872,6 +1040,16 @@ export default {
   color: #666;
 }
 
+.form-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.required-star {
+  color: #f44336;
+  margin-right: 4px;
+  font-size: 18px;
+}
+
 .form-item input,
 .form-item select {
   padding: 12px 16px;
@@ -886,6 +1064,86 @@ export default {
   outline: none;
   border-color: #325e21;
   background: #fff;
+}
+
+.salary-hint {
+  font-size: 14px;
+  color: #999;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* 教育经历块样式 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.btn-add-education {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #325e21;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-add-education:hover {
+  background: #2a4e1b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(50, 94, 33, 0.3);
+}
+
+.add-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.education-block {
+  padding: 25px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border-left: 4px solid #325e21;
+}
+
+.education-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.education-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #325e21;
+}
+
+.btn-remove-education {
+  padding: 6px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-remove-education:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 /* 标签选择器 */
