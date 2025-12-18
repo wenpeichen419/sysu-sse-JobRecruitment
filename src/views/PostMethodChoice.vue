@@ -59,24 +59,15 @@
     <!-- 文件上传对话框 -->
     <el-dialog
       v-model="uploadDialogVisible"
-      title="上传岗位文档"
+      title="上传解析图文"
       width="900px"
       :close-on-click-modal="false"
       class="upload-dialog-custom"
     >
       <!-- 对话框内容 -->
       <div class="dialog-container">
-        <!-- 对话框头部装饰 -->
-        <div class="dialog-header-decor">
-          <div class="decor-line"></div>
-          <div class="decor-icon">
-            <i class="el-icon-upload"></i>
-          </div>
-          <div class="decor-line"></div>
-        </div>
-
-        <!-- 主要内容区域 -->
-        <div class="dialog-main-content">
+        <!-- 将主要内容区域整体下移，添加margin-top -->
+        <div class="dialog-main-content" style="margin-top: 30px;">
           <!-- 输入类型选择卡片 -->
           <div class="input-type-section">
             <h3 class="section-title">
@@ -90,7 +81,8 @@
                 @click="inputType = 'text'"
               >
                 <div class="card-icon">
-                  <i class="el-icon-document"></i>
+                  <!-- 使用text_logo图标 -->
+                  <img src="@/assets/text_logo.png" alt="文本输入" class="custom-icon">
                 </div>
                 <h4>文本输入</h4>
                 <p>直接粘贴岗位描述文本</p>
@@ -101,7 +93,8 @@
                 @click="inputType = 'image'"
               >
                 <div class="card-icon">
-                  <i class="el-icon-picture"></i>
+                  <!-- 使用image_logo图标 -->
+                  <img src="@/assets/image_logo.png" alt="图片上传" class="custom-icon">
                 </div>
                 <h4>图片上传</h4>
                 <p>上传岗位相关图片</p>
@@ -159,7 +152,7 @@
                 </el-button>
               </div>
               
-              <div class="upload-area" @click="triggerFileUpload">
+              <div class="upload-area" >
                 <el-upload
                   ref="uploadRef"
                   class="upload-demo"
@@ -168,41 +161,56 @@
                   :on-remove="handleRemove"
                   :on-change="handleImageChange"
                   :on-success="handleImageSuccess"
+                  :before-upload="beforeImageUpload"
                   :file-list="fileList"
                   :auto-upload="false"
                   :show-file-list="false"
-                  accept=".jpg,.jpeg,.png,.gif,.pdf"
+                  accept=".jpg,.jpeg,.png,.bmp,.webp"
+                  multiple
                 >
                   <div class="upload-placeholder">
-                    <div class="upload-icon">
-                      <i class="el-icon-upload"></i>
-                    </div>
-                    <div class="upload-text">
-                      <p class="main-text">点击或拖拽文件到此区域</p>
-                      <p class="sub-text">支持 JPG、PNG、PDF 格式，文件大小不超过 10MB</p>
-                    </div>
+                     <div class="upload-icon">
+                        <img src="@/assets/upload_logo.png" alt="上传" class="upload-custom-icon">
+                     </div>
+                     <div class="upload-text">
+                        <p class="main-text">点击或拖拽文件到此区域</p>
+                        <p class="sub-text">支持 JPG、PNG等格式，文件大小不超过 10MB</p>
+                     </div>
                   </div>
                 </el-upload>
               </div>
 
-              <!-- 文件列表 -->
+              <!-- 文件列表 - 优化图片预览 -->
               <div v-if="fileList.length > 0" class="file-list">
-                <div v-for="(file, index) in fileList" :key="index" class="file-item">
-                  <div class="file-icon">
-                    <i class="el-icon-document"></i>
-                  </div>
-                  <div class="file-info">
-                    <div class="file-name">{{ file.name }}</div>
-                    <div class="file-size">{{ formatFileSize(file.size) }}</div>
-                  </div>
-                  <div class="file-actions">
-                    <el-button 
-                      type="text" 
-                      @click="handleRemove(file)"
-                      class="remove-btn"
+                <div v-for="(file, index) in fileList" :key="file.uid || index" class="file-item">
+                  <!-- 图片预览 -->
+                  <div class="file-preview" v-if="isImageFile(file)">
+                    <img 
+                      :src="getFilePreviewUrl(file)" 
+                      :alt="file.name"
+                      class="file-thumbnail"
+                      @click="handlePreview(file)"
                     >
-                      <i class="el-icon-delete"></i>
-                    </el-button>
+                    <!-- 删除按钮 - 改为白色叉号 -->
+                    <div class="file-remove-btn" @click.stop="removeFile(index)">
+                      <div class="remove-icon">×</div>
+                    </div>
+                  </div>
+                  
+                  <!-- 非图片文件 -->
+                  <div v-else class="file-info-container">
+                    <div class="file-icon">
+                      <i class="el-icon-document"></i>
+                    </div>
+                    <div class="file-info">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-size">{{ formatFileSize(file.size) }}</div>
+                    </div>
+                    <div class="file-actions">
+                      <div class="file-remove-btn" @click.stop="removeFile(index)">
+                        <div class="remove-icon">×</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -271,7 +279,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
@@ -292,6 +300,25 @@ export default {
     const uploadAction = ref('https://jsonplaceholder.typicode.com/posts/')
     const uploadRef = ref(null)
 
+    // 判断是否为图片文件
+    const isImageFile = (file) => {
+      const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp']
+      return imageTypes.includes(file.type) || 
+             (file.name && file.name.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i))
+    }
+
+    // 获取文件预览URL
+    const getFilePreviewUrl = (file) => {
+      if (file.url) {
+        return file.url
+      } else if (file.raw) {
+        return URL.createObjectURL(file.raw)
+      } else if (file instanceof File) {
+        return URL.createObjectURL(file)
+      }
+      return ''
+    }
+
     // 计算表单是否有效
     const isFormValid = computed(() => {
       if (!inputType.value) return false
@@ -299,7 +326,7 @@ export default {
       if (inputType.value === 'text') {
         return textContent.value.trim().length > 0
       } else if (inputType.value === 'image') {
-        return fileList.value.length > 0 || uploadedFile.value !== null
+        return fileList.value.length > 0
       }
       
       return false
@@ -313,13 +340,14 @@ export default {
     // 显示上传对话框
     const showUploadDialog = () => {
       uploadDialogVisible.value = true
-      // 重置状态
-      inputType.value = ''
-      textContent.value = ''
-      fileList.value = []
-      uploadedFile.value = null
-      isProcessing.value = false
-      processingProgress.value = 0
+      // 重置状态 - 使用 nextTick 确保 DOM 已更新
+      nextTick(() => {
+        inputType.value = ''
+        textContent.value = ''
+        clearFileList()
+        isProcessing.value = false
+        processingProgress.value = 0
+      })
     }
 
     // 格式化文件大小
@@ -331,49 +359,116 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
 
-    // 触发文件上传
-    const triggerFileUpload = () => {
-      if (uploadRef.value) {
-        uploadRef.value.$el.querySelector('input[type="file"]')?.click()
-      }
-    }
+    // // 触发文件上传
+    // const triggerFileUpload = () => {
+    //   if (uploadRef.value) {
+    //     // 修复：确保点击的是正确的 input 元素
+    //     const uploadInput = uploadRef.value.$el.querySelector('input[type="file"]')
+    //     if (uploadInput) {
+    //       uploadInput.value = '' // 清除之前的值，避免第一次上传失败
+    //       uploadInput.click()
+    //     }
+    //   }
+    // }
 
     // 清空文件列表
     const clearFileList = () => {
+      // 清理所有图片的URL对象
+      fileList.value.forEach(file => {
+        if (file.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl)
+        }
+      })
       fileList.value = []
       uploadedFile.value = null
     }
 
+    // 删除单个文件
+    const removeFile = (index) => {
+      if (index >= 0 && index < fileList.value.length) {
+        const file = fileList.value[index]
+        // 清理预览URL
+        if (file.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl)
+        }
+        fileList.value.splice(index, 1)
+        
+        // 更新 uploadedFile
+        if (fileList.value.length > 0) {
+          uploadedFile.value = fileList.value[0].raw || fileList.value[0]
+        } else {
+          uploadedFile.value = null
+        }
+      }
+    }
+
     // 图片预览
     const handlePreview = (file) => {
-      console.log('Preview file:', file)
+      if (isImageFile(file)) {
+        const imageUrl = getFilePreviewUrl(file)
+        if (imageUrl) {
+          window.open(imageUrl, '_blank')
+        }
+      }
     }
 
-    // 图片移除
+    // 图片移除（兼容原有方法）
     const handleRemove = (file) => {
       const index = fileList.value.findIndex(f => f.uid === file.uid)
-      if (index > -1) {
-        fileList.value.splice(index, 1)
-      }
-      if (fileList.value.length === 0) {
-        uploadedFile.value = null
-      }
+      removeFile(index)
     }
 
-    // 图片变化
+    // 图片上传前的验证
+    const beforeImageUpload = (file) => {
+      const isImage = isImageFile(file)
+      const isLt10M = file.size / 1024 / 1024 < 10
+
+      if (!isImage) {
+        ElMessage.error('只能上传图片格式文件!')
+        return false
+      }
+      if (!isLt10M) {
+        ElMessage.error('图片大小不能超过 10MB!')
+        return false
+      }
+      return true
+    }
+
+    // 图片变化 - 修复第一次上传失败的问题
     const handleImageChange = (file, files) => {
       console.log('File changed:', file, files)
-      fileList.value = files
-      if (file.raw) {
-        uploadedFile.value = file.raw
+      
+      // 修复：确保 fileList 完全更新
+      fileList.value = files.map(f => {
+        // 确保每个文件对象都有必要的属性
+        const fileObj = {
+          ...f,
+          previewUrl: f.raw && isImageFile(f) ? URL.createObjectURL(f.raw) : null
+        }
+        
+        // 确保有 uid
+        if (!fileObj.uid) {
+          fileObj.uid = Date.now() + Math.random()
+        }
+        
+        return fileObj
+      })
+      
+      // 更新 uploadedFile
+      if (fileList.value.length > 0) {
+        uploadedFile.value = fileList.value[0].raw || fileList.value[0]
       } else {
-        uploadedFile.value = file
+        uploadedFile.value = null
       }
     }
 
     // 图片上传成功
     const handleImageSuccess = (response, file, files) => {
       console.log('Upload success:', response, file, files)
+      // 添加上传成功的预览URL
+      if (file.raw && !file.previewUrl && isImageFile(file)) {
+        file.previewUrl = URL.createObjectURL(file.raw)
+      }
       uploadedFile.value = file
       fileList.value = files
     }
@@ -417,8 +512,10 @@ export default {
         
         if (inputType.value === 'text') {
           requestData.append('text', textContent.value)
-        } else if (inputType.value === 'image' && (fileList.value.length > 0 || uploadedFile.value)) {
-          const file = uploadedFile.value || (fileList.value[0]?.raw || fileList.value[0])
+        } else if (inputType.value === 'image' && fileList.value.length > 0) {
+          // 修复：确保使用正确的文件对象
+          const firstFile = fileList.value[0]
+          const file = firstFile.raw || firstFile
           if (file) {
             requestData.append('image', file)
           }
@@ -446,6 +543,13 @@ export default {
             fromLLM: true
           }
 
+          // 清理预览URL
+          fileList.value.forEach(file => {
+            if (file.previewUrl) {
+              URL.revokeObjectURL(file.previewUrl)
+            }
+          })
+
           // 延迟一点再跳转，让用户看到成功消息
           setTimeout(() => {
             uploadDialogVisible.value = false
@@ -467,6 +571,15 @@ export default {
       }
     }
 
+    // 组件销毁时清理URL对象
+    const cleanup = () => {
+      fileList.value.forEach(file => {
+        if (file.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl)
+        }
+      })
+    }
+
     return {
       uploadDialogVisible,
       isProcessing,
@@ -479,16 +592,23 @@ export default {
       uploadRef,
       isFormValid,
       formatFileSize,
+      isImageFile,
+      getFilePreviewUrl,
       goToManualForm,
       showUploadDialog,
-      triggerFileUpload,
       clearFileList,
+      removeFile,
       handlePreview,
       handleRemove,
+      beforeImageUpload,
       handleImageChange,
       handleImageSuccess,
-      handleUploadConfirm
+      handleUploadConfirm,
+      cleanup
     }
+  },
+  beforeUnmount() {
+    this.cleanup()
   }
 }
 </script>
@@ -702,36 +822,6 @@ export default {
   padding: 0 40px;
 }
 
-/* 头部装饰 */
-.dialog-header-decor {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0 30px;
-}
-
-.decor-line {
-  flex: 1;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #325e21, transparent);
-}
-
-.decor-icon {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #325e21 0%, #4a8c2a 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 20px;
-}
-
-.decor-icon i {
-  color: white;
-  font-size: 24px;
-}
-
 /* 主要内容 */
 .dialog-main-content {
   display: flex;
@@ -808,9 +898,11 @@ export default {
   justify-content: center;
 }
 
-.card-icon i {
-  color: white;
-  font-size: 28px;
+/* 自定义图标样式 */
+.custom-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .type-card h4 {
@@ -912,6 +1004,12 @@ export default {
   font-size: 28px;
 }
 
+.upload-custom-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .upload-text {
   text-align: center;
   width: 100%;
@@ -930,64 +1028,137 @@ export default {
   margin: 0;
 }
 
-/* 文件列表 */
+/* 文件列表 - 新增样式 */
 .file-list {
   margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
 }
 
 .file-item {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  position: relative;
   transition: all 0.3s ease;
 }
 
-.file-item:hover {
+/* 图片预览样式 */
+.file-preview {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.file-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.file-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+/* 删除按钮样式 - 修改为白色叉号 */
+.file-remove-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  z-index: 10;
+  font-weight: bold;
+}
+
+.file-remove-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.remove-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* 非图片文件样式 */
+.file-info-container {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+  position: relative;
+}
+
+.file-info-container:hover {
   background: #e9ecef;
 }
 
 .file-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: #325e21;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
 .file-icon i {
   color: white;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .file-info {
   flex: 1;
+  min-width: 0;
+  margin-right: 30px; /* 为删除按钮留出空间 */
 }
 
 .file-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #333;
   margin-bottom: 3px;
   word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .file-size {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
 }
 
-.remove-btn {
-  color: #ff4757;
-}
-
-.remove-btn:hover {
-  color: #ff6b81;
+.file-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
 }
 
 /* 提示信息 */
@@ -1109,6 +1280,10 @@ export default {
   
   .input-content-section {
     padding: 20px;
+  }
+  
+  .file-list {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }
 }
 
