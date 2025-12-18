@@ -41,7 +41,7 @@
               {{ a.title }}
             </div>
             <div class="meta">{{ a.place }}</div>
-            <div class="summary">{{ a.summary }}</div>
+            <div class="summary" v-html="a.summaryPreviewHtml"></div>
           </div>
           <div class="arrow">›</div>
         </div>
@@ -110,6 +110,25 @@ function splitYMD (str) {
   return { year: y, month: m, day }
 }
 
+// 把富文本 HTML 转成纯文本（不会破坏标签）
+function htmlToText (html) {
+  if (!html) return ''
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim()
+}
+
+// 防止用户文本里出现 < > 之类被当成 HTML（做成安全的纯文本 HTML）
+function escapeHtml (s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+
 export default {
   name: 'ActivityList',
   components: { ZyBreadcrumb },
@@ -119,7 +138,9 @@ export default {
       data: [],       // 当前页活动列表
       total: 0,       // 总记录数
       page: 1,        // 当前页码
-      pageSize: 10    // 每页数量
+      pageSize: 10 ,   // 每页数量
+      previewLen: 60
+
     }
   },
   computed: {
@@ -156,16 +177,30 @@ export default {
 
         // 总数
         this.total = data.total || 0
+// 当前页数据（富文本摘要：只显示部分字数）
+this.data = events.map(e => {
+  const rawHtml = e.event_summary || ''     // 后端富文本 HTML
+  const text = htmlToText(rawHtml)          // 转纯文本
 
-        // 当前页数据
-        this.data = events.map(e => ({
-          key: `event-${e.event_id}`,
-          id: e.event_id,
-          title: e.event_title,
-          date: e.event_start_time,
-          place: e.event_location,
-          summary: e.event_summary || ''
-        }))
+  const cut = text.length > this.previewLen
+    ? text.slice(0, this.previewLen) + '…'
+    : text
+
+  return {
+    key: `event-${e.event_id}`,
+    id: e.event_id,
+    title: e.event_title,
+    date: e.event_start_time,
+    place: e.event_location,
+
+    // 可选：保留原始富文本（以后详情页要用的话）
+    summaryHtml: rawHtml,
+
+    // 列表页显示用：截断后的“安全 HTML”（其实是纯文本）
+    summaryPreviewHtml: escapeHtml(cut)
+  }
+})
+
       } catch (err) {
         console.error('获取活动列表失败', err)
       }

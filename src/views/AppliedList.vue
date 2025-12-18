@@ -175,44 +175,53 @@ export default {
   },
   methods: {
   
-    formatSalary (item) {
-    // 优先用后端给的 salary_range
-    const raw = item.salary_range ?? item.salary ?? ''
+formatSalary (item) {
+  const raw = item.salary_range ?? item.salary ?? ''
+  if (raw === null || raw === undefined || raw === '') return ''
 
-    if (raw === null || raw === undefined || raw === '') return ''
+  const s = String(raw).trim()
 
-    // 1) 如果已经带 k 了，直接用
-    if (typeof raw === 'string' && /[kK]/.test(raw)) {
-      return raw
+  // 1) 已经带 k 的，直接用（不改）
+  if (/[kK]/.test(s)) return s.replace(/\s+/g, '')
+
+  // 2) 已经带 元 / ￥ 的，去掉单位，只保留数字
+  if (/[元￥]/.test(s)) {
+    return s.replace(/[元￥]/g, '').replace(/\s+/g, '')
+  }
+
+  // 3) 区间：a-b / a~b
+  const m = s.match(/^\s*(\d+(\.\d+)?)\s*[-~]\s*(\d+(\.\d+)?)\s*$/)
+  if (m) {
+    const a = Number(m[1])
+    const b = Number(m[3])
+
+    // 100-400 这种：直接显示数字
+    if (a < 1000 && b < 1000) {
+      return `${a}-${b}`
     }
 
-    // 2) 形如 "7-11"、"9 - 11" 这种，补上 k
-    if (typeof raw === 'string') {
-      const m = raw.match(/^\s*(\d+)\s*[-~]\s*(\d+)\s*$/)
-      if (m) {
-        return `${m[1]}k-${m[2]}k`
-      }
-      return raw    // 其他奇怪格式就原样返回
-    }
+    // 7000-11000 → 转 k
+    const ak = a / 1000
+    const bk = b / 1000
+    const fmt = (x) =>
+      Number.isInteger(x) ? String(x) : x.toFixed(1).replace(/\.0$/, '')
 
-    // 3) 如果有 min/max 字段（例如 7 和 11）
-    const min = item.salary_min ?? item.min_salary
-    const max = item.salary_max ?? item.max_salary
-    if (min && max) {
-      // 如果后端给的是 “7, 11” 这种单位就是 k：
-      return `${min}k-${max}k`
+    return `${fmt(ak)}k-${fmt(bk)}k`
+  }
 
-      // ⚠ 如果后端给的是 “7000, 11000”，改成：
-      // return `${min / 1000}k-${max / 1000}k`
-    }
+  // 4) 单个数字
+  const num = Number(s)
+  if (!Number.isNaN(num)) {
+    if (num < 1000) return String(num)
+    const k = num / 1000
+    return Number.isInteger(k) ? `${k}k` : `${k.toFixed(1).replace(/\.0$/, '')}k`
+  }
 
-    // 4) 单个数字就当 xk
-    if (typeof raw === 'number') {
-      return `${raw}k`
-    }
+  // 5) 例如：面议
+  return s
+}
 
-    return String(raw)
-  },
+,
       formatDateTime (str) {
       if (!str) return ''
       return str.replace('T', ' ').slice(0, 19)

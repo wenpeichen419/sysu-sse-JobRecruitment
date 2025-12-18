@@ -30,12 +30,14 @@
         <div v-if="eventsMap[cell.dateStr]?.length" class="dot"></div>
 
         <!-- 悬浮提示 -->
-        <div
-          class="popover"
-          v-if="hover === cell.dateStr"
-          @mouseenter="hover = cell.dateStr"
-          @mouseleave="hover = ''"
-        >
+<div
+  class="popover"
+  :class="cell.row >= 3 ? 'to-top' : 'to-bottom'"
+  v-if="hover === cell.dateStr"
+  @mouseenter="hover = cell.dateStr"
+  @mouseleave="hover = ''"
+>
+
           <div class="p-title">{{ cell.dateStr }} 活动</div>
           <div v-if="eventsMap[cell.dateStr]?.length">
             <!-- ⭐ 每条活动可以点击跳转 -->
@@ -107,7 +109,8 @@ export default {
           dateStr,
           inMonth,
           day: d.getDate(),
-          isToday: dateStr === todayStr
+          isToday: dateStr === todayStr,
+          row: Math.floor(i / 7)
         })
       }
       return arr
@@ -286,7 +289,6 @@ export default {
   position:absolute;
   z-index:999;
   left:50%;
-  top:72px;
   transform:translateX(-50%);
   min-width:220px;
   background:#ffffff;
@@ -294,6 +296,16 @@ export default {
   border-radius:10px;
   padding:10px 12px;
   box-shadow:0 8px 22px rgba(0,0,0,.08);
+}
+
+/* 上半部分：向下弹（不影响下面太多） */
+.popover.to-bottom{
+  top:72px;
+}
+
+/* 下半部分：向上弹（避免盖住下一行日期格子） */
+.popover.to-top{
+  bottom:72px;
 }
 .p-title{
   font-weight:700;
@@ -352,9 +364,7 @@ export default {
 }
 
 /* 让当前格子整体盖在其他格子上，popover 不会被挡住 */
-.cell:hover,
-.cell.selected,
-.cell.today {
-  z-index: 1000;
-}
+.cell { z-index: 0; }
+.cell:hover { z-index: 2000; }
+
 </style>

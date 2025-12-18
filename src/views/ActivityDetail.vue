@@ -37,12 +37,11 @@
           </div>
 
           <!-- 内容（这里用 event_summary） -->
-          <div class="content">
-            <p v-for="(line, i) in activity.content" :key="i">
-              {{ line }}
-            </p>
-            <p v-if="!activity.content.length">暂无详细介绍</p>
-          </div>
+<div class="content">
+  <div v-if="activity.summaryHtml" v-html="activity.summaryHtml"></div>
+  <p v-else>暂无详细介绍</p>
+</div>
+
         </div>
       </div>
     </div>
@@ -81,13 +80,14 @@ export default {
   data () {
     return {
       loading: true,
-      activity: {
-        title: '活动不存在',
-        date: '',
-        place: '',
-        targetAudience: '',
-        content: [] // 这里放 event_summary 文本
-      }
+activity: {
+  title: '活动不存在',
+  date: '',
+  place: '',
+  targetAudience: '',
+  summaryHtml: '' // ⭐ 富文本 HTML
+}
+
     }
   },
   mounted () {
@@ -100,17 +100,14 @@ export default {
         const res = await api.get(`/events/${this.id}`)
         const raw = res.data?.data || {}
 
-        const summary = raw.event_summary || ''
+this.activity = {
+  title: raw.event_title || '活动不存在',
+  date: raw.event_start_time ? raw.event_start_time.slice(0, 10) : '',
+  place: raw.event_location || '',
+  targetAudience: raw.event_target_audience || '',
+  summaryHtml: raw.event_summary || '' // ⭐ 直接保存富文本
+}
 
-        this.activity = {
-          title: raw.event_title || '活动不存在',
-          // "2025-10-27 19:00:00" → "2025-10-27"
-          date: raw.event_start_time ? raw.event_start_time.slice(0, 10) : '',
-          place: raw.event_location || '',
-          targetAudience: raw.event_target_audience || '',
-          // 后端只有一个 summary，就当成一段内容展示
-          content: summary ? [summary] : []
-        }
       } catch (e) {
         console.error('获取活动详情失败', e)
       } finally {
@@ -128,6 +125,41 @@ export default {
 </script>
 
 <style scoped>
+.content :deep(p) {
+  margin: 0 0 14px;
+  line-height: 1.9;
+}
+
+.content :deep(a) {
+  color: #2a5e23;
+  text-decoration: underline;
+}
+
+
+/* 富文本里的图片样式控制 */
+.content :deep(img) {
+  display: block;          /* 让 img 可以居中 */
+  max-width: 100%;         /* 不超过内容宽度 */
+  height: auto;            /* 等比例缩放 */
+  margin: 16px auto;       /* 上下留白 + 水平居中 */
+  border-radius: 8px;      /* 可选：圆角更好看 */
+}
+
+.content :deep(img){
+  max-width:35%;
+  height:auto;
+}
+
+.content :deep(p){
+  margin:0 0 10px;
+}
+
+.content :deep(a){
+  color:#2a5e23;
+}
+
+
+
 .page{
   padding:30px;
   background:#f5f6f7;
