@@ -1,5 +1,10 @@
 <template>
   <div class="login-page">
+    <!-- 消息提示组件 -->
+    <div v-if="showMessage" :class="['message-tip', messageType]">
+      {{ messageText }}
+    </div>
+    
     <div class="login-container">
       <div class="login-box">
         <div class="login-header">
@@ -67,12 +72,19 @@ export default {
         email: '',
         password: ''
       },
-      loading: false
+      loading: false,
+      // 消息提示相关数据
+      showMessage: false,
+      messageText: '',
+      messageType: 'success' // 'success' 或 'error'
     }
   },
   methods: {
     async handleLogin() {
       this.loading = true
+      // 先隐藏可能存在的旧消息
+      this.showMessage = false
+      
       try {
         const response = await fetch('http://localhost:8080/auth/login', {
           method: 'POST',
@@ -92,23 +104,41 @@ export default {
           localStorage.setItem('token', data.data.token)
           localStorage.setItem('userInfo', JSON.stringify(data.data.user_info))
           
-          // 根据用户角色跳转到不同页面
-          if (data.data.user_info.role === 'student') {
-            this.$router.push('/student-home')
-          } else {
-            this.$router.push('/enterprise-home')
-          }
+          // 显示成功消息（自动消失）
+          this.showMessageTip('登录成功', 'success')
           
-          this.$message.success('登录成功')
+          // 延迟跳转，让用户看到成功消息
+          setTimeout(() => {
+            // 根据用户角色跳转到不同页面
+            if (data.data.user_info.role === 'student') {
+              this.$router.push('/student-home')
+            } else {
+              this.$router.push('/enterprise-home')
+            }
+          }, 1500)
+          
         } else {
-          this.$message.error(data.message || '登录失败')
+          // 显示错误消息
+          this.showMessageTip(data.message || '登录失败', 'error')
         }
       } catch (error) {
         console.error('登录失败:', error)
-        this.$message.error('登录失败，请检查网络连接')
+        this.showMessageTip('登录失败，请检查网络连接', 'error')
       } finally {
         this.loading = false
       }
+    },
+    
+    // 显示消息提示
+    showMessageTip(text, type = 'success') {
+      this.messageText = text
+      this.messageType = type
+      this.showMessage = true
+      
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        this.showMessage = false
+      }, 3000)
     }
   },
   mounted() {
@@ -246,5 +276,63 @@ export default {
 
 .login-links .link:hover {
   text-decoration: underline;
+}
+
+/* 消息提示样式 */
+.message-tip {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+  max-width: 80%;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px); /* 添加毛玻璃效果 */
+}
+
+/* 成功消息 - 使用半透明白色背景 + 绿色边框 */
+.message-tip.success {
+  background: rgba(82, 196, 26, 0.7); /* 原色 90% 透明度 */
+}
+
+/* 错误消息 - 使用半透明白色背景 + 红色边框 */
+.message-tip.error {
+  background: rgba(255, 77, 79, 0.7); /* 原色 90% 透明度 */
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-50%) translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .message-tip {
+    top: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    max-width: 90%;
+  }
+  
+  .login-box {
+    padding: 30px 20px;
+    margin: 0 15px;
+  }
+  
+  .login-header h2 {
+    font-size: 28px;
+  }
 }
 </style>
