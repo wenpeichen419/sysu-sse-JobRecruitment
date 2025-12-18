@@ -157,7 +157,7 @@
         <!-- 查看企业其他职位 -->
         <div class="info-card view-more-jobs-card" @click="goToCompanyInfo">
           <div class="view-more-content">
-            <div class="view-more-icon">🏢</div>
+            <div class="view-more-icon"></div>
             <div class="view-more-text">点击查看该企业其他在招岗位</div>
             <div class="view-more-arrow">→</div>
           </div>

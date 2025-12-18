@@ -64,7 +64,7 @@
           <span class="btn-text">编辑信息</span>
         </button>
         <button class="action-btn change-pwd" @click="showPasswordDialog = true">
-          <span class="btn-icon">🔒</span>
+          <span class="btn-icon"></span>
           <span class="btn-text">修改密码</span>
         </button>
       </div>
@@ -164,24 +164,24 @@
       <!-- 功能卡片区 -->
       <div class="functions-grid">
         <div class="function-card" @click="goToResume">
-          <div class="card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <span class="icon">📄</span>
+          <div class="card-icon" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);">
+            <img :src="documentIcon" alt="我的简历" class="icon-img" />
           </div>
           <div class="card-title">我的简历</div>
           <div class="card-desc">管理和编辑个人简历</div>
         </div>
 
         <div class="function-card" @click="goToFavorites">
-          <div class="card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <span class="icon">⭐</span>
+          <div class="card-icon" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);">
+            <img :src="favoriteIcon" alt="我的收藏" class="icon-img" />
           </div>
           <div class="card-title">我的收藏</div>
           <div class="card-desc">查看收藏的岗位信息</div>
         </div>
 
         <div class="function-card" @click="goToApplications">
-          <div class="card-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <span class="icon">📊</span>
+          <div class="card-icon" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);">
+            <img :src="applyIcon" alt="投递进度" class="icon-img" />
           </div>
           <div class="card-title">投递进度</div>
           <div class="card-desc">查看已投递的岗位状态</div>
@@ -239,6 +239,10 @@ import { getWelcomeInfo, getResumePreview, changePassword } from '@/api'
 import { loadImageWithAuth, revokeBlobUrls } from '@/utils/imageLoader'
 // ✅ 导入默认头像
 import defaultAvatar from '@/assets/default-avatar.png'
+// ✅ 导入功能图标
+import documentIcon from '@/assets/文档.png'
+import favoriteIcon from '@/assets/收藏.png'
+import applyIcon from '@/assets/立即投递.png'
 
 export default {
   name: 'StudentCenter',
@@ -274,7 +278,11 @@ export default {
       // ✅ 加载状态
       loading: false,
       // ✅ 后端基础URL
-      baseURL: 'http://localhost:8080'
+      baseURL: 'http://localhost:8080',
+      // ✅ 功能图标
+      documentIcon,
+      favoriteIcon,
+      applyIcon
     }
   },
   computed: {
@@ -1235,6 +1243,12 @@ export default {
 
 .card-icon .icon {
   font-size: 35px;
+}
+
+.card-icon .icon-img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
 }
 
 .card-title {
