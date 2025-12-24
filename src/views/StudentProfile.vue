@@ -395,7 +395,12 @@ export default {
         // ✅ 加载头像（带token验证），如果没有头像URL则使用默认头像
         if (data.avatar_url) {
           try {
-            this.avatarUrl = await loadImageWithAuth(data.avatar_url, this.baseURL)
+            // 🔧 修复：传入 defaultAvatar 作为默认图片，确保加载失败时返回默认头像而不是空字符串
+            this.avatarUrl = await loadImageWithAuth(data.avatar_url, this.baseURL, defaultAvatar)
+            // 🔧 如果返回空字符串，说明加载失败，使用默认头像
+            if (!this.avatarUrl || this.avatarUrl === '') {
+              this.avatarUrl = defaultAvatar
+            }
           } catch (error) {
             console.warn('【头像加载失败，使用默认头像】', error)
             this.avatarUrl = defaultAvatar

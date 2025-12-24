@@ -542,6 +542,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
+import defaultAvatar from '@/assets/default-avatar.png'
 import { ElDatePicker } from 'element-plus'
 import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 const STORAGE_KEY = 'resume_data_v1'
@@ -617,7 +618,9 @@ export default {
       previewVisible: false,
       exporting: false,
       fileList: [],
-      campusLogo
+      campusLogo,
+      defaultAvatar,
+      defaultAvatarBase64: '' // 默认头像的 base64 字符串
     }
   },
   async mounted () {
@@ -633,6 +636,9 @@ export default {
   }
 
   this.form.template = 'school'
+
+  // 0. 将默认头像转换为 base64
+  await this.loadDefaultAvatarAsBase64()
 
   // 1. 加载简历草稿
   await this.fetchResumeDraft()
@@ -958,6 +964,56 @@ f.profile.status = js || f.profile.status
     }
   },
 
+// ========== 将默认头像转换为 base64 ==========
+async loadDefaultAvatarAsBase64 () {
+  try {
+    console.log('【开始转换默认头像】defaultAvatar 路径:', this.defaultAvatar)
+    
+    // 尝试使用 fetch 加载图片
+    const response = await fetch(this.defaultAvatar)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+    
+    const blob = await response.blob()
+    console.log('【默认头像】blob 大小:', blob.size, '类型:', blob.type)
+    
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        console.log('【默认头像】base64 转换成功，长度:', reader.result.length)
+        resolve(reader.result)
+      }
+      reader.onerror = (err) => {
+        console.error('【默认头像】FileReader 错误:', err)
+        reject(err)
+      }
+      reader.readAsDataURL(blob)
+    })
+    
+    this.defaultAvatarBase64 = base64
+    console.log('【默认头像已转换为 base64】成功')
+  } catch (error) {
+    console.error('【默认头像转换失败】', error)
+    console.error('【默认头像转换失败】错误详情:', error.message, error.stack)
+    // 如果转换失败，尝试使用 require 或直接使用原始路径
+    try {
+      // 如果 defaultAvatar 已经是 base64，直接使用
+      if (this.defaultAvatar && this.defaultAvatar.startsWith('data:image/')) {
+        this.defaultAvatarBase64 = this.defaultAvatar
+        console.log('【默认头像】使用已有的 base64')
+      } else {
+        // 否则使用原始路径作为备用
+        this.defaultAvatarBase64 = this.defaultAvatar
+        console.warn('【默认头像】转换失败，使用原始路径作为备用:', this.defaultAvatar)
+      }
+    } catch (e) {
+      console.error('【默认头像】备用方案也失败:', e)
+      this.defaultAvatarBase64 = ''
+    }
+  }
+},
+
 // ========== 从学生中心档案同步头像 + 基本信息 ==========
 async fetchStudentAvatar () {
   try {
@@ -977,14 +1033,39 @@ async fetchStudentAvatar () {
 
     console.log('【简历页】basic_info = ', basic)
 
-    // 1) 头像
+    // 1) 头像 - 🔧 修复：转换为 base64，以便在 PDF 中正确显示
     const raw = data.avatar_url
     if (raw) {
       let full = raw
       if (!/^https?:\/\//.test(raw)) {
         full = `${API_PREFIX}${raw.startsWith('/') ? '' : '/'}${raw}`
       }
-      this.form.profile.avatar = full
+      
+      // 尝试将头像 URL 转换为 base64
+      try {
+        const imgRes = await axios.get(full, {
+          headers: getAuthHeaders(),
+          responseType: 'blob'
+        })
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(imgRes.data)
+        })
+
+        // 把 avatar 换成 base64
+        this.form.profile.avatar = dataUrl
+        console.log('【简历页】头像已转换为 base64')
+      } catch (err) {
+        console.warn('【简历页】头像加载失败，使用默认头像', err)
+        // 🔧 如果头像加载失败，使用默认头像的 base64
+        this.form.profile.avatar = this.defaultAvatarBase64 || this.defaultAvatar || ''
+      }
+    } else {
+      // 🔧 如果没有头像 URL，使用默认头像
+      this.form.profile.avatar = this.defaultAvatarBase64 || this.defaultAvatar || ''
     }
 
     // 小工具： yyyy-MM-dd -> yyyy-MM
@@ -1469,8 +1550,13 @@ async saveResume () {
     },
 
     /* ========== 预览/导出（学校模版-纯文本） ========== */
-    openPreview () {
+    async openPreview () {
       this.previewVisible = true
+      // 🔧 确保默认头像 base64 已准备好
+      if (!this.defaultAvatarBase64 || !this.defaultAvatarBase64.startsWith('data:image/')) {
+        console.log('【简历预览】默认头像 base64 未准备好，立即转换')
+        await this.loadDefaultAvatarAsBase64()
+      }
       this.$nextTick(() => this.renderPlain('plain-preview'))
     },
 
@@ -1512,7 +1598,33 @@ async saveResume () {
   `<div class="info-item"><span class="k">${esc(k)}</span><span class="v">${esc(v || '-')}</span></div>`
 ).join('')
 
-const avatar = f.profile?.avatar || f.profile?.photo || ''
+// 🔧 修复：如果头像为空或者是 URL（需要认证），使用默认头像的 base64
+let avatar = f.profile?.avatar || f.profile?.photo || ''
+
+console.log('【简历预览】原始头像值:', avatar ? (avatar.substring(0, 50) + '...') : '空')
+console.log('【简历预览】defaultAvatarBase64 状态:', this.defaultAvatarBase64 ? '已准备' : '未准备')
+
+// 如果头像为空，使用默认头像
+if (!avatar || avatar.trim() === '') {
+  console.log('【简历预览】头像为空，使用默认头像')
+  avatar = this.defaultAvatarBase64 || this.defaultAvatar || ''
+} else if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+  // 如果是 URL 格式，说明可能没有转换为 base64，使用默认头像（避免 PDF 渲染器无法加载）
+  console.warn('【简历预览】检测到头像为 URL 格式，使用默认头像以确保 PDF 正常生成', avatar)
+  avatar = this.defaultAvatarBase64 || this.defaultAvatar || ''
+} else if (!avatar.startsWith('data:image/')) {
+  // 如果不是 base64 格式，也使用默认头像
+  console.warn('【简历预览】头像格式异常，使用默认头像', avatar.substring(0, 50))
+  avatar = this.defaultAvatarBase64 || this.defaultAvatar || ''
+}
+
+// 最终检查：如果 avatar 还是空，强制使用默认头像
+if (!avatar || avatar.trim() === '') {
+  console.error('【简历预览】头像最终为空，强制使用默认头像')
+  avatar = this.defaultAvatar || ''
+}
+
+console.log('【简历预览】最终使用的头像:', avatar ? (avatar.startsWith('data:') ? 'base64格式' : avatar.substring(0, 50) + '...') : '空')
 
 const infoHtml = `
   <div class="info-row">
