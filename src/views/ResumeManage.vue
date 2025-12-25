@@ -544,6 +544,8 @@ import { exportElementToPDF } from '@/utils/pdf'
 import campusLogo from '@/assets/campus_logo.png'
 import defaultAvatar from '@/assets/default-avatar.png'
 import { ElDatePicker } from 'element-plus'
+import { getResumePreview } from '@/api'
+
 import ZyBreadcrumb from '@/components/common/ZyBreadcrumb.vue'
 const STORAGE_KEY = 'resume_data_v1'
 
@@ -640,22 +642,68 @@ export default {
   // 0. 将默认头像转换为 base64
   await this.loadDefaultAvatarAsBase64()
 
-  // 1. 加载简历草稿
-  await this.fetchResumeDraft()
+await this.fetchResumeDraft()
 
-  // 2. **这里必须有这一行**
-  await this.fetchStudentAvatar()
+// 先同步头像/基本信息（你已有）
+await this.fetchStudentAvatar()
 
-  // 3. 简历文件列表
-  this.fileList = await this.fetchResumeFiles()
+// ⭐ 再同步教育经历（用 student center 的来源覆盖掉）
+await this.fetchStudentEducation()
 
-  // 4. 滚动高亮
-  this.setupScrollSpy()
+this.fileList = await this.fetchResumeFiles()
+this.setupScrollSpy()
+
 }
 
 ,
 
   methods: {
+// yyyy-MM-dd -> yyyy-MM
+normalizeMonth (s) {
+  if (!s) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0, 7)
+  return s
+},
+
+async fetchStudentEducation () {
+  try {
+    const resumeData = await getResumePreview()
+    console.log('【ResumeManage-简历预览】', resumeData)
+
+    // 兼容你 StudentCenter 里写的三套字段：education_list / educations / primary_education
+    let educations = []
+
+    if (Array.isArray(resumeData.education_list)) {
+      educations = resumeData.education_list
+    } else if (Array.isArray(resumeData.educations)) {
+      educations = resumeData.educations
+    } else if (resumeData.primary_education) {
+      educations = Array.isArray(resumeData.primary_education)
+        ? resumeData.primary_education
+        : [resumeData.primary_education]
+    }
+
+    // 映射到 ResumeManage 的 form.education 结构
+    this.form.education = (educations || []).map(edu => ({
+      id: edu.id ?? null,
+      school: edu.school_name || edu.school || '',
+      major: edu.major || '',
+      rank: edu.major_rank || edu.ranking || '',
+      start: this.normalizeMonth(edu.start_date || edu.startDate || ''),
+      end: this.normalizeMonth(edu.end_date || edu.endDate || '')
+    }))
+
+    // 如果你只想展示第一条（比如“主教育经历”），就改成：
+    // this.form.education = this.form.education.slice(0, 1)
+
+    this.persist()
+  } catch (e) {
+    console.error('【ResumeManage】同步教育经历失败：', e)
+  }
+},
+
+
+
     confirmWork (index, w) {
   if (!w.company?.trim() || !w.title?.trim()) {
     ElMessage.warning('请先填写「公司名称」和「职位名称」')
@@ -876,18 +924,7 @@ f.profile.status = js || f.profile.status
       // skills
       f.skills = d.skills_summary || ''
 
-      // education（接口里是一个 education 对象）
-      const edu = d.education || {}
-      if (Object.keys(edu).length) {
-        f.education = [{
-          id: edu.id || null,
-          school: edu.school_name || '',
-          major: edu.major || '',
-          rank: edu.major_rank || '',
-          start: edu.start_date || '',
-          end: edu.end_date || ''
-        }]
-      }
+
 
       // work_experiences
       f.work = (d.work_experiences || []).map(w => ({
