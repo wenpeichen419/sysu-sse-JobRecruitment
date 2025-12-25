@@ -269,10 +269,16 @@ export default {
       })
     },
 
-    getCandidateInitial(name) {
-      if (!name) return '?'
-      return name.charAt(0)
-    },
+  
+getCandidateInitial(name) {
+  if (!name) return '?'
+  const trimmedName = name.trim()
+  // 如果名字小于等于2个字，直接显示全名；否则取后两个字
+  if (trimmedName.length <= 2) {
+    return trimmedName
+  }
+  return trimmedName.substring(trimmedName.length - 2)
+},
 
     async fetchCandidateAvatar(candidate) {
       if (!candidate.avatar_url) return null

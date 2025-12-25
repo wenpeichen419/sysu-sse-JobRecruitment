@@ -20,7 +20,7 @@
             @error="handleAvatarError($event, candidate)"
           >
           <div v-else class="sidebar-avatar-placeholder">
-            {{ candidate.name.charAt(0) }}
+            {{ getFormattedName(candidate.name) }}
           </div>
         </div>
         <span class="sidebar-name">{{ candidate.name }}</span>
@@ -68,6 +68,16 @@ export default {
       this.$emit('candidate-selected', candidate)
     },
     
+    // 新增：获取名字显示逻辑（优先后两个字）
+    getFormattedName(name) {
+      if (!name) return '?';
+      const trimmedName = name.trim();
+      // 如果名字小于等于2个字，直接显示全名；否则截取最后两个字
+      return trimmedName.length <= 2 
+        ? trimmedName 
+        : trimmedName.substring(trimmedName.length - 2);
+    },
+
     // 获取侧边栏候选人头像
     async fetchSidebarAvatar(candidate) {
       if (!candidate.avatar) return;
@@ -93,8 +103,6 @@ export default {
           }
         });
         
-        console.log('侧边栏头像响应状态:', response.status);
-        
         if (response.ok) {
           const blob = await response.blob();
           const avatarBlobUrl = URL.createObjectURL(blob);
@@ -114,19 +122,15 @@ export default {
       if (this.sidebarAvatars[candidate.id]) {
         return this.sidebarAvatars[candidate.id];
       }
-      
-      // 如果有头像URL但还没加载，返回null让占位符显示
-      if (candidate.avatar) {
-        return null;
-      }
-      
       return null; // 返回null显示占位符
     },
 
     // 头像加载失败处理
-    handleAvatarError(event) {
+    handleAvatarError(event, candidate) {
       console.log('侧边栏头像加载失败，显示占位符');
-      event.target.style.display = 'none';
+      // 清空该候选人的头像缓存，让 v-else 生效
+      this.sidebarAvatars[candidate.id] = null;
+      this.$forceUpdate();
     }
   }
 }
@@ -209,6 +213,7 @@ export default {
   object-fit: cover;
 }
 
+/* 修改点：优化文字显示样式 */
 .sidebar-avatar-placeholder {
   width: 100%;
   height: 100%;
@@ -217,7 +222,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 12px; /* 侧边栏较窄，调小字号显示两个字 */
   font-weight: bold;
 }
 

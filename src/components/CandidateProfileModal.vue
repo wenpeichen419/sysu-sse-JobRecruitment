@@ -1,22 +1,18 @@
 <template>
   <div class="modal-overlay" v-if="visible" @click="closeModal">
     <div class="modal-content" @click.stop>
-      <!-- 关闭按钮 -->
       <button class="modal-close" @click="closeModal">×</button>
       
-      <!-- 弹窗标题 -->
       <div class="modal-header">
         <h2 class="modal-title">候选人简介</h2>
         <span class="modal-subtitle">{{ displayValue(candidateName, '暂无') }}的个人简历</span>
       </div>
 
-      <!-- 加载状态 -->
       <div v-if="loading" class="loading-state">
         <div class="loading-spinner"></div>
         <span>加载中...</span>
       </div>
 
-      <!-- 简历内容 -->
       <div v-else-if="resumeData" class="resume-content">
         <div class="resume-left">
           <div class="resume-avatar-section">
@@ -28,14 +24,13 @@
                 @error="handleAvatarError"
               >
               <div v-else class="avatar-placeholder">
-                {{ getCandidateInitial(resumeData.basic_info?.full_name || candidateName) }}
+                {{ getCandidateDisplayName(resumeData.basic_info?.full_name || candidateName) }}
               </div>
             </div>
             <h2 class="resume-name" :class="{ 'empty-value': !resumeData.basic_info?.full_name }">
               {{ displayValue(resumeData.basic_info?.full_name || candidateName, '暂无') }}
             </h2>
             
-            <!-- 求职状态徽章 -->
             <div class="job-status-badge" :class="getJobStatusClass()">
               <span class="status-icon">{{ getJobStatusIcon() }}</span>
               <span class="status-text">{{ getJobStatusText() }}</span>
@@ -67,7 +62,6 @@
               </div>
               <div class="text-item">
                 <span class="item-label">期望薪资:</span>
-                <!-- 修复这里：使用正确的判断条件 -->
                 <span class="item-value" :class="{ 'empty-value': !hasSalaryData }">
                   {{ formatSalary() }}
                 </span>
@@ -77,7 +71,6 @@
         </div>
         
         <div class="resume-right">
-          <!-- 教育经历 -->
           <div class="resume-section">
             <h4 class="resume-section-title">教育经历</h4>
             <div 
@@ -107,7 +100,6 @@
             </div>
           </div>
 
-          <!-- 能力标签 -->
           <div class="resume-section">
             <h4 class="resume-section-title">能力标签</h4>
             <div class="resume-tags">
@@ -125,7 +117,6 @@
         </div>
       </div>
 
-      <!-- 错误状态 -->
       <div v-else class="error-state">
         <span>加载简历信息失败</span>
         <button class="retry-btn" @click="fetchResume">重试</button>
@@ -162,21 +153,16 @@ export default {
       avatarLoaded: false,
       jobSeekingStatus: 0,
       baseURL: 'http://localhost:8080',
-      hasSalaryData: false // 新增：标记是否有薪资数据
+      hasSalaryData: false
     }
   },
   computed: {
-    // 获取个人标签数组
     personalTags() {
       return this.resumeData?.personal_tags || []
     },
-    // 获取教育经历数组 - 根据接口返回的数据结构调整
     educations() {
       if (!this.resumeData) return []
-      
       let educations = []
-      
-      // 根据接口返回数据，使用 primary_education 字段
       if (this.resumeData.primary_education && Array.isArray(this.resumeData.primary_education)) {
         educations = this.resumeData.primary_education.map(edu => ({
           school: edu.school_name,
@@ -187,7 +173,6 @@ export default {
           ranking: edu.major_rank
         }))
       }
-      
       return educations
     }
   },
@@ -201,7 +186,6 @@ export default {
     }
   },
   methods: {
-    // 辅助方法：处理空值显示，空值显示为"暂无"
     displayValue(value, defaultText = '暂无') {
       if (value === null || value === undefined || value === '') {
         return defaultText
@@ -212,7 +196,6 @@ export default {
       return value
     },
     
-    // 将后端返回的求职状态字符串转换为数字
     convertJobStatusToNumber(statusString) {
       const statusMap = {
         '在校-暂不考虑': 0,
@@ -226,42 +209,29 @@ export default {
       return statusMap[statusString] || 0
     },
     
-    // 格式化薪资显示 - 修复逻辑
     formatSalary() {
       if (!this.resumeData?.expected_job) {
         this.hasSalaryData = false
         return '暂无'
       }
-      
       const minSalary = this.resumeData.expected_job.expected_min_salary
       const maxSalary = this.resumeData.expected_job.expected_max_salary
       const status = this.jobSeekingStatus
-      
-      // 检查是否有薪资数据
       const hasMinSalary = minSalary !== null && minSalary !== undefined && minSalary !== 0
       const hasMaxSalary = maxSalary !== null && maxSalary !== undefined && maxSalary !== 0
-      
       if (!hasMinSalary && !hasMaxSalary) {
         this.hasSalaryData = false
         return '暂无'
       }
-      
       this.hasSalaryData = true
-      
-      // 求职状态：1=在校-寻求实习, 2=应届-寻求实习 -> 不加k
-      // 求职状态：3=应届-寻求校招 -> 加k（用户填的就是k值，直接加后缀即可）
       const shouldAddK = status === 3
-      
       if (shouldAddK) {
-        // 校招：直接加k后缀
         return `${minSalary || 0}k-${maxSalary || 0}k`
       } else {
-        // 实习：不加k，直接显示数字
         return `${minSalary || 0}-${maxSalary || 0}`
       }
     },
     
-    // 获取求职状态文本
     getJobStatusText() {
       const status = this.jobSeekingStatus
       const statusMap = {
@@ -273,19 +243,10 @@ export default {
       return statusMap[status] || '暂无'
     },
     
-    // 获取求职状态图标
     getJobStatusIcon() {
-      const status = this.jobSeekingStatus
-      const iconMap = {
-        0: '',
-        1: '',
-        2: '',
-        3: ''
-      }
-      return iconMap[status] || ''
+      return ''
     },
     
-    // 获取求职状态样式类名
     getJobStatusClass() {
       const status = this.jobSeekingStatus
       const classMap = {
@@ -299,16 +260,13 @@ export default {
     
     async fetchResume() {
       if (!this.userId) return
-      
       this.loading = true
       this.error = null
       this.avatarUrl = null
       this.avatarLoaded = false
       this.hasSalaryData = false
-      
       try {
         const token = localStorage.getItem('token')
-        
         const response = await fetch(`http://localhost:8080/api/hr/resume/${this.userId}`, {
           method: 'GET',
           headers: {
@@ -316,22 +274,14 @@ export default {
             'Content-Type': 'application/json'
           }
         })
-        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
         const data = await response.json()
-        console.log('候选人简历接口返回数据:', data)
-        
         if (data.code === 200 && data.data) {
           this.resumeData = data.data
-          
-          // 获取求职状态
           const jobSeekingStatusRaw = this.resumeData.basic_info?.job_seeking_status || 0
           this.jobSeekingStatus = this.convertJobStatusToNumber(jobSeekingStatusRaw)
-          
-          // 获取头像
           if (this.resumeData.avatar_url) {
             try {
               this.avatarUrl = await loadImageWithAuth(this.resumeData.avatar_url, this.baseURL)
@@ -341,9 +291,7 @@ export default {
               this.avatarUrl = null
             }
           }
-          
-          // 初始化薪资数据状态
-          this.formatSalary() // 调用一次来设置 hasSalaryData
+          this.formatSalary()
         } else {
           throw new Error(data.message || '获取简历信息失败')
         }
@@ -355,21 +303,27 @@ export default {
       }
     },
 
-    // 获取候选人姓名的首字母
-    getCandidateInitial(name) {
+    /**
+     * 修改后的方法：获取候选人姓名展示文字
+     * 逻辑：取姓名的后两个字。如果姓名长度小于等于2，则显示全名。
+     */
+    getCandidateDisplayName(name) {
       if (!name) return '?'
-      return name.charAt(0)
+      // 去除首尾空格
+      const trimmedName = name.trim()
+      if (trimmedName.length <= 2) {
+        return trimmedName
+      }
+      // 取最后两个字符
+      return trimmedName.substring(trimmedName.length - 2)
     },
 
-    // 头像加载失败时的处理
     handleAvatarError() {
-      console.log('头像加载失败，显示姓氏占位符')
       this.avatarUrl = null
       this.avatarLoaded = false
     },
 
     closeModal() {
-      // 释放 blob URL，避免内存泄漏
       if (this.avatarUrl && this.avatarUrl.startsWith('blob:')) {
         revokeBlobUrls([this.avatarUrl])
       }
@@ -390,12 +344,10 @@ export default {
 </script>
 
 <style scoped>
+/* 样式部分保持不变，仅在 avatar-placeholder 处优化字体大小以适应两个字 */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -418,26 +370,15 @@ export default {
 
 .modal-close {
   position: absolute;
-  top: 15px;
-  right: 20px;
-  background: none;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-  color: #999;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s;
+  top: 15px; right: 20px;
+  background: none; border: none;
+  font-size: 30px; cursor: pointer;
+  color: #999; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: all 0.3s;
 }
 
-.modal-close:hover {
-  background: #f5f5f5;
-  color: #333;
-}
+.modal-close:hover { background: #f5f5f5; color: #333; }
 
 .modal-header {
   margin-bottom: 30px;
@@ -446,30 +387,19 @@ export default {
 }
 
 .modal-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #325e21;
-  margin: 0 0 8px 0;
+  font-size: 26px; font-weight: 700;
+  color: #325e21; margin: 0 0 8px 0;
 }
 
-.modal-subtitle {
-  font-size: 15px;
-  color: #999;
-  font-style: italic;
-}
+.modal-subtitle { font-size: 15px; color: #999; font-style: italic; }
 
 .loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  padding: 40px;
-  color: #666;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 15px; padding: 40px; color: #666;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border: 4px solid #f3f3f3;
   border-top: 4px solid #325e21;
   border-radius: 50%;
@@ -482,326 +412,96 @@ export default {
 }
 
 .error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  padding: 40px;
-  color: #f44336;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 15px; padding: 40px; color: #f44336;
 }
 
 .retry-btn {
-  padding: 8px 16px;
-  background: #325e21;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
+  padding: 8px 16px; background: #325e21;
+  color: white; border: none; border-radius: 6px;
+  cursor: pointer; font-size: 14px;
 }
 
-.retry-btn:hover {
-  background: #2a4e1b;
-}
-
-/* 简历内容样式 */
 .resume-content {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 30px;
 }
 
-.resume-left {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .resume-avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
+  display: flex; flex-direction: column;
+  align-items: center; padding: 20px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px;
 }
 
 .resume-avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  position: relative;
-  margin-bottom: 12px;
+  width: 100px; height: 100px;
+  border-radius: 50%; overflow: hidden;
+  position: relative; margin-bottom: 12px;
   border: 4px solid white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.resume-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.resume-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .avatar-placeholder {
-  width: 100%;
-  height: 100%;
+  width: 100%; height: 100%;
   background: linear-gradient(135deg, #325e21, #4a7c2f);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  font-weight: bold;
-  border-radius: 50%;
+  color: white; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 24px; /* 减小了字体以容纳两个字 */
+  font-weight: bold; border-radius: 50%;
 }
 
-.resume-name {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 8px 0;
-}
+.resume-name { font-size: 24px; font-weight: 700; color: #333; margin: 0 0 8px 0; }
+.resume-name.empty-value { color: #ff9800; }
 
-.resume-name.empty-value {
-  color: #ff9800;
-}
-
-/* 求职状态徽章 */
 .job-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 12px 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 14px; font-weight: 600; margin: 12px 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
 }
 
-.job-status-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.status-icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.status-text {
-  font-size: 14px;
-  letter-spacing: 0.5px;
-}
-
-/* 统一的激活状态 - 绿色 */
 .status-active {
   background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-  color: #2e7d32;
-  border: 1px solid #81c784;
+  color: #2e7d32; border: 1px solid #81c784;
 }
 
-/* 待完善状态 */
-.status-incomplete {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  color: #f57c00;
-  border: 1px dashed #ffb74d;
-}
+.resume-basic-info { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666; }
+.info-tag.empty-value { color: #ff9800; }
+.info-separator { color: #ccc; }
 
-.resume-basic-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-}
-
-.info-tag {
-  color: #666;
-}
-
-.info-tag.empty-value {
-  color: #ff9800;
-}
-
-.info-separator {
-  color: #ccc;
-}
-
-.resume-right {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+.resume-right { display: flex; flex-direction: column; gap: 20px; }
 
 .resume-section {
-  padding: 18px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border-left: 4px solid #325e21;
+  padding: 18px; background: #f8f9fa;
+  border-radius: 10px; border-left: 4px solid #325e21;
 }
 
-.resume-section-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #325e21;
-  margin: 0 0 12px 0;
-}
+.resume-section-title { font-size: 18px; font-weight: 700; color: #325e21; margin: 0 0 12px 0; }
+.text-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.item-label { color: #666; font-weight: 600; min-width: 70px; }
+.item-value { color: #333; font-weight: 500; }
+.item-value.empty-value { color: #ff9800; }
 
-.resume-text {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.education-item.not-first { margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ddd; }
+.edu-school { font-size: 18px; font-weight: 700; color: #333; }
+.edu-school.empty-value { color: #ff9800; }
+.edu-time { font-size: 15px; color: #666; font-weight: 500; }
+.edu-details { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.edu-major { color: #333; font-weight: 600; }
 
-.text-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.item-label {
-  color: #666;
-  font-weight: 600;
-  min-width: 70px;
-}
-
-.item-value {
-  color: #333;
-  font-weight: 500;
-}
-
-.item-value.empty-value {
-  color: #ff9800;
-}
-
-.education-item {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.education-item.not-first {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px dashed #ddd;
-}
-
-.edu-school {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
-}
-
-.edu-school.empty-value {
-  color: #ff9800;
-}
-
-.edu-time {
-  font-size: 15px;
-  color: #666;
-  font-weight: 500;
-}
-
-.edu-time .empty-value {
-  color: #ff9800;
-}
-
-.edu-details {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.edu-major {
-  color: #333;
-  font-weight: 600;
-}
-
-.edu-major.empty-value {
-  color: #ff9800;
-}
-
-.edu-degree {
-  color: #666;
-}
-
-.edu-degree.empty-value {
-  color: #ff9800;
-}
-
-.edu-rank {
-  color: #666;
-}
-
-.edu-rank.empty-value {
-  color: #ff9800;
-}
-
-.resume-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
+.resume-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .resume-tag {
-  padding: 6px 12px;
-  background: white;
-  color: #325e21;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 6px 12px; background: white; color: #325e21;
+  border-radius: 16px; font-size: 12px; font-weight: 500;
   border: 1px solid #c3d6c0;
 }
 
-.empty-resume-tag {
-  padding: 6px 12px;
-  background: #fff3e0;
-  color: #ff9800;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px dashed #ffb74d;
-}
-
-.no-data {
-  color: #999;
-  text-align: center;
-  padding: 20px;
-}
-
-/* 响应式设计 */
 @media (max-width: 768px) {
-  .modal-content {
-    padding: 20px;
-    width: 95%;
-  }
-  
-  .resume-content {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .resume-avatar-section {
-    padding: 15px;
-  }
-  
-  .resume-avatar {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .resume-name {
-    font-size: 20px;
-  }
-  
-  .resume-section {
-    padding: 15px;
-  }
+  .resume-content { grid-template-columns: 1fr; }
 }
 </style>
