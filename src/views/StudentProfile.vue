@@ -58,7 +58,12 @@
           <div class="form-grid">
             <div class="form-item">
               <label><span class="required-star">*</span>姓名</label>
-              <input type="text" v-model="formData.name" placeholder="请输入姓名" />
+              <input
+                type="text"
+                v-model="formData.name"
+                placeholder="姓名由系统同步，无法修改"
+                disabled
+              />
             </div>
             <div class="form-item">
               <label><span class="required-star">*</span>学号</label>
@@ -88,7 +93,12 @@
             </div>
             <div class="form-item">
               <label>邮箱</label>
-              <input type="email" v-model="formData.email" placeholder="请输入邮箱" />
+              <input
+                type="email"
+                v-model="formData.email"
+                placeholder="邮箱由系统同步，无法修改"
+                disabled
+              />
             </div>
             <div class="form-item">
               <label><span class="required-star">*</span>电话</label>
