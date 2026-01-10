@@ -82,7 +82,7 @@
               <el-form-item label="岗位性质" prop="work_nature" required>
                 <el-radio-group v-model="formData.work_nature">
                   <el-radio :label="1">实习</el-radio>
-                  <el-radio :label="2">全职</el-radio>
+                  <el-radio :label="2">校招</el-radio>
                 </el-radio-group>
               </el-form-item>
 
