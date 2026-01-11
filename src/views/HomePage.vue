@@ -36,29 +36,35 @@
     <!-- 右侧轮播图区域 -->
     <div class="right-panel">
       <div class="carousel">
-        <div class="carousel-container" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-          <div class="carousel-slide">
-            <img src="@/assets/campus.png" alt="校园图片" class="carousel-image">
-          </div>
-          <div class="carousel-slide">
-            <div class="text-slide">
-              <h3>软件工程</h3>
-              <p>定制服务</p>
-              <p>铸就未来</p>
-            </div>
-          </div>
-        </div>
+<div
+  class="carousel-container"
+  :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
+>
+  <div
+    class="carousel-slide"
+    v-for="(slide, index) in slides"
+    :key="index"
+  >
+    <img
+      :src="slide.src"
+      class="carousel-image"
+      alt="轮播图"
+    />
+  </div>
+</div>
+
         
         <div class="carousel-controls">
           <button class="control-btn" @click="prevSlide">‹</button>
           <div class="indicators">
-            <span 
-              v-for="index in 2" 
-              :key="index"
-              class="indicator"
-              :class="{ active: currentSlide === index - 1 }"
-              @click="currentSlide = index - 1"
-            ></span>
+<span 
+  v-for="(item, index) in slides"
+  :key="index"
+  class="indicator"
+  :class="{ active: currentSlide === index }"
+  @click="currentSlide = index"
+></span>
+
           </div>
           <button class="control-btn" @click="nextSlide">›</button>
         </div>
@@ -73,8 +79,18 @@ export default {
   data() {
     return {
       currentSlide: 0,
-      totalSlides: 2,
       autoPlayInterval: null,
+      slides: [
+      { type: 'image', src: require('@/assets/SYSU-Pic0.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic1.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic2.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic3.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic4.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic5.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic6.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic7.jpg') },
+      { type: 'image', src: require('@/assets/SYSU-Pic8.jpg') }
+    ],
       companyName: '字节跳动',
       totalJobs: 0,
       totalApplications: 0,
@@ -101,12 +117,15 @@ export default {
         this.autoPlayInterval = null;
       }
     },
-    nextSlide() {
-      this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
-    },
-    prevSlide() {
-      this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
-    },
+nextSlide() {
+  this.currentSlide =
+    (this.currentSlide + 1) % this.slides.length
+},
+prevSlide() {
+  this.currentSlide =
+    (this.currentSlide - 1 + this.slides.length) % this.slides.length
+},
+
     goToEnterpriseInfo() {
       this.$router.push('/enterprise-info');
     },

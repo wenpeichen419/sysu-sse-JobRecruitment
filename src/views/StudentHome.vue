@@ -3,9 +3,9 @@
     <!-- 顶部轮播：全宽 -->
     <div class="banner">
       <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-        <div class="slide">
-          <img src="@/assets/campus.png" alt="banner" class="banner-img" />
-        </div>
+<div class="slide" v-for="(img, index) in bannerImages" :key="index">
+    <img :src="img" alt="banner" class="banner-img" />
+  </div>
         <div class="slide">
           <div class="text-slide">
             <h3>求职中心</h3>
@@ -124,8 +124,17 @@ import axios from 'axios'
 import StudentCalendar from '@/components/StudentCalendar.vue'
 import RecruitmentPanel from '@/components/student/RecruitmentPanel.vue'
 import UsefulLinks from '@/components/student/UsefulLinks.vue'
-
+import banner1 from '@/assets/SYSU-Pic0.jpg'
+import banner2 from '@/assets/SYSU-Pic1.jpg'
+import banner3 from '@/assets/SYSU-Pic2.jpg'
+import banner4 from '@/assets/SYSU-Pic3.jpg'
+import banner5 from '@/assets/SYSU-Pic4.jpg'
+import banner6 from '@/assets/SYSU-Pic5.jpg'
+import banner7 from '@/assets/SYSU-Pic6.jpg'
+import banner8 from '@/assets/SYSU-Pic7.jpg'
+import banner9 from '@/assets/SYSU-Pic8.jpg'
 // 本地时间格式化成 YYYY-MM-DD
+
 function formatDateLocal (d) {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -159,7 +168,8 @@ export default {
     const today = new Date()
     return {
       currentSlide: 0,
-      totalSlides: 2,
+      totalSlides: 9,
+      bannerImages: [banner1, banner2, banner3, banner4, banner5, banner6, banner7, banner8, banner9],
       timer: null,
 
       selectedDate: formatDateLocal(today),
@@ -452,11 +462,14 @@ export default {
 
 /* 顶部 banner */
 .banner {
-  width: 100vw !important;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
-  border-radius: 0 !important;
+  width: 100vw;
+  height: calc(100vh - 90px); /* 👈 64px 是你顶部导航栏高度 */
+  min-height: 480px;
+  max-height: 700px;
+  position: relative;
+  overflow: hidden;
 }
+
 .banner-img {
   width: 100%;
   height: 100%;
@@ -471,11 +484,17 @@ export default {
 @media (min-width:1440px){
   .container{ padding-left:32px; padding-right:32px; }
 }
-.banner{
-  position:relative; height:360px; overflow:hidden; border-radius:0; margin:0; background:#fff;
+
+.slides {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
 }
-.slides{ display:flex; height:100%; transition:transform .5s ease-in-out; }
-.slide{ flex:0 0 100%; height:100%; display:flex; align-items:center; justify-content:center; }
+
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
 .text-slide{
   width:100%; height:100%;
   background:linear-gradient(135deg,#f8f9fa,#e9ecef); color:#325e21;
