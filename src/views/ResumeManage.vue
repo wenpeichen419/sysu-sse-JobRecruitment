@@ -1285,28 +1285,36 @@ async saveResume () {
     },
 
     /* ========== 简历文件列表 ========== */
-    async fetchResumeFiles () {
-      try {
-        const res = await axios.get(API_GET_FILES, {
-          headers: getAuthHeaders()
-        })
-        if (!res.data || res.data.code !== 200 || !Array.isArray(res.data.data)) {
-          return []
-        }
-        return res.data.data.map(item => ({
-          id: item.id,
-          fileName: item.file_name,
-          size: item.file_size,
-          createdAt: item.uploaded_at,
-          fileUrl: item.file_url,
-          usage: item.usage,        // usage_type
-          templateId: item.template_id
-        }))
-      } catch (e) {
-        console.error('获取简历列表失败：', e)
-        return []
+async fetchResumeFiles() {
+  try {
+    const res = await axios.get(API_GET_FILES, { headers: getAuthHeaders() });
+    if (!res.data || res.data.code !== 200 || !Array.isArray(res.data.data)) return [];
+
+    return res.data.data.map(item => {
+      // --- 修改开始 ---
+      let rawUrl = item.file_url || '';
+      let finalUrl = rawUrl;
+      
+      // 如果不是以 http 开头，且 rawUrl 不为空，则手动拼接 API 前缀
+      if (rawUrl && !rawUrl.startsWith('http')) {
+        finalUrl = `${API_PREFIX}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
       }
-    },
+      // --- 修改结束 ---
+
+      return {
+        id: item.id,
+        fileName: item.file_name,
+        size: item.file_size,
+        createdAt: item.uploaded_at,
+        fileUrl: finalUrl, // 现在这是完整的、带 http 的绝对路径
+        usage: item.usage
+      }
+    })
+  } catch (e) {
+    console.error('获取列表失败', e);
+    return [];
+  }
+},
 
     triggerUpload () {
       this.$refs.fileInput?.click()
@@ -1357,27 +1365,74 @@ async saveResume () {
 ,
 
 
-    async downloadFromList (item) {
-      if (!item.fileUrl) {
-        ElMessage.warning('文件地址为空')
-        return
-      }
-      window.open(item.fileUrl, '_blank')
-    },
+async downloadFromList(item) {
+  if (!item.fileUrl) {
+    ElMessage.warning('文件下载链接失效');
+    return;
+  }
 
-    async removeFromList (item) {
-      if (!confirm('删除这份简历文件？')) return
-      try {
-        await axios.delete(API_DELETE_PDF(item.id), {
-          headers: getAuthHeaders()
-        })
-        ElMessage.success('已删除')
-        this.fileList = await this.fetchResumeFiles()
-      } catch (e) {
-        console.error('删除简历失败：', e)
-        ElMessage.error('删除失败，请稍后重试')
+  try {
+    // 1. 使用带有 Token 的 axios 重新请求文件
+    const response = await axios.get(item.fileUrl, {
+      headers: getAuthHeaders(),
+      responseType: 'blob' // 必须要求返回二进制文件流
+    });
+
+    // 2. 将返回的二进制流转为浏览器可识别的临时 URL
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    // 3. 创建隐藏的 a 标签模拟点击下载
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = item.fileName || '我的简历.pdf'; // 指定下载文件名
+    document.body.appendChild(link);
+    link.click();
+
+    // 4. 清理现场
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+
+    ElMessage.success('已开始下载');
+  } catch (e) {
+    console.error('下载失败详情:', e);
+    ElMessage.error('无法下载该文件，请检查网络或登录状态');
+  }
+},
+
+async removeFromList(item) {
+  if (!confirm(`确定要删除简历「${item.fileName}」吗？`)) return;
+
+  try {
+    const res = await axios.delete(API_DELETE_PDF(item.id), {
+      headers: getAuthHeaders()
+    });
+
+    if (res.data && res.data.code === 200) {
+      ElMessage.success('已删除');
+      this.fileList = await this.fetchResumeFiles();
+    } else {
+      // 处理业务逻辑返回的 code 非 200 情况
+      const msg = res.data.message || '';
+      if (msg.includes('投递') || msg.includes('使用')) {
+        ElMessage.warning('无法删除，该简历已被引用');
+      } else {
+        ElMessage.warning(msg || '删除失败');
       }
-    },
+    }
+  } catch (e) {
+    // 关键点：拦截后端返回的长句子并替换
+    const serverErrorMsg = e.response?.data?.message || '';
+
+    if (serverErrorMsg.includes('投递') || serverErrorMsg.includes('记录')) {
+      // 只要后端返回的消息里包含“投递”或“记录”等关键词，就显示为您要求的精简文案
+      ElMessage.warning('无法删除，该简历已被引用');
+    } else {
+      ElMessage.error(serverErrorMsg || '删除请求失败');
+    }
+    console.error('删除简历详情：', e);
+  }
+},
 
     formatSize (bytes) {
       if (bytes === undefined || bytes === null) return '-'
