@@ -1400,19 +1400,39 @@ async downloadFromList(item) {
   }
 },
 
-    async removeFromList (item) {
-      if (!confirm('删除这份简历文件？')) return
-      try {
-        await axios.delete(API_DELETE_PDF(item.id), {
-          headers: getAuthHeaders()
-        })
-        ElMessage.success('已删除')
-        this.fileList = await this.fetchResumeFiles()
-      } catch (e) {
-        console.error('删除简历失败：', e)
-        ElMessage.error('删除失败，请稍后重试')
+async removeFromList(item) {
+  if (!confirm(`确定要删除简历「${item.fileName}」吗？`)) return;
+
+  try {
+    const res = await axios.delete(API_DELETE_PDF(item.id), {
+      headers: getAuthHeaders()
+    });
+
+    if (res.data && res.data.code === 200) {
+      ElMessage.success('已删除');
+      this.fileList = await this.fetchResumeFiles();
+    } else {
+      // 处理业务逻辑返回的 code 非 200 情况
+      const msg = res.data.message || '';
+      if (msg.includes('投递') || msg.includes('使用')) {
+        ElMessage.warning('无法删除，该简历已被引用');
+      } else {
+        ElMessage.warning(msg || '删除失败');
       }
-    },
+    }
+  } catch (e) {
+    // 关键点：拦截后端返回的长句子并替换
+    const serverErrorMsg = e.response?.data?.message || '';
+
+    if (serverErrorMsg.includes('投递') || serverErrorMsg.includes('记录')) {
+      // 只要后端返回的消息里包含“投递”或“记录”等关键词，就显示为您要求的精简文案
+      ElMessage.warning('无法删除，该简历已被引用');
+    } else {
+      ElMessage.error(serverErrorMsg || '删除请求失败');
+    }
+    console.error('删除简历详情：', e);
+  }
+},
 
     formatSize (bytes) {
       if (bytes === undefined || bytes === null) return '-'
