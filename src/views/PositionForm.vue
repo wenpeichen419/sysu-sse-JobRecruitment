@@ -924,63 +924,69 @@ export default {
     }
 
     // 从URL参数加载LLM提取的数据
-    const loadLLMData = (extractedData) => {
-      isFromLLM.value = true
-      
-      // 填充表单数据
-      formData.value = {
-        ...formData.value,
-        title: extractedData.title || '',
-        type: extractedData.type || null,
-        work_nature: extractedData.work_nature || null,
-        department: extractedData.department || '',
-        headcount: extractedData.headcount || 1,
-        required_degree: extractedData.required_degree || null,
-        province_id: extractedData.province_id || null,
-        city_id: extractedData.city_id || null,
-        address_detail: extractedData.address_detail || '',
-        min_salary: extractedData.min_salary || null,
-        max_salary: extractedData.max_salary || null,
-        required_start_date: extractedData.required_start_date || '',
-        deadline: extractedData.deadline || '',
-        description: extractedData.description || '',
-        tech_requirements: extractedData.tech_requirements || '',
-        bonus_points: extractedData.bonus_points || '',
-        tags: extractedData.tags || []
-      }
-      
-      console.log('LLM数据填充完成:', formData.value)
-      
-      // 关键修改：如果LLM数据中有省份ID，触发省份变化处理
-      if (extractedData.province_id) {
-        console.log('LLM数据中有省份ID，触发省份变化处理:', extractedData.province_id)
+    // 从URL参数加载LLM提取的数据
+const loadLLMData = (extractedData) => {
+  isFromLLM.value = true
+  
+  console.log('LLM提取的原始数据:', extractedData)
+  console.log('学历要求值:', extractedData.required_degree, '类型:', typeof extractedData.required_degree)
+  
+  // 填充表单数据
+  formData.value = {
+    ...formData.value,
+    title: extractedData.title || '',
+    type: extractedData.type || null,
+    work_nature: extractedData.work_nature || null,
+    department: extractedData.department || '',
+    headcount: extractedData.headcount || 1,
+    // 关键修复：确保学历要求正确设置
+    required_degree: extractedData.required_degree !== undefined ? Number(extractedData.required_degree) : null,
+    province_id: extractedData.province_id || null,
+    city_id: extractedData.city_id || null,
+    address_detail: extractedData.address_detail || '',
+    min_salary: extractedData.min_salary || null,
+    max_salary: extractedData.max_salary || null,
+    required_start_date: extractedData.required_start_date || '',
+    deadline: extractedData.deadline || '',
+    description: extractedData.description || '',
+    tech_requirements: extractedData.tech_requirements || '',
+    bonus_points: extractedData.bonus_points || '',
+    tags: extractedData.tags || []
+  }
+  
+  console.log('填充后的表单数据:', formData.value)
+  console.log('学历要求已设置:', formData.value.required_degree)
+  
+  // 关键修改：如果LLM数据中有省份ID，触发省份变化处理
+  if (extractedData.province_id) {
+    console.log('LLM数据中有省份ID，触发省份变化处理:', extractedData.province_id)
+    
+    // 等待省份数据加载完成
+    const checkProvinceLoaded = () => {
+      if (provinceList.value.length > 0) {
+        console.log('省份数据已加载，执行handleProvinceChange')
+        handleProvinceChange(extractedData.province_id)
         
-        // 等待省份数据加载完成
-        const checkProvinceLoaded = () => {
-          if (provinceList.value.length > 0) {
-            console.log('省份数据已加载，执行handleProvinceChange')
-            handleProvinceChange(extractedData.province_id)
-            
-            // 使用nextTick确保DOM更新后再设置city_id
-            nextTick(() => {
-              if (extractedData.city_id) {
-                console.log('设置城市ID:', extractedData.city_id)
-                formData.value.city_id = extractedData.city_id
-              }
-            })
-          } else {
-            console.log('等待省份数据加载...')
-            setTimeout(checkProvinceLoaded, 100)
+        // 使用nextTick确保DOM更新后再设置city_id
+        nextTick(() => {
+          if (extractedData.city_id) {
+            console.log('设置城市ID:', extractedData.city_id)
+            formData.value.city_id = extractedData.city_id
           }
-        }
-        checkProvinceLoaded()
+        })
+      } else {
+        console.log('等待省份数据加载...')
+        setTimeout(checkProvinceLoaded, 100)
       }
-      
-      ElMessage.success({
-        message: 'LLM已自动填充表单，请检查信息是否准确',
-        duration: 3000
-      })
     }
+    checkProvinceLoaded()
+  }
+  
+  ElMessage.success({
+    message: 'LLM已自动填充表单，请检查信息是否准确',
+    duration: 3000
+  })
+}
 
     // 组件挂载
     onMounted(() => {
