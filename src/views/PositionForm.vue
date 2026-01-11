@@ -384,7 +384,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleCheck, Edit } from '@element-plus/icons-vue'
@@ -569,144 +569,146 @@ export default {
     }
 
     // 获取岗位详情数据（编辑模式）
-
-const fetchPositionDetail = async (positionId) => {
-  try {
-    const token = localStorage.getItem('token')
-    
-    const response = await fetch(`http://localhost:8080/api/hr/jobs/${positionId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    
-    const data = await response.json()
-    if (data.code === 200 && data.data) {
-      const jobDetails = data.data.job_details
-      console.log('获取到的岗位详情:', jobDetails)
-      
-      // 等待省市数据加载完成
-      await new Promise((resolve) => {
-        const checkLocationsLoaded = () => {
-          if (provinceList.value.length > 0) {
-            console.log('省市数据已加载完成')
-            resolve()
-          } else {
-            console.log('等待省市数据加载...')
-            setTimeout(checkLocationsLoaded, 100)
-          }
-        }
-        checkLocationsLoaded()
-      })
-
-      // 等待标签数据加载完成
-      await new Promise((resolve) => {
-        const checkTagsLoaded = () => {
-          if (tagCategories.value.length > 0) {
-            console.log('标签数据已加载完成')
-            resolve()
-          } else {
-            console.log('等待标签数据加载...')
-            setTimeout(checkTagsLoaded, 100)
-          }
-        }
-        checkTagsLoaded()
-      })
-
-      // 填充表单数据
-      formData.value = {
-        title: jobDetails.title || '',
-        type: jobDetails.type || null,
-        work_nature: jobDetails.work_nature || null,
-        department: jobDetails.department || '',
-        headcount: jobDetails.headcount || 1,
-        required_degree: jobDetails.required_degree || null,
-        province_id: jobDetails.province_id || null,
-        city_id: jobDetails.city_id || null,
-        address_detail: jobDetails.address_detail || '',
-        min_salary: jobDetails.min_salary || null,
-        max_salary: jobDetails.max_salary || null,
-        required_start_date: jobDetails.required_start_date || '',
-        deadline: jobDetails.deadline || '',
-        description: jobDetails.description || '',
-        tech_requirements: jobDetails.tech_requirements || '',
-        bonus_points: jobDetails.bonus_points || '',
-        tags: jobDetails.tags ? jobDetails.tags.map(tag => tag.tag_id) : []
-      }
-
-      console.log('填充后的表单数据:', formData.value)
-
-      // 处理省市联动
-      if (jobDetails.province_id) {
-        console.log('处理省份数据，省份ID:', jobDetails.province_id)
-        handleProvinceChange(jobDetails.province_id, true)
+    const fetchPositionDetail = async (positionId) => {
+      try {
+        const token = localStorage.getItem('token')
         
-        setTimeout(() => {
-          console.log('设置城市ID:', jobDetails.city_id, '当前城市列表:', currentCities.value)
-          formData.value.city_id = jobDetails.city_id || null
-        }, 300)
-      }
-
-      // 处理标签数据 - 关键修改：将所有标签合并到currentTags中
-      if (jobDetails.tags && jobDetails.tags.length > 0) {
-        console.log('处理标签数据:', jobDetails.tags)
-        
-        // 解决方案：将所有类别的标签合并到currentTags中
-        const allTags = []
-        tagCategories.value.forEach(category => {
-          if (category.tags && category.tags.length > 0) {
-            allTags.push(...category.tags)
+        const response = await fetch(`http://localhost:8080/api/hr/jobs/${positionId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         })
         
-        // 去重
-        const uniqueTags = allTags.filter((tag, index, self) => 
-          index === self.findIndex(t => t.tag_id === tag.tag_id)
-        )
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         
-        currentTags.value = uniqueTags
-        console.log('合并后的所有标签:', currentTags.value)
-        
-        // 设置第一个标签类别（保持原有逻辑，但不影响标签显示）
-        if (tagCategories.value.length > 0) {
-          selectedTagCategory.value = tagCategories.value[0].category_id
-        }
-      } else {
-        console.log('没有标签数据')
-        // 如果没有标签，仍然设置默认类别
-        if (tagCategories.value.length > 0) {
-          selectedTagCategory.value = tagCategories.value[0].category_id
-          handleTagCategoryChange(tagCategories.value[0].category_id)
-        }
-      }
+        const data = await response.json()
+        if (data.code === 200 && data.data) {
+          const jobDetails = data.data.job_details
+          console.log('获取到的岗位详情:', jobDetails)
+          
+          // 等待省市数据加载完成
+          await new Promise((resolve) => {
+            const checkLocationsLoaded = () => {
+              if (provinceList.value.length > 0) {
+                console.log('省市数据已加载完成')
+                resolve()
+              } else {
+                console.log('等待省市数据加载...')
+                setTimeout(checkLocationsLoaded, 100)
+              }
+            }
+            checkLocationsLoaded()
+          })
 
-      ElMessage.success('数据加载成功')
-    } else {
-      throw new Error(data.message || '获取岗位详情失败')
+          // 等待标签数据加载完成
+          await new Promise((resolve) => {
+            const checkTagsLoaded = () => {
+              if (tagCategories.value.length > 0) {
+                console.log('标签数据已加载完成')
+                resolve()
+              } else {
+                console.log('等待标签数据加载...')
+                setTimeout(checkTagsLoaded, 100)
+              }
+            }
+            checkTagsLoaded()
+          })
+
+          // 填充表单数据
+          formData.value = {
+            title: jobDetails.title || '',
+            type: jobDetails.type || null,
+            work_nature: jobDetails.work_nature || null,
+            department: jobDetails.department || '',
+            headcount: jobDetails.headcount || 1,
+            required_degree: jobDetails.required_degree || null,
+            province_id: jobDetails.province_id || null,
+            city_id: jobDetails.city_id || null,
+            address_detail: jobDetails.address_detail || '',
+            min_salary: jobDetails.min_salary || null,
+            max_salary: jobDetails.max_salary || null,
+            required_start_date: jobDetails.required_start_date || '',
+            deadline: jobDetails.deadline || '',
+            description: jobDetails.description || '',
+            tech_requirements: jobDetails.tech_requirements || '',
+            bonus_points: jobDetails.bonus_points || '',
+            tags: jobDetails.tags ? jobDetails.tags.map(tag => tag.tag_id) : []
+          }
+
+          console.log('填充后的表单数据:', formData.value)
+
+          // 处理省市联动
+          if (jobDetails.province_id) {
+            console.log('处理省份数据，省份ID:', jobDetails.province_id)
+            handleProvinceChange(jobDetails.province_id, true)
+            
+            // 使用nextTick确保DOM更新后再设置city_id
+            nextTick(() => {
+              console.log('设置城市ID:', jobDetails.city_id, '当前城市列表:', currentCities.value)
+              formData.value.city_id = jobDetails.city_id || null
+            })
+          }
+
+          // 处理标签数据 - 关键修改：将所有标签合并到currentTags中
+          if (jobDetails.tags && jobDetails.tags.length > 0) {
+            console.log('处理标签数据:', jobDetails.tags)
+            
+            // 解决方案：将所有类别的标签合并到currentTags中
+            const allTags = []
+            tagCategories.value.forEach(category => {
+              if (category.tags && category.tags.length > 0) {
+                allTags.push(...category.tags)
+              }
+            })
+            
+            // 去重
+            const uniqueTags = allTags.filter((tag, index, self) => 
+              index === self.findIndex(t => t.tag_id === tag.tag_id)
+            )
+            
+            currentTags.value = uniqueTags
+            console.log('合并后的所有标签:', currentTags.value)
+            
+            // 设置第一个标签类别（保持原有逻辑，但不影响标签显示）
+            if (tagCategories.value.length > 0) {
+              selectedTagCategory.value = tagCategories.value[0].category_id
+            }
+          } else {
+            console.log('没有标签数据')
+            // 如果没有标签，仍然设置默认类别
+            if (tagCategories.value.length > 0) {
+              selectedTagCategory.value = tagCategories.value[0].category_id
+              handleTagCategoryChange(tagCategories.value[0].category_id)
+            }
+          }
+
+          ElMessage.success('数据加载成功')
+        } else {
+          throw new Error(data.message || '获取岗位详情失败')
+        }
+      } catch (error) {
+        console.error('获取岗位详情失败:', error)
+        ElMessage.error('获取岗位详情失败: ' + error.message)
+      }
     }
-  } catch (error) {
-    console.error('获取岗位详情失败:', error)
-    ElMessage.error('获取岗位详情失败: ' + error.message)
-  }
-}
 
     // 省份变化处理
     const handleProvinceChange = (provinceId) => {
+      console.log('省份变化，省份ID:', provinceId)
       formData.value.city_id = null
       const province = provinceList.value.find(p => p.province_id === provinceId)
       currentCities.value = province ? province.cities : []
+      console.log('当前城市列表:', currentCities.value)
     }
 
     // 标签类别变化处理
-const handleTagCategoryChange = (categoryId) => {
-  const category = tagCategories.value.find(c => c.category_id === categoryId)
-  // 只更新当前可选的标签，不影响已选择的标签
-  currentTags.value = category ? category.tags : []
-}
+    const handleTagCategoryChange = (categoryId) => {
+      const category = tagCategories.value.find(c => c.category_id === categoryId)
+      // 只更新当前可选的标签，不影响已选择的标签
+      currentTags.value = category ? category.tags : []
+    }
     
     // 分类变化时更新可选标签
     const onCategoryChange = () => {
@@ -922,58 +924,97 @@ const handleTagCategoryChange = (categoryId) => {
     }
 
     // 从URL参数加载LLM提取的数据
+    const loadLLMData = (extractedData) => {
+      isFromLLM.value = true
+      
+      // 填充表单数据
+      formData.value = {
+        ...formData.value,
+        title: extractedData.title || '',
+        type: extractedData.type || null,
+        work_nature: extractedData.work_nature || null,
+        department: extractedData.department || '',
+        headcount: extractedData.headcount || 1,
+        required_degree: extractedData.required_degree || null,
+        province_id: extractedData.province_id || null,
+        city_id: extractedData.city_id || null,
+        address_detail: extractedData.address_detail || '',
+        min_salary: extractedData.min_salary || null,
+        max_salary: extractedData.max_salary || null,
+        required_start_date: extractedData.required_start_date || '',
+        deadline: extractedData.deadline || '',
+        description: extractedData.description || '',
+        tech_requirements: extractedData.tech_requirements || '',
+        bonus_points: extractedData.bonus_points || '',
+        tags: extractedData.tags || []
+      }
+      
+      console.log('LLM数据填充完成:', formData.value)
+      
+      // 关键修改：如果LLM数据中有省份ID，触发省份变化处理
+      if (extractedData.province_id) {
+        console.log('LLM数据中有省份ID，触发省份变化处理:', extractedData.province_id)
+        
+        // 等待省份数据加载完成
+        const checkProvinceLoaded = () => {
+          if (provinceList.value.length > 0) {
+            console.log('省份数据已加载，执行handleProvinceChange')
+            handleProvinceChange(extractedData.province_id)
+            
+            // 使用nextTick确保DOM更新后再设置city_id
+            nextTick(() => {
+              if (extractedData.city_id) {
+                console.log('设置城市ID:', extractedData.city_id)
+                formData.value.city_id = extractedData.city_id
+              }
+            })
+          } else {
+            console.log('等待省份数据加载...')
+            setTimeout(checkProvinceLoaded, 100)
+          }
+        }
+        checkProvinceLoaded()
+      }
+      
+      ElMessage.success({
+        message: 'LLM已自动填充表单，请检查信息是否准确',
+        duration: 3000
+      })
+    }
+
+    // 组件挂载
     onMounted(() => {
       // 检查是否是编辑模式
       const positionId = route.query.positionId
       const isEdit = route.query.isEdit
       
-      if (positionId && isEdit) {
-        isEditMode.value = true
-        currentPositionId.value = positionId
-        // 获取岗位详情数据
-        fetchPositionDetail(positionId)
-      } else {
-        // 新建模式：检查是否有LLM数据
-        const dataParam = route.query.data
-        if (dataParam) {
-          try {
-            const extractedData = JSON.parse(dataParam)
-            if (extractedData.fromLLM) {
-              isFromLLM.value = true
-              // 填充表单数据
-              formData.value = {
-                ...formData.value,
-                title: extractedData.title || '',
-                type: extractedData.type || null,
-                work_nature: extractedData.work_nature || null,
-                department: extractedData.department || '',
-                headcount: extractedData.headcount || 1,
-                required_degree: extractedData.required_degree || null,
-                address_detail: extractedData.address_detail || '',
-                min_salary: extractedData.min_salary || null,
-                max_salary: extractedData.max_salary || null,
-                required_start_date: extractedData.required_start_date || '',
-                deadline: extractedData.deadline || '',
-                description: extractedData.description || '',
-                tech_requirements: extractedData.tech_requirements || '',
-                bonus_points: extractedData.bonus_points || '',
-                tags: extractedData.tags || []
+      // 先获取省市数据
+      fetchLocations().then(() => {
+        // 再获取标签数据
+        fetchTags().then(() => {
+          if (positionId && isEdit) {
+            isEditMode.value = true
+            currentPositionId.value = positionId
+            // 获取岗位详情数据
+            fetchPositionDetail(positionId)
+          } else {
+            // 新建模式：检查是否有LLM数据
+            const dataParam = route.query.data
+            if (dataParam) {
+              try {
+                const extractedData = JSON.parse(dataParam)
+                if (extractedData.fromLLM) {
+                  loadLLMData(extractedData)
+                }
+              } catch (error) {
+                console.error('解析数据失败:', error)
               }
-              
-              ElMessage.success({
-                message: 'LLM已自动填充表单，请检查信息是否准确',
-                duration: 3000
-              })
             }
-          } catch (error) {
-            console.error('解析数据失败:', error)
           }
-        }
-      }
+        })
+      })
       
       setupScrollSpy()
-      fetchLocations()
-      fetchTags()
       
       // 监听新标签选择
       const unwatch = watch(newTag, (tagId) => {
