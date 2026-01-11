@@ -24,3 +24,4 @@ app.config.globalProperties.$message = {
 app.use(router)
 
 app.mount('#app')
+

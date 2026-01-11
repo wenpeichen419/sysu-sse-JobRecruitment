@@ -164,7 +164,7 @@
               </el-form-item>
 
               <!-- 薪资区间 -->
-              <el-form-item label="薪资区间(k)" required>
+              <el-form-item label="薪资区间(k/元)" required>
                 <div class="salary-range-container">
                   <el-form-item prop="min_salary" style="margin-bottom: 0;">
                     <el-input-number 
@@ -1851,5 +1851,20 @@ const loadLLMData = (extractedData) => {
   .btn-submit {
     width: 100%;
   }
+}
+/* 高优先级 - 专门针对这三个下拉框 */
+:deep(.position-form .el-form-item[prop="required_degree"] .el-select .el-input__inner),
+:deep(.position-form .el-form-item[prop="province_id"] .el-select .el-input__inner),
+:deep(.position-form .el-form-item[prop="city_id"] .el-select .el-input__inner) {
+  font-size: 22px !important;
+  height: 60px !important;
+  line-height: 60px !important;
+}
+
+/* 下拉选项 */
+:deep(.el-select-dropdown__item) {
+  font-size: 22px !important;
+  height: 55px !important;
+  line-height: 55px !important;
 }
 </style>
