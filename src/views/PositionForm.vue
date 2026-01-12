@@ -287,32 +287,74 @@
               </el-form-item>
             </div>
 
-            <!-- 提交按钮 -->
-            <div class="form-section submit-section">
-              <el-form-item>
-                <el-button 
-                  type="primary" 
-                  size="large" 
-                  @click="handleSubmit(true)" 
-                  :loading="submitting"
-                  :disabled="!isFormComplete"
-                >
-                  {{ isEditMode ? '提交修改' : '提交申请' }}
-                </el-button>
-                <el-button 
-                  v-if="!isEditMode"
-                  type="success" 
-                  size="large" 
-                  @click="handleSubmit(false)" 
-                  :loading="submitting"
-                >
-                  保存草稿
-                </el-button>
-                <el-button size="large" @click="handleCancel">
-                  取消
-                </el-button>
-              </el-form-item>
-            </div>
+           <!-- 修改提交按钮部分 -->
+<div class="form-section submit-section">
+  <el-form-item>
+    <!-- 情况1：新建模式 -->
+    <el-button 
+      v-if="!isEditMode"
+      type="primary" 
+      size="large" 
+      @click="handleSubmit(true)" 
+      :loading="submitting"
+      :disabled="!isFormComplete || submitting"
+    >
+      提交申请
+    </el-button>
+    
+    <!-- 情况2：编辑草稿（status=1） -->
+    <el-button 
+      v-if="isEditMode && formData.status === 1"
+      type="primary" 
+      size="large" 
+      @click="handleSubmit(true)" 
+      :loading="submitting"
+      :disabled="!isFormComplete || submitting"
+    >
+      提交申请
+    </el-button>
+    
+    <!-- 情况3：编辑审核未通过（status=30） -->
+    <el-button 
+      v-if="isEditMode && formData.status === 30"
+      type="primary" 
+      size="large" 
+      @click="handleSubmit(true)" 
+      :loading="submitting"
+      :disabled="!isFormComplete || submitting"
+    >
+      重新提交申请
+    </el-button>
+    
+    <!-- 情况4：其他编辑情况（如已审核通过的修改） -->
+    <el-button 
+      v-if="isEditMode && formData.status !== 1 && formData.status !== 30 && formData.status !== null"
+      type="primary" 
+      size="large" 
+      @click="handleSubmit(true)" 
+      :loading="submitting"
+      :disabled="submitting"
+    >
+      提交修改
+    </el-button>
+    
+    <!-- 保存草稿按钮：只有新建模式和草稿模式显示 -->
+    <el-button 
+      v-if="(!isEditMode) || (isEditMode && formData.status === 1)"
+      type="success" 
+      size="large" 
+      @click="handleSubmit(false)" 
+      :loading="submitting"
+      :disabled="submitting"
+    >
+      保存草稿
+    </el-button>
+    
+    <el-button size="large" @click="handleCancel">
+      取消
+    </el-button>
+  </el-form-item>
+</div>
           </el-form>
         </div>
       </div>
@@ -506,17 +548,17 @@ export default {
     }
 
     // 检查表单是否完整（用于启用提交申请按钮）
-    const isFormComplete = computed(() => {
-      const data = formData.value
-      return data.title && 
-             data.type !== null && 
-             data.work_nature !== null && 
-             data.headcount > 0 &&
-             data.min_salary !== null &&
-             data.max_salary !== null &&
-             data.description &&
-             data.tech_requirements
-    })
+const isFormComplete = computed(() => {
+  const data = formData.value
+  return data.title && 
+         data.type !== null && 
+         data.work_nature !== null && 
+         data.headcount > 0 &&
+         data.min_salary !== null &&
+         data.max_salary !== null &&
+         data.description &&
+         data.tech_requirements
+})
 
     // 获取省市数据
     const fetchLocations = async () => {
@@ -570,74 +612,50 @@ export default {
 
     // 获取岗位详情数据（编辑模式）
     const fetchPositionDetail = async (positionId) => {
-      try {
-        const token = localStorage.getItem('token')
-        
-        const response = await fetch(`http://localhost:8080/api/hr/jobs/${positionId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        
-        const data = await response.json()
-        if (data.code === 200 && data.data) {
-          const jobDetails = data.data.job_details
-          console.log('获取到的岗位详情:', jobDetails)
-          
-          // 等待省市数据加载完成
-          await new Promise((resolve) => {
-            const checkLocationsLoaded = () => {
-              if (provinceList.value.length > 0) {
-                console.log('省市数据已加载完成')
-                resolve()
-              } else {
-                console.log('等待省市数据加载...')
-                setTimeout(checkLocationsLoaded, 100)
-              }
-            }
-            checkLocationsLoaded()
-          })
-
-          // 等待标签数据加载完成
-          await new Promise((resolve) => {
-            const checkTagsLoaded = () => {
-              if (tagCategories.value.length > 0) {
-                console.log('标签数据已加载完成')
-                resolve()
-              } else {
-                console.log('等待标签数据加载...')
-                setTimeout(checkTagsLoaded, 100)
-              }
-            }
-            checkTagsLoaded()
-          })
-
-          // 填充表单数据
-          formData.value = {
-            title: jobDetails.title || '',
-            type: jobDetails.type || null,
-            work_nature: jobDetails.work_nature || null,
-            department: jobDetails.department || '',
-            headcount: jobDetails.headcount || 1,
-            required_degree: jobDetails.required_degree || null,
-            province_id: jobDetails.province_id || null,
-            city_id: jobDetails.city_id || null,
-            address_detail: jobDetails.address_detail || '',
-            min_salary: jobDetails.min_salary || null,
-            max_salary: jobDetails.max_salary || null,
-            required_start_date: jobDetails.required_start_date || '',
-            deadline: jobDetails.deadline || '',
-            description: jobDetails.description || '',
-            tech_requirements: jobDetails.tech_requirements || '',
-            bonus_points: jobDetails.bonus_points || '',
-            tags: jobDetails.tags ? jobDetails.tags.map(tag => tag.tag_id) : []
-          }
-
-          console.log('填充后的表单数据:', formData.value)
+  try {
+    const token = localStorage.getItem('token')
+    
+    const response = await fetch(`http://localhost:8080/api/hr/jobs/${positionId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    
+    const data = await response.json()
+    if (data.code === 200 && data.data) {
+      const jobDetails = data.data.job_details
+      
+      // 保存原始状态值
+      const originalStatus = jobDetails.status
+      
+      // 填充表单数据 - 包含status字段
+      formData.value = {
+        title: jobDetails.title || '',
+        type: jobDetails.type || null,
+        work_nature: jobDetails.work_nature || null,
+        department: jobDetails.department || '',
+        headcount: jobDetails.headcount || 1,
+        required_degree: jobDetails.required_degree || null,
+        province_id: jobDetails.province_id || null,
+        city_id: jobDetails.city_id || null,
+        address_detail: jobDetails.address_detail || '',
+        min_salary: jobDetails.min_salary || null,
+        max_salary: jobDetails.max_salary || null,
+        required_start_date: jobDetails.required_start_date || '',
+        deadline: jobDetails.deadline || '',
+        description: jobDetails.description || '',
+        tech_requirements: jobDetails.tech_requirements || '',
+        bonus_points: jobDetails.bonus_points || '',
+        tags: jobDetails.tags ? jobDetails.tags.map(tag => tag.tag_id) : [],
+        // 关键：保存状态字段
+        status: originalStatus
+      }
+      
+      console.log('岗位状态:', originalStatus, '是否草稿:', originalStatus === 1)
 
           // 处理省市联动
           if (jobDetails.province_id) {
@@ -817,94 +835,149 @@ export default {
     }
 
     // 提交表单
-    const handleSubmit = async (isSubmit) => {
-      if (!formRef.value) return
+const handleSubmit = async (isSubmit) => {
+  if (!formRef.value) return
 
-      // 验证必填字段
-      formRef.value.validate((valid) => {
-        if (!valid && isSubmit) {
-          ElMessage.error('请完善必填信息')
-          return false
-        }
-
-        // 构建提交数据
-        const submitData = {
-          ...formData.value
-        }
-
-        // 编辑模式和新建模式的状态处理不同
-        if (isEditMode.value) {
-          // 编辑模式：保持原有状态，只更新数据
-          // 不需要设置status
-        } else {
-          // 新建模式：设置状态
-          submitData.status = isSubmit ? 10 : 1 // 10=提交申请, 1=保存草稿
-        }
-
-        // 移除空值字段
-        Object.keys(submitData).forEach(key => {
-          if (submitData[key] === null || submitData[key] === '' || (Array.isArray(submitData[key]) && submitData[key].length === 0)) {
-            delete submitData[key]
-          }
-        })
-
-        ElMessageBox.confirm(
-          isEditMode.value ? '确认提交修改吗？' : 
-          (isSubmit ? '确认提交岗位信息吗？提交后将进入审核流程。' : '确认保存为草稿吗？'),
-          isEditMode.value ? '确认修改' : (isSubmit ? '确认提交' : '确认保存'),
-          {
-            confirmButtonText: '确认',
-            cancelButtonText: '取消',
-            type: isSubmit ? 'warning' : 'info'
-          }
-        ).then(async () => {
-          submitting.value = true
-          try {
-            const token = localStorage.getItem('token')
-            
-            let url = 'http://localhost:8080/api/hr/jobs'
-            let method = 'POST'
-            
-            // 编辑模式使用PUT请求和特定URL
-            if (isEditMode.value) {
-              url = `http://localhost:8080/api/hr/jobs/${currentPositionId.value}`
-              method = 'PUT'
-            }
-            
-            const response = await fetch(url, {
-              method: method,
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(submitData)
-            })
-            
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-            
-            const data = await response.json()
-            if (data.code === 200 || data.code === 201) {
-              ElMessage.success(isEditMode.value ? '岗位信息修改成功！' : 
-                              (isSubmit ? '岗位信息提交成功！' : '草稿保存成功！'))
-              
-              // 跳转到岗位管理页面
-              setTimeout(() => {
-                router.push('/position-manage')
-              }, 1500)
-            } else {
-              throw new Error(data.message || '提交失败')
-            }
-          } catch (error) {
-            console.error('提交失败:', error)
-            ElMessage.error('提交失败：' + error.message)
-          } finally {
-            submitting.value = false
-          }
-        }).catch(() => {
-          // 用户取消
-        })
-      })
+  // 只有提交申请时才验证必填字段（草稿和审核未通过重新提交都需要验证）
+  if (isSubmit && (formData.value.status === 1 || formData.value.status === 30 || !isEditMode.value)) {
+    const isValid = await formRef.value.validate().catch(() => false)
+    if (!isValid) {
+      ElMessage.error('请完善必填信息')
+      return
     }
+    
+    // 额外验证薪资范围
+    if (formData.value.min_salary > formData.value.max_salary) {
+      ElMessage.error('最低薪资不能大于最高薪资')
+      return
+    }
+  }
+
+  // 构建提交数据
+  const submitData = {
+    ...formData.value
+  }
+
+  // 处理状态逻辑
+  if (isEditMode.value) {
+    // 编辑模式：
+    // 1. 如果是草稿(status=1)并且点击"提交申请"，更新状态为待审核(10)
+    // 2. 如果是审核未通过(status=30)并且点击"提交申请"，更新状态为待审核(10)
+    // 3. 其他情况（如已审核通过的状态）保持原有状态
+    if ((formData.value.status === 1 || formData.value.status === 30) && isSubmit) {
+      submitData.status = 10  // 草稿/审核未通过 -> 待审核
+    }
+    // 如果是草稿点击"保存草稿"，状态保持为草稿(1)
+    // 如果是审核未通过，不应该有保存草稿按钮
+  } else {
+    // 新建模式：设置状态
+    submitData.status = isSubmit ? 10 : 1  // 10=提交申请, 1=保存草稿
+  }
+
+  // 移除空值字段
+  Object.keys(submitData).forEach(key => {
+    if (submitData[key] === null || submitData[key] === '' || (Array.isArray(submitData[key]) && submitData[key].length === 0)) {
+      delete submitData[key]
+    }
+  })
+
+  // 确定提示消息
+  let confirmMessage = ''
+  let confirmTitle = ''
+  
+  if (isEditMode.value) {
+    if (formData.value.status === 1 && isSubmit) {
+      confirmMessage = '确认提交岗位信息吗？提交后将进入审核流程，无法再修改。'
+      confirmTitle = '确认提交申请'
+    } else if (formData.value.status === 30 && isSubmit) {
+      confirmMessage = '确认重新提交申请吗？提交后将重新进入审核流程。'
+      confirmTitle = '确认重新提交'
+    } else if (formData.value.status === 1 && !isSubmit) {
+      confirmMessage = '确认保存草稿吗？'
+      confirmTitle = '确认保存草稿'
+    } else {
+      confirmMessage = '确认提交修改吗？'
+      confirmTitle = '确认修改'
+    }
+  } else {
+    confirmMessage = isSubmit 
+      ? '确认提交岗位信息吗？提交后将进入审核流程，无法再修改。'
+      : '确认保存为草稿吗？'
+    confirmTitle = isSubmit ? '确认提交' : '确认保存'
+  }
+
+  ElMessageBox.confirm(
+    confirmMessage,
+    confirmTitle,
+    {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: isSubmit ? 'warning' : 'info'
+    }
+  ).then(async () => {
+    submitting.value = true
+    try {
+      const token = localStorage.getItem('token')
+      
+      let url = 'http://localhost:8080/api/hr/jobs'
+      let method = 'POST'
+      
+      // 编辑模式使用PUT请求和特定URL
+      if (isEditMode.value) {
+        url = `http://localhost:8080/api/hr/jobs/${currentPositionId.value}`
+        method = 'PUT'
+      }
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(submitData)
+      })
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+      
+      const data = await response.json()
+      if (data.code === 200 || data.code === 201) {
+        let successMessage = ''
+        
+        if (isEditMode.value) {
+          if (formData.value.status === 1 && isSubmit) {
+            successMessage = '岗位信息提交成功！等待管理员审核。'
+          } else if (formData.value.status === 30 && isSubmit) {
+            successMessage = '重新提交成功！等待管理员重新审核。'
+          } else if (formData.value.status === 1 && !isSubmit) {
+            successMessage = '草稿保存成功！'
+          } else {
+            successMessage = '岗位信息修改成功！'
+          }
+        } else {
+          successMessage = isSubmit 
+            ? '岗位信息提交成功！等待管理员审核。'
+            : '草稿保存成功！'
+        }
+        
+        ElMessage.success(successMessage)
+        
+        // 跳转到岗位管理页面
+        setTimeout(() => {
+          router.push('/position-manage')
+        }, 1500)
+      } else {
+        throw new Error(data.message || '提交失败')
+      }
+    } catch (error) {
+      console.error('提交失败:', error)
+      ElMessage.error('提交失败：' + error.message)
+    } finally {
+      submitting.value = false
+    }
+  }).catch(() => {
+    // 用户取消
+  })
+}
 
     // 取消操作
     const handleCancel = () => {
@@ -993,7 +1066,10 @@ const loadLLMData = (extractedData) => {
       // 检查是否是编辑模式
       const positionId = route.query.positionId
       const isEdit = route.query.isEdit
-      
+        // 初始化表单状态（如果是新建模式，状态为null）
+      if (!isEdit) {
+        formData.value.status = null
+      }
       // 先获取省市数据
       fetchLocations().then(() => {
         // 再获取标签数据
